@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MOE UniLab–MuJoCo：PPO specialist 与蒸馏学生实验报告（2026-07-23）</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="../../assets/gate.css?v=__BUILD_VERSION__">
+<script src="../../assets/gate.js?v=__BUILD_VERSION__" defer></script>
+</head>
+<body>
+<header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>
+<main>
+<p class="source">Public OpenResults copy · source report slug <code>2026-07-23-MOE-unilab-specialist-distill-report</code></p>
+<h1 id="moe-unilabmujocoppo-specialist-2026-07-23">MOE UniLab–MuJoCo：PPO specialist 与蒸馏学生实验报告（2026-07-23）</h1>
+<p data-evidence-profile="pure-offline" hidden aria-hidden="true"></p>
+
+<blockquote>
+<p>Date/scale: <code>2026-07-23</code> / semantic K=8 · val 139 + test 140 · rollouts=4<br>
+Output profile: <code>markdown-project-report</code>（HTML 副本见 checkpoint 树）<br>
+Results profile: <code>evaluator-offline</code>（纯离线数值；无新 rollout 视频）<br>
+Verdict: <code>PASS</code><br>
+Analysis: 主叙事为用户确认共识；GTrXL vs MLP 容量 claim = <strong>无证据</strong></p>
+</blockquote>
+<p>本报告是 BeyondMimic 合同下 <strong>specialist → DAgger 蒸馏</strong> 主线的 <strong>PPO 版</strong>复跑与升级。上一版同合同、<strong>fastSAC</strong> 管线（<code>2026-07-22-beyondmimic-retrain-experiment-summary.md</code>（未随本公开包发布））学生 test 峰值约 <strong>0.843</strong>；本版改用 <strong>PPO</strong> tracker，在有限迭代预算下再验 specialist / 蒸馏叙事。完整流水线见 §3 Experimental setup。</p>
+<p>Plan：<code>../plans/2026-07-23-plan-experiment-ppo-spec-g0-g-dagger-gtrxl.md</code>（未随本公开包发布）<br>
+Phase A/B 登记：<code>2026-07-23-ppo-phase-a-b-g0-g-spec-lock-record.md</code>（未随本公开包发布）<br>
+旧路径 stub：<code>2026-07-23-ppo-phase-c-d-dagger-final-report.md</code>（未随本公开包发布）</p>
+<hr>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS。</strong></p>
+<ul>
+<li>Decisive evidence: PPO 下 locked Spec oracle 与 best-by-val 学生 val BM SR = <strong>0.994</strong>；test 上学生高于同协议 single-policy <strong>G = 0.960</strong>（D6 GTrXL <strong>0.993</strong> / D8 MLP <strong>0.977</strong>），并远高于上一版 fastSAC 学生峰值 <strong>0.843</strong>（主表）。</li>
+<li>Counter-signal: specialist 过训有灾难性遗忘风险（clap Spec_final@3998 → SR 0；须按 val 锁早 ckpt）；末轮 D9 相对峰值略降。<strong>D6 用于 50Hz physical filter 时，accepted walk/kick 相对 reference 普遍高频关节颤振（§5.4），上肢更稳；BM SR 不刻画该平滑度。</strong></li>
+<li>Not shown: <strong>GTrXL 容量优于 MLP</strong>（本实验无支持该 claim 的证据，见 §5.3 / Analysis）；可部署 router；与 fastSAC 版完全同超参的严格 A/B；本报告主表未把门控 jerk。</li>
+<li>Decision: 有限预算下继续采用 <strong>PPO + specialist（难动作）+ DAgger 保留</strong>；架构选择不因本表主张 Transformer 必胜；若下游消费执行态，须另加平滑 / MPJPE 合同。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>本报告检验三条命题（semantic K=8、BeyondMimic full-motion SR）：</p>
+<ol>
+<li><strong>算法代际：</strong> 将 tracker 从 <strong>fastSAC</strong> 换为 <strong>PPO</strong> 后，单网与蒸馏学生的宏 SR 是否明显高于上一版峰值（~0.84）。</li>
+<li><strong>Specialist（有限预算）：</strong> 在有限续训量上，难动作（如 kick）上 specialist 是否优于 matched-iter <strong>single-policy baseline（G）</strong>；同时是否存在易动作上的灾难性遗忘，因而必须按 val 选 ckpt。</li>
+<li><strong>蒸馏保留：</strong> DAgger 得到的<strong>单一学生</strong>能否最大程度保留 specialist 收益，并在 val/test 上优于 G。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Single-policy baseline（G）</strong></td>
+<td>全量 train 上的单一 PPO；本报告 matched-iter 主对照为 <strong>G@4000</strong></td>
+<td>非蒸馏标签；非 MoE 路由</td>
+</tr>
+<tr>
+<td><strong>G0</strong></td>
+<td>同一 run 的较早快照 <strong>@1999</strong>（Spec resume 起点）</td>
+<td>非本报告主对照终点</td>
+</tr>
+<tr>
+<td><strong>Specialist（Spec）</strong></td>
+<td>自 G0 按 cluster 续训的专属策略；主结果 <strong>semantic K=8</strong></td>
+<td>评测时组合为 oracle，非默认可部署单网</td>
+</tr>
+<tr>
+<td><strong>Specialist oracle / locked Spec</strong></td>
+<td>用<strong>已知 cluster 标签</strong>选 Phase B 锁定的 Spec；clap 强制 @2000，其余 argmax val BM SR</td>
+<td>评测上界</td>
+</tr>
+<tr>
+<td><strong>灾难性遗忘（本文）</strong></td>
+<td>同一 Spec run 后期 ckpt 在原易动作上 BM SR 崩溃（clap@3998）</td>
+<td>非泛指一切过训现象</td>
+</tr>
+<tr>
+<td><strong>Student Di</strong></td>
+<td>DAgger 第 (i) 轮单一策略（MLP 或 GTrXL）；标签 = locked Spec</td>
+<td>非在线 PPO 微调</td>
+</tr>
+<tr>
+<td><strong>DAgger（本文）</strong></td>
+<td>离线迭代蒸馏：R0 由 G@4000 驱动采集；R≥1 由上一轮 GTrXL 驱动；监督始终来自 locked Spec</td>
+<td>非 interactive online DAgger；非 driver=specialist 的 fake-DAgger</td>
+</tr>
+<tr>
+<td><strong>BM SR</strong></td>
+<td><code>beyondmimic_style_full_motion_sr</code>（↑）；固定 clip start；MPJPE 不 gate</td>
+<td>非 legacy adaptive-start SR</td>
+</tr>
+<tr>
+<td><strong>上一版 fastSAC 峰值</strong></td>
+<td>同 BM 合同、同切分上的重训总结：学生 test 峰值 <strong>D7≈0.843</strong></td>
+<td>见 2026-07-22 总结；非本树数字</td>
+</tr>
+<tr>
+<td><strong>macro SR（unweighted）</strong></td>
+<td>8 cluster segment-macro SR 的等权平均（主表）</td>
+<td>clip-weighted 见 Appendix</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-experimental-setup">3. Experimental setup</h2>
+<p>整条实验按固定顺序推进：<strong>single-policy → specialists → 选模锁定 → DAgger 蒸馏 → 终局对照</strong>。Tracker 一律为 UniLab–MuJoCo <strong>PPO</strong>（相对上一版 fastSAC）；切分方式为 <strong>semantic K=8</strong>；主指标为 BeyondMimic full-motion SR。</p>
+<h3 id="31">3.1 数据与训练合同</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stack / host</td>
+<td>UniLab · MuJoCo · RSL-RL PPO；<code>hanszhu</code>；GPU0 RTX 5090</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>VADCompose V2 → UniLab NPZ；train / val / test = <strong>1113 / 139 / 140</strong></td>
+</tr>
+<tr>
+<td>Clustering</td>
+<td><strong>semantic K=8</strong>（clap, cross_arms, crouch, handshake, kick, punch, walk, wave_arms）</td>
+</tr>
+<tr>
+<td>Env</td>
+<td>BM terminate <code>0.25 / 0.8 / 0.25</code>；<code>truncate_on_clip_end</code>；<code>action_scale=2.0</code></td>
+</tr>
+<tr>
+<td>Teacher <code>num_envs</code></td>
+<td><strong>4096</strong>（每个 PPO 训练进程）</td>
+</tr>
+<tr>
+<td>Policy backbone（teachers）</td>
+<td>MLP 512-256-128 ELU</td>
+</tr>
+<tr>
+<td>Product root</td>
+<td><code>outputs/plan1_bm_ppo_spec_from_g1999/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="32">3.2 端到端流水线</h3>
+<ol>
+<li>
+<p><strong>Train single-policy（G0）</strong><br>
+   在<strong>全部</strong> train clips 上训一台 PPO；<code>num_envs=4096</code>。本树取检查点 <strong>@1999</strong> 记为 <strong>G0</strong>（Spec 的共同 resume 起点）。</p>
+</li>
+<li>
+<p><strong>续训 matched-iter single-policy（G）∥ 训 8× specialists（Spec）</strong><br>
+   - <strong>G</strong>：自 G0 在全量 train 上继续 PPO，取与 Spec 对齐的预算终点 <strong>@4000</strong>（主对照；旁路曾续到 ~8000，不作主表）。<br>
+   - <strong>Spec</strong>：按 semantic cluster 各开一条 run，自 <strong>G0@1999</strong> resume，每条再 <strong>+2000</strong> iter（至约 @3998/3999），<code>save_interval=500</code>，<code>PARALLEL=8</code>，每进程同样 <code>num_envs=4096</code>。</p>
+</li>
+<li>
+<p><strong>Phase A — 对照评测</strong><br>
+   每 cluster 在 val+test 上评 <strong>G0 / G / Spec_final</strong>（<code>rollouts=4</code>）；并对 Spec@2000…3500 做 <strong>val</strong> 扫，供选模。</p>
+</li>
+<li>
+<p><strong>Phase B — 锁定老师（<code>teachers.lock</code>）</strong><br>
+   - clap（c0）：<strong>强制 Spec@2000</strong>（防后期遗忘崩溃）。<br>
+   - 其余 cluster：在 Spec@2000…3500 上 <strong>argmax val BM SR</strong>（平手取更低 MPJPE）。<br>
+   - 组合评测时用已知 cluster 标签选对应 locked Spec → <strong>specialist oracle</strong>（评测上界，非默认可部署单网）。</p>
+</li>
+<li>
+<p><strong>Phase C — DAgger 蒸馏 ×10</strong><br>
+   - 标签始终 = locked Spec（不在线改 PPO teacher）。<br>
+   - 学生同时训 <strong>MLP + GTrXL</strong>（<code>SKIP_MLP=0</code>）。<br>
+   - Round 0 由 <strong>G@4000</strong> 驱动采集；Round ≥1 由上一轮 <strong>GTrXL</strong> 学生驱动。<br>
+   - 每轮结束后对该轮学生做 <strong>val ×4</strong> BM eval，得到 D0…D9。</p>
+</li>
+<li>
+<p><strong>Phase D — 终局对照</strong><br>
+   按 val 选 best 学生（本报告：<strong>D8 MLP</strong>、<strong>D6 GTrXL</strong>）并含末轮 <strong>D9</strong>；与 G0 / G / locked Spec oracle 一并做 <strong>val+test ×4</strong>。主数字见 §5。</p>
+</li>
+<li>
+<p><strong>（附加）Frozen SONIC 对照</strong><br>
+   同一 val/test clip 集上跑 frozen GEAR-SONIC bare，再<strong>后验</strong>套 BM SR，与 D6 GTrXL 并列（§5.4）；不改变上述训练流水线。</p>
+</li>
+</ol>
+<pre><code class="language-text">full-train PPO (num_envs=4096) → G0@1999
+        ├─ continue full-train → G@4000          (matched-iter baseline)
+        └─ 8× cluster resume +2000 → Spec_*     (specialists)
+              → Phase A/B eval + teachers.lock
+              → Phase C DAgger×10 (MLP+GTrXL; R0=G@4000)
+              → Phase D final val+test×4
+</code></pre>
+<h3 id="33">3.3 验收门槛（本报告）</h3>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PPO 代际抬升</td>
+<td style="text-align: right;">学生 test SR ≫ 上一版 ~0.843</td>
+<td style="text-align: right;">D6 GTrXL test <strong>0.993</strong></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>难动作 Spec &gt; G（有限预算）</td>
+<td style="text-align: right;">kick 上 Spec ≥ G</td>
+<td style="text-align: right;">val/test：locked Spec <strong>1.000</strong> vs G <strong>0.786</strong></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>蒸馏 ≥ G 且贴近 oracle</td>
+<td style="text-align: right;">student test &gt; G；val ≈ oracle</td>
+<td style="text-align: right;">D6/D8 满足（主表）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>遗忘风险被选模吸收</td>
+<td style="text-align: right;">clap 不采用崩塌 ckpt</td>
+<td style="text-align: right;">locked clap@2000；Spec_final@3998 = 0</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Differences and Run Spec</summary>
+
+### Differences from prior generation
+
+- Tracker：**fastSAC → PPO**；蒸馏协议同为 DAgger×10 + specialist 标签。
+- 难动作：上一版 BM 重训中 kick 仍失败；本版 PPO Spec/学生 kick test SR ≥ **0.929**（D6 = 1.000）。
+- Plan 曾写「仅 GTrXL」→ 实际 **MLP+GTrXL**（用户确认）。
+
+### Run Spec
+
+独立 `run_spec*.json` 未找到；设计来自 plan §Phase C/D + 用户确认开跑。搜索：`docs/plans/2026-07-23-plan-experiment-ppo-spec-g0-g-dagger-gtrxl.md`、`outputs/plan1_bm_ppo_spec_from_g1999/TODO.md`。
+
+
+<pre><code>Run Spec — moe-unilab-ppo-specialist-distill-2026-07-23
+Question/Hypothesis :
+  (1) PPO 是否相对 fastSAC 抬升 BM SR；
+  (2) 有限预算下难动作 Spec &gt; G，且存在遗忘风险；
+  (3) DAgger 学生能否保留 Spec 收益并优于 G
+Stack : UniLab MuJoCo PPO + DAgger
+Data : semantic K=8；teachers.lock；R0 = G@4000
+Train recipe : single-policy num_envs=4096 → G0@1999;
+  Spec +2000/cluster; G matched @4000; DAgger×10 MLP+GTrXL
+改动清单 : SKIP_MLP=0；终局 best-by-val + D9；val+test ×4
+对照 : G0@1999 / G@4000 / Spec_oracle_locked；叙事对照 2026-07-22 fastSAC 峰值
+Output : eval_phase_d_final_val_test_x4/summary.json
+</code></pre>
+
+
+</details>
+
+<h2 id="5-results">5. Results</h2>
+<p>主指标：<strong>macro BM SR（unweighted，↑）</strong>；质量：<strong>macro MPJPE（m，↓）</strong>。</p>
+<h3 id="51">5.1 宏平均（终局）</h3>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th style="text-align: right;">val BM SR ↑</th>
+<th style="text-align: right;">test BM SR ↑</th>
+<th style="text-align: right;">val MPJPE ↓</th>
+<th style="text-align: right;">test MPJPE ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>G0</td>
+<td style="text-align: right;">0.933</td>
+<td style="text-align: right;">0.941</td>
+<td style="text-align: right;">0.0403</td>
+<td style="text-align: right;">0.0378</td>
+</tr>
+<tr>
+<td>G（single-policy）</td>
+<td style="text-align: right;">0.945</td>
+<td style="text-align: right;">0.960</td>
+<td style="text-align: right;">0.0350</td>
+<td style="text-align: right;">0.0325</td>
+</tr>
+<tr>
+<td>Spec_oracle_locked</td>
+<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">0.977</td>
+<td style="text-align: right;">0.0343</td>
+<td style="text-align: right;">0.0338</td>
+</tr>
+<tr>
+<td><strong>D8_mlp</strong> (best-by-val)</td>
+<td style="text-align: right;"><strong>0.994</strong></td>
+<td style="text-align: right;">0.977</td>
+<td style="text-align: right;">0.0336</td>
+<td style="text-align: right;">0.0317</td>
+</tr>
+<tr>
+<td><strong>D6_gtrxl</strong> (best-by-val)</td>
+<td style="text-align: right;"><strong>0.994</strong></td>
+<td style="text-align: right;"><strong>0.993</strong></td>
+<td style="text-align: right;">0.0336</td>
+<td style="text-align: right;"><strong>0.0300</strong></td>
+</tr>
+<tr>
+<td>D9_mlp</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.984</td>
+<td style="text-align: right;">0.0335</td>
+<td style="text-align: right;">0.0310</td>
+</tr>
+<tr>
+<td>D9_gtrxl</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.977</td>
+<td style="text-align: right;">0.0330</td>
+<td style="text-align: right;">0.0298</td>
+</tr>
+<tr>
+<td><em>上一版 fastSAC 学生峰值（D7，test）</em></td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><em>0.843</em></td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><em>0.048</em></td>
+</tr>
+</tbody>
+</table>
+<p>Authoritative：<code>outputs/plan1_bm_ppo_spec_from_g1999/eval_phase_d_final_val_test_x4/summary.json</code>。<br>
+上一版峰值：<code>docs/report/2026-07-22-beyondmimic-retrain-experiment-summary.md</code>（同 BM 合同，不同 tracker）。</p>
+<h3 id="52-kick-clap">5.2 难动作与遗忘切片（kick / clap）</h3>
+<table>
+<thead>
+<tr>
+<th>Split</th>
+<th>Policy</th>
+<th style="text-align: right;">kick SR</th>
+<th style="text-align: right;">clap SR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>val</td>
+<td>G</td>
+<td style="text-align: right;">0.786</td>
+<td style="text-align: right;">0.950</td>
+</tr>
+<tr>
+<td>val</td>
+<td>Spec_oracle_locked</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;">0.950</td>
+</tr>
+<tr>
+<td>val</td>
+<td>D6_gtrxl</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;">0.950</td>
+</tr>
+<tr>
+<td>test</td>
+<td>G</td>
+<td style="text-align: right;">0.786</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td>test</td>
+<td>Spec_oracle_locked</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td>test</td>
+<td>D6_gtrxl</td>
+<td style="text-align: right;"><strong>1.000</strong></td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td>val</td>
+<td>Spec_final@3998（未锁定）</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;"><strong>0.000</strong></td>
+</tr>
+</tbody>
+</table>
+<p>clap@3998 崩溃与 Phase B 强制 clap@2000：见 <code>2026-07-23-ppo-phase-a-b-g0-g-spec-lock-record.md</code>（未随本公开包发布）。</p>
+<h3 id="53-gtrxl-vs-mlp-claim">5.3 GTrXL vs MLP（容量 claim：无证据）</h3>
+<p>同轮 val（D0–D9）：MLP 更高 <strong>5</strong> 轮、打平 <strong>4</strong>、GTrXL 更高 <strong>1</strong> 轮；均值 Δ(GTrXL−MLP) ≈ <strong>−0.006</strong>。<br>
+同轮 test 仅有 <strong>D9</strong>：MLP <strong>0.984</strong> &gt; GTrXL <strong>0.977</strong>。<br>
+best-by-val 跨轮（D8 MLP vs D6 GTrXL）test 上 GTrXL 更高，但<strong>不是同轮架构对照</strong>，不能证明容量优势。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Round</th>
+<th style="text-align: right;">MLP val SR</th>
+<th style="text-align: right;">GTrXL val SR</th>
+<th style="text-align: right;">Δ (G−M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">D0</td>
+<td style="text-align: right;">0.938</td>
+<td style="text-align: right;">0.894</td>
+<td style="text-align: right;">−0.044</td>
+</tr>
+<tr>
+<td style="text-align: right;">D1</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">D2</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.978</td>
+<td style="text-align: right;">−0.009</td>
+</tr>
+<tr>
+<td style="text-align: right;">D3</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.985</td>
+<td style="text-align: right;">−0.002</td>
+</tr>
+<tr>
+<td style="text-align: right;">D4</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.978</td>
+<td style="text-align: right;">−0.009</td>
+</tr>
+<tr>
+<td style="text-align: right;">D5</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">D6</td>
+<td style="text-align: right;">0.980</td>
+<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">+0.014</td>
+</tr>
+<tr>
+<td style="text-align: right;">D7</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">D8</td>
+<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">−0.007</td>
+</tr>
+<tr>
+<td style="text-align: right;">D9</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0.987</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">D9 test</td>
+<td style="text-align: right;">0.984</td>
+<td style="text-align: right;">0.977</td>
+<td style="text-align: right;">−0.007</td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论：</strong> 本管线<strong>没有证据</strong>支持「Transformer/GTrXL 容量必然优于 MLP」的 MoE-tracker 式 claim。</p>
+<h3 id="54-frozen-sonic-vs-d6-gtrxl-bm">5.4 Frozen SONIC vs D6 GTrXL（同 BM 合同）</h3>
+<p>同一 semantic val/test clip 集。SONIC = frozen bare GEAR-SONIC 执行轨迹，<strong>后验</strong>套用 <code>beyondmimic_style_full_motion_sr</code>（anchor-Z 0.25 / ori 0.8 / EE-Z 0.25）；D6 = Phase D 已落盘数字。宏平均 = 8-cluster unweighted。</p>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th style="text-align: right;">val BM SR ↑</th>
+<th style="text-align: right;">test BM SR ↑</th>
+<th style="text-align: right;">val MPJPE ↓</th>
+<th style="text-align: right;">test MPJPE ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SONIC bare（BM post-hoc）</td>
+<td style="text-align: right;">0.982</td>
+<td style="text-align: right;">0.988</td>
+<td style="text-align: right;">0.0331</td>
+<td style="text-align: right;">0.0315</td>
+</tr>
+<tr>
+<td>D6_gtrxl（best-by-val）</td>
+<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">0.993</td>
+<td style="text-align: right;">0.0336</td>
+<td style="text-align: right;">0.0300</td>
+</tr>
+</tbody>
+</table>
+<p>Authoritative：<code>outputs/plan1_bm_ppo_spec_from_g1999/eval_sonic_bare_vs_d6/summary_bm.json</code>。</p>
+<h3 id="54-post-hoc-observation-d6-accepted-walk-kick">5.4 Post-hoc observation — D6 accepted walk / kick 抖动</h3>
+<p>本观察不改主表 SR 结论，只补充：<strong>同一 D6 GTrXL 学生</strong>在 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 过滤中「accepted」后的物理执行平滑度。评测对象为全部 accepted <strong>walk 186 + kick 134</strong>；量尺为相对同 clip 50Hz reference 的关节 accel / jerk RMS 比（exec / ref）。</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">jerk 比中位</th>
+<th style="text-align: right;">accel 比中位</th>
+<th style="text-align: right;">接近不抖（j≤1.5 且 a≤1.5）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td style="text-align: right;">186</td>
+<td style="text-align: right;"><strong>~6.4×</strong></td>
+<td style="text-align: right;"><strong>~7.1×</strong></td>
+<td style="text-align: right;"><strong>1 / 186</strong></td>
+</tr>
+<tr>
+<td>kick</td>
+<td style="text-align: right;">134</td>
+<td style="text-align: right;"><strong>~4.0×</strong></td>
+<td style="text-align: right;"><strong>~4.4×</strong></td>
+<td style="text-align: right;"><strong>1 / 134</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>外部审阅：locomotion（walk/kick）抖、上肢较好——与上表一致。</li>
+<li>抖动在执行态 <code>dof_vel</code> / <code>dof_acc</code> 与逐帧 ‖Δq‖，不是 reference；filter 只要求跑完且未 terminate。</li>
+<li>稀有近参考样本：walk <code>val:125:1:195:238</code>（walk back）；kick <code>val:847:1:210:316</code>。</li>
+<li>详细叙述与产物指针见 Rollouts_V2 报告 §4.5：<code>2026-07-23-vad-cleaned-50hz-rollouts-v2-and-tracker.md</code>（未随本公开包发布）；分数 JSON：<code>outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v2_jitter_probe/walk_kick_jitter_scores.json</code>。</li>
+</ul>
+<h2 id="6-analysis">6. Analysis</h2>
+<ul>
+<li><strong>Finding:</strong> PPO 代际下，宏 SR 与难动作（kick）均相对上一版 fastSAC 峰值大幅抬升；best-by-val 学生贴齐 locked Spec oracle，并优于 G（§5.1–5.2）。另：D6 的 <strong>BM SR 高</strong> 与 <strong>walk/kick 执行平滑</strong> 可分离——accepted locomotion 仍可相对 reference 颤振数倍（§5.4）。</li>
+<li><strong>Working interpretation（已确认）:</strong> 有限训练量上 specialist 在难动作上优于 single-policy；过训有灾难性遗忘风险，故必须 val 选模；DAgger 能最大保留 specialist 收益，使可部署单网优于 G。SR 合同不约束高频关节颤振；body 跟踪主导、关节项为 0、弱 action-rate 时，接触步态更易过修。</li>
+<li><strong>Architecture claim:</strong> <strong>无证据</strong>证明 GTrXL &gt; MLP（§5.3）；val 多数轮次 MLP ≥ GTrXL，唯一同轮 test（D9）亦为 MLP 略高。</li>
+<li><strong>Next:</strong> 本线 PPO MoE 数字已齐；若衔接 50Hz DP / cleaned rollouts，应并行加 jerk（或 accel）门与/或训练平滑项；router / 部署待指定。</li>
+</ul>
+<h2 id="7-appendix">7. Appendix</h2>
+<details>
+<summary>Terms, calculations, evidence, and reproduction</summary>
+
+### Worked examples
+
+
+<pre><code class="language-text">val macro SR = mean_c SR_c
+  Spec_oracle_locked val = mean(0.95,1,1,1,1,1,1,1) = 0.99375 → 0.994
+D6_gtrxl test − G test = 0.992647 − 0.959611 = +0.033
+D6_gtrxl test − prior fastSAC D7 test ≈ 0.993 − 0.843 = +0.150
+kick val: Spec 1.000 − G 0.786 = +0.214
+</code></pre>
+
+
+### Evidence paths
+
+- Phase D: `outputs/plan1_bm_ppo_spec_from_g1999/eval_phase_d_final_val_test_x4/summary.json`
+- SONIC BM post-hoc: `outputs/plan1_bm_ppo_spec_from_g1999/eval_sonic_bare_vs_d6/summary_bm.json`
+- Teachers: `…/semantic/locks/teachers.lock.json`
+- Students: `…/semantic/students/D8_mlp_bb/`, `D6_gtrxl/`, `D9_*`
+- Prior fastSAC BM 总结: `docs/report/2026-07-22-beyondmimic-retrain-experiment-summary.md`
+- Legacy adaptive-start MoE（勿混合同）: `docs/report/2026-07-20-MOE-unilab-specialist-distill-report.md`
+
+### Commands
+
+`scripts/run_plan1_true_dagger_distill.sh` · `scripts/run_plan1_ppo_phase_d_final_eval.sh` · `scripts/rescore_plan1_sonic_bare_bm.py` · PPO collect `scripts/plan1_unilab_ppo_actor.py`
+
+</details>
+</main>
+</body>
+</html>

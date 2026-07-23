@@ -7,15 +7,67 @@
       "project": "VAD Alignment",
       "category": "Dataset & Tracker",
       "status": "PASS",
-      "summary": "D6 GTrXL tracker reaches test BM SR 0.993; filter accepts 1384/1392 clips into VAD_Cleaned_50Hz_Rollouts_V2 with live physics overlays for accepted and rejected samples.",
+      "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6\u00d7 / ~4\u00d7), while upper-body clips stay comparatively smooth.",
       "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
       "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
       "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
-      "tags": ["Humanoid control", "Motion tracking", "G1", "UniLab", "50Hz", "Rollouts V2"],
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "50Hz",
+        "Rollouts V2",
+        "Jitter"
+      ],
       "metrics": [
-        {"value": "0.993", "label": "D6 GTrXL test BM SR"},
-        {"value": "1384/1392", "label": "filter accept rate"},
-        {"value": "14+8", "label": "live overlay videos"}
+        {
+          "value": "0.993",
+          "label": "D6 GTrXL test BM SR"
+        },
+        {
+          "value": "~6.4\u00d7",
+          "label": "walk jerk ratio median"
+        },
+        {
+          "value": "~4.0\u00d7",
+          "label": "kick jerk ratio median"
+        }
+      ]
+    },
+    {
+      "slug": "moe-unilab-specialist-distill-d6",
+      "title": "MOE UniLab PPO specialist distill (D6) + locomotion jitter note",
+      "date": "2026-07-23",
+      "project": "VAD Alignment",
+      "category": "Tracker Training",
+      "status": "PASS",
+      "summary": "PPO specialist\u2192DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6\u2019s accepted walk/kick physical rollouts jitter vs reference (medians ~6\u00d7 / ~4\u00d7 jerk).",
+      "path": "results/moe-unilab-specialist-distill-d6/",
+      "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
+      "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "MoE",
+        "DAgger",
+        "Jitter"
+      ],
+      "metrics": [
+        {
+          "value": "0.993",
+          "label": "D6 test BM SR"
+        },
+        {
+          "value": "0.994",
+          "label": "locked Spec val SR"
+        },
+        {
+          "value": "~6\u00d7/~4\u00d7",
+          "label": "walk/kick jerk medians"
+        }
       ]
     }
   ]

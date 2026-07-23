@@ -56,9 +56,9 @@ Verdict: <code>PASS</code></p>
 <p><strong>PASS。</strong></p>
 <ul>
 <li>Decisive evidence: tracker 学生 <strong>D6 GTrXL</strong> test BM SR <strong>0.993</strong>（single-policy baseline <strong>0.960</strong>）；用其过滤得到 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong> 接受 <strong>1384/1392（99.4%）</strong>（§4）。</li>
-<li>Counter-signal: 过滤仍拒 <strong>8</strong> 条（terminate / 未跑完）；reject live 视频已覆盖全集。</li>
-<li>Not shown: 可部署动作 router；GTrXL 相对 MLP 的容量优势（MoE 报告标 <strong>无证据</strong>）；本 filter <strong>尚未</strong>用 Tracking MPJPE / EE 二次卡控（MPJPE 仅审计）。</li>
-<li>Decision: 下游先用 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong>；进一步工作见 §5（MPJPE/EE 加严过滤；与 SONIC 在 delay / amplitude / EE 几何上做同协议量化对照）。</li>
+<li>Counter-signal: 过滤仍拒 <strong>8</strong> 条（terminate / 未跑完）；reject live 视频已覆盖全集。Accepted 的 <strong>walk / kick</strong> 相对 reference 普遍存在高频关节颤振（§4.5），上肢动作则明显更稳。</li>
+<li>Not shown: 可部署动作 router；GTrXL 相对 MLP 的容量优势（MoE 报告标 <strong>无证据</strong>）；本 filter <strong>尚未</strong>用 Tracking MPJPE / EE / jerk 二次卡控（MPJPE 仅审计）。</li>
+<li>Decision: 下游先用 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong> 时须知 locomotion 平滑度未门控；进一步工作见 §5（MPJPE/EE/jerk 加严；与 SONIC 同协议对照）。</li>
 </ul>
 <h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
 <p>本报告回答两件事是否可复现、可计量：（1）PPO tracker 如何训成、最终 SR 多少；（2）如何用该 tracker 得到与 V1 对应的 50Hz rollout 集。</p>
@@ -446,13 +446,52 @@ Tracker / 蒸馏 Run Spec 见 MoE 报告折叠区。
 </tbody>
 </table>
 <p>Rejected 画廊（8）：<a href="assets/rejected/index.html"><code>fail_render/live_rollout_videos/index.html</code></a></p>
+<h3 id="45-observation-accepted-walk-kick">4.5 Observation — accepted walk / kick 高频抖动</h3>
+<p>外部审阅（locomotion 为主）指出：accepted overlay 上 <strong>walk / kick 抖得明显，上肢动作则较好</strong>。对本集全部 accepted <strong>walk 186 + kick 134</strong> 条，相对同 clip 的 50Hz reference 计算关节轨迹的加速度 / jerk RMS 比（exec / ref；50Hz 差分）：</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th style="text-align: right;">n（accepted）</th>
+<th style="text-align: right;">jerk 比中位</th>
+<th style="text-align: right;">accel 比中位</th>
+<th style="text-align: right;">j≤1.5 且 a≤1.5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td style="text-align: right;">186</td>
+<td style="text-align: right;"><strong>~6.4×</strong></td>
+<td style="text-align: right;"><strong>~7.1×</strong></td>
+<td style="text-align: right;"><strong>1 / 186</strong></td>
+</tr>
+<tr>
+<td>kick</td>
+<td style="text-align: right;">134</td>
+<td style="text-align: right;"><strong>~4.0×</strong></td>
+<td style="text-align: right;"><strong>~4.4×</strong></td>
+<td style="text-align: right;"><strong>1 / 134</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>读数要点</strong></p>
+<ul>
+<li>抖动在 <strong>执行态关节速度 / <code>dof_acc</code></strong>，不是 reference 自带；位置高频仅略升，但逐帧 ‖Δq‖ 与速度 RMS 在抖样本上明显抬高。</li>
+<li>现行 filter <strong>不</strong>门控平滑度，故上述片段仍进入 <code>VAD_Cleaned_50Hz_Rollouts_V2</code>。</li>
+<li>上肢（wave_arms / clap / punch / handshake 等）在同协议抽样中多数接近 reference；问题集中在 <strong>locomotion / 踢腿</strong>。</li>
+<li>接近不抖的稀有样本：walk <code>val:125:1:195:238</code>（<code>walk back</code>，j≈0.73×）；kick <code>val:847:1:210:316</code>（j≈1.24×）。普通前向 walk 中位仍约 6×。</li>
+<li>机制工作假设（与 reward 合同一致、待加训验证）：body 跟踪权重大、<code>motion_joint_pos/vel=0</code>、仅弱 <code>action_rate_l2</code>；接触步态下闭环过修表现为高频颤振。<code>action_scale=2.0</code>。</li>
+</ul>
+<p>逐条分数：<code>outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v2_jitter_probe/walk_kick_jitter_scores.json</code>。n`，内容同合同）。</p>
 <h2 id="5-analysis">5. Analysis</h2>
 <ul>
-<li><strong>Finding:</strong> Tracker 侧 D6 GTrXL test BM SR 高于 single-policy baseline（§4.1）；同一执行器按「跑完且未 terminate」得到 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 接受率 99.4%（§4.2）。§4.3 视频即该合同下的成功采样。</li>
-<li><strong>Working interpretation（已确认）:</strong> 现行 filter 只保证 <strong>可跑完</strong>，不保证局部 tracking 质量。公开 SONIC 审计（<a href="https://lingfanb.github.io/openresults/results/hierarchical-rollout-tracking-audit/">hierarchical rollout tracking audit</a>）在 15 条代表 clip 上归纳：动作越快、连续变化越多，execution 越易出现局部 <strong>delay</strong>（wave-arms 最明显；kick 上臂晚于腿）；delay 常伴 <strong>amplitude</strong> 不对称；全身 MPJPE 掩盖腕/踝等 <strong>EE / geometry</strong> 集中误差；慢动作或部分 walk 视觉上更一致。本栈 overlay 应用同一读法，但执行器与 SONIC 不同，数字不可直接混表。</li>
-<li><strong>Unknown:</strong> 8 条 reject 未做逐条动力学归因；accepted 集上尚未公布与 SONIC 对齐的 delay / EE 量化表。</li>
+<li><strong>Finding:</strong> Tracker 侧 D6 GTrXL test BM SR 高于 single-policy baseline（§4.1）；同一执行器按「跑完且未 terminate」得到 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 接受率 99.4%（§4.2）。§4.3 视频即该合同下的成功采样。§4.5 进一步表明：accepted <strong>不等于</strong> locomotion 平滑。</li>
+<li><strong>Working interpretation（已确认）:</strong> 现行 filter 只保证 <strong>可跑完</strong>，不保证局部 tracking 质量，也不保证无高频关节颤振。walk/kick 上 exec/ref jerk 中位约 4–6×（§4.5）；上肢同集明显更稳。公开 SONIC 审计（<a href="https://lingfanb.github.io/openresults/results/hierarchical-rollout-tracking-audit/">hierarchical rollout tracking audit</a>）另归纳 delay / amplitude / EE 几何问题；本栈 overlay 可平行阅读，但执行器与 SONIC 不同，数字不可直接混表。</li>
+<li><strong>Unknown:</strong> 8 条 reject 未做逐条动力学归因；accepted 集上尚未公布与 SONIC 对齐的 delay / EE 量化表；jerk 门阈值尚未标定。</li>
 <li><strong>Next（further work）:</strong></li>
-<li>在现行 filter 之上加 <strong>Tracking MPJPE</strong> 与 <strong>EE</strong>（腕/踝）阈值或分位数门，再导出更干净的 Rollouts 子集。</li>
+<li>在现行 filter 之上加 <strong>Tracking MPJPE</strong>、<strong>EE</strong>（腕/踝）与 <strong>jerk / accel</strong> 阈值或分位数门，再导出更干净的 Rollouts 子集。</li>
+<li>训练侧加强调节平滑（action-rate / jerk）并复测 walk/kick 的 exec/ref 比。</li>
 <li>针对与本报告同类的 50Hz cleaned rollouts，与 SONIC 在 delay、amplitude、EE trajectory / keypoint 上做 <strong>同协议量化对照</strong>（不替代各自产品线主指标）。</li>
 </ul>
 <h2 id="6-appendix">6. Appendix</h2>
