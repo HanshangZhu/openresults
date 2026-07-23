@@ -1,0 +1,89 @@
+#openresults-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgba(98, 182, 255, 0.16), transparent 42%),
+    #08111d;
+  color: #e9f1fb;
+  font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+  visibility: visible !important;
+}
+
+#openresults-gate .gate-card {
+  width: min(100%, 420px);
+  margin: 0;
+  padding: 28px 24px 24px;
+  border: 1px solid #27415e;
+  border-radius: 14px;
+  background: #0e1b2b;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+#openresults-gate .gate-eyebrow {
+  margin: 0 0 8px;
+  color: #62b6ff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+#openresults-gate h1 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  color: #e9f1fb;
+}
+
+#openresults-gate .gate-copy {
+  margin: 0 0 18px;
+  color: #b9c7d8;
+}
+
+#openresults-gate .gate-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #b9c7d8;
+  font-size: 13px;
+}
+
+#openresults-gate .gate-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #27415e;
+  border-radius: 8px;
+  background: #06101a;
+  color: #e9f1fb;
+  font: inherit;
+}
+
+#openresults-gate .gate-input:focus {
+  outline: 2px solid rgba(98, 182, 255, 0.55);
+  outline-offset: 1px;
+}
+
+#openresults-gate .gate-button {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #62b6ff;
+  color: #08111d;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+#openresults-gate .gate-button:hover {
+  filter: brightness(1.05);
+}
+
+#openresults-gate .gate-error {
+  margin: 12px 0 0;
+  color: #ef7f8d;
+  font-size: 13px;
+}

@@ -18,3 +18,9 @@ python scripts/audit-public-site.py .
 The published site contains copied public artifacts only. It does not connect to private report repositories or runtime services.
 
 GitHub Actions replaces `__BUILD_VERSION__` with the deploying commit SHA so HTML, CSS, JavaScript, and catalog data cannot be mixed across browser cache versions.
+
+## Access gate
+
+Published pages show a shared password prompt (`sessionStorage`, SHA-256 check in `assets/gate.js`).
+
+This is a **soft** gate for casual sharing only. It is not server authentication: anyone with repo access can still read files on GitHub, and direct asset URLs are not cryptographically protected.

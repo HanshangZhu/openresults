@@ -10,7 +10,22 @@ h1{font-size:24px} h2{font-size:17px;color:var(--cyan)}
 p{color:var(--soft)} code{color:#8bc8ff}
 section{margin:16px 0;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:9px}
 video{width:100%;border:1px solid var(--line);border-radius:7px;background:#000}
-</style></head><body><main>
+</style>
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="../../../../assets/gate.css?v=__BUILD_VERSION__">
+<script src="../../../../assets/gate.js?v=__BUILD_VERSION__" defer></script>
+</head><body><main>
 <h1>Live physics overlay · REJECTED-LIVE</h1>
 <p>每帧 solid = MuJoCo <code>env.step</code> 后的物理状态；蓝 ghost = 同一步 motion reference。关节序 = UniLab/MuJoCo（无 IsaacLab PERM）。</p>
 <p>n=8</p>

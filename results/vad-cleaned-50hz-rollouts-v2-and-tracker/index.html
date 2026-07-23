@@ -21,6 +21,21 @@ img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;backgrou
 details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
 summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 @media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="../../assets/gate.css?v=__BUILD_VERSION__">
+<script src="../../assets/gate.js?v=__BUILD_VERSION__" defer></script>
 </head>
 <body>
 <header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>

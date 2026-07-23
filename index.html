@@ -7,6 +7,21 @@
   <title>OpenResults · Research result library</title>
   <link rel="stylesheet" href="assets/site.css?v=__BUILD_VERSION__">
   <script src="assets/catalog.js?v=__BUILD_VERSION__" defer></script>
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="assets/gate.css?v=__BUILD_VERSION__">
+<script src="assets/gate.js?v=__BUILD_VERSION__" defer></script>
 </head>
 <body class="catalog-page">
   <a class="skip-link" href="#catalog">Skip to results</a>

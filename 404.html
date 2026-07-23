@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Result not found · OpenResults</title>
   <link rel="stylesheet" href="/openresults/assets/site.css?v=__BUILD_VERSION__">
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="/openresults/assets/gate.css?v=__BUILD_VERSION__">
+<script src="/openresults/assets/gate.js?v=__BUILD_VERSION__" defer></script>
 </head>
 <body>
   <header class="site-header"><a class="brand" href="/openresults/?v=__BUILD_VERSION__"><span class="brand-mark">O</span>OpenResults</a></header>
