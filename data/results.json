@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
+      "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
+      "date": "2026-07-23",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "D6 GTrXL tracker reaches test BM SR 0.993; filter accepts 1384/1392 clips into VAD_Cleaned_50Hz_Rollouts_V2 with live physics overlays for accepted and rejected samples.",
+      "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
+      "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
+      "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
+      "tags": ["Humanoid control", "Motion tracking", "G1", "UniLab", "50Hz", "Rollouts V2"],
+      "metrics": [
+        {"value": "0.993", "label": "D6 GTrXL test BM SR"},
+        {"value": "1384/1392", "label": "filter accept rate"},
+        {"value": "14+8", "label": "live overlay videos"}
+      ]
+    }
+  ]
+}

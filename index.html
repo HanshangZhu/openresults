@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="OpenResults is a browsable library of visual, inspectable research results.">
+  <title>OpenResults · Research result library</title>
+  <link rel="stylesheet" href="assets/site.css?v=__BUILD_VERSION__">
+  <script src="assets/catalog.js?v=__BUILD_VERSION__" defer></script>
+</head>
+<body class="catalog-page">
+  <a class="skip-link" href="#catalog">Skip to results</a>
+
+  <header class="site-header catalog-header">
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="OpenResults home">
+        <span class="brand-mark" aria-hidden="true">O</span>
+        <span>OpenResults</span>
+      </a>
+      <p class="brand-description">Inspectable research evidence, organized by project.</p>
+    </div>
+  </header>
+
+  <main class="catalog-main" id="catalog">
+    <section class="catalog-intro" aria-labelledby="catalog-title">
+      <div>
+        <p class="eyebrow">Public result library</p>
+        <h1 id="catalog-title">Research you can inspect.</h1>
+        <p>Each result keeps its claim, evidence, scope, and limitations together.</p>
+      </div>
+    </section>
+
+    <section class="catalog-tools" aria-label="Filter results">
+      <label class="search-field">
+        <span class="visually-hidden">Search results</span>
+        <input id="resultSearch" type="search" autocomplete="off" placeholder="Search title, finding, or tag">
+      </label>
+      <label class="select-field" id="projectField" hidden>
+        <span>Project</span>
+        <select id="projectFilter"><option value="all">All projects</option></select>
+      </label>
+      <label class="select-field" id="statusField" hidden>
+        <span>Status</span>
+        <select id="statusFilter"><option value="all">All statuses</option></select>
+      </label>
+      <button class="clear-filters" id="clearFilters" type="button" hidden>Clear</button>
+    </section>
+
+    <div class="catalog-status" id="catalogStatus" aria-live="polite"></div>
+    <div class="result-groups" id="resultGroups" aria-busy="true"></div>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <strong>No matching results</strong>
+      <p>Try a different search or clear the current filters.</p>
+    </div>
+
+    <noscript>
+      <p class="empty-state">JavaScript is required to load the result catalog. The published result remains available at <a href="results/vad-cleaned-50hz-rollouts-v2-and-tracker/">UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2</a>.</p>
+    </noscript>
+  </main>
+
+  <footer class="site-footer">
+    <span>OpenResults</span>
+    <span>Evidence before narrative · Updated <time id="catalogUpdated">2026-07-23</time></span>
+  </footer>
+</body>
+</html>

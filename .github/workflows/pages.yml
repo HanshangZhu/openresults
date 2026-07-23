@@ -1,0 +1,45 @@
+name: Deploy OpenResults
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate result catalog
+        run: node scripts/validate-catalog.mjs
+      - name: Stamp static asset version
+        run: |
+          while IFS= read -r -d '' file; do
+            sed -i "s/__BUILD_VERSION__/${GITHUB_SHA}/g" "$file"
+          done < <(find . -path './.git' -prune -o -type f -name '*.html' -print0)
+      - name: Audit public artifact
+        run: python scripts/audit-public-site.py .
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

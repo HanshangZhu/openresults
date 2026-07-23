@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniLab PPO tracker 与 `VAD_Cleaned_50Hz_Rollouts_V2` 构建</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>
+<main>
+<p class="source">Public OpenResults copy · source report slug <code>2026-07-23-vad-cleaned-50hz-rollouts-v2-and-tracker</code></p>
+<h1 id="unilab-ppo-tracker-vad_cleaned_50hz_rollouts_v2">UniLab PPO tracker 与 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 构建</h1>
+<p data-evidence-profile="training-physical" hidden aria-hidden="true"></p>
+
+<blockquote>
+<p>Date/scale: <code>2026-07-23</code> / tracker train 1113 · filter 1384/1392 · semantic K=8<br>
+Output profile: <code>markdown-project-report</code>（HTML 同目录）<br>
+Results profile: <code>training-physical</code> + <code>dataset-verifier</code><br>
+Verdict: <code>PASS</code></p>
+</blockquote>
+<p>本报告先交代 <strong>UniLab–MuJoCo PPO tracker</strong> 的训练数据、<code>num_envs=4096</code> 流程与最终 BeyondMimic success rate；再说明如何用该 tracker 产出与 V1 对应的 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong>（50Hz 过滤执行态集）。Tracker 细节见 <code>2026-07-23-MOE-unilab-specialist-distill-report.md</code>（未随本公开包发布）。</p>
+<hr>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS。</strong></p>
+<ul>
+<li>Decisive evidence: tracker 学生 <strong>D6 GTrXL</strong> test BM SR <strong>0.993</strong>（single-policy baseline <strong>0.960</strong>）；用其过滤得到 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong> 接受 <strong>1384/1392（99.4%）</strong>（§4）。</li>
+<li>Counter-signal: 过滤仍拒 <strong>8</strong> 条（terminate / 未跑完）；reject live 视频已覆盖全集。</li>
+<li>Not shown: 可部署动作 router；GTrXL 相对 MLP 的容量优势（MoE 报告标 <strong>无证据</strong>）；本 filter <strong>尚未</strong>用 Tracking MPJPE / EE 二次卡控（MPJPE 仅审计）。</li>
+<li>Decision: 下游先用 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong>；进一步工作见 §5（MPJPE/EE 加严过滤；与 SONIC 在 delay / amplitude / EE 几何上做同协议量化对照）。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>本报告回答两件事是否可复现、可计量：（1）PPO tracker 如何训成、最终 SR 多少；（2）如何用该 tracker 得到与 V1 对应的 50Hz rollout 集。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Motion-tracking train set</strong></td>
+<td>人工审查通过后打包的 UniLab NPZ（去掉 bow）；frozen split <strong>1113/139/140</strong>；路径 <code>data/processed/vadcompose_v2_unilab_npz/</code></td>
+<td>是 <strong>tracker 训练输入</strong>，不是 Rollouts_V2</td>
+</tr>
+<tr>
+<td><strong>Motion reference（50Hz）</strong></td>
+<td>同 frozen 行集的严格 50Hz 网格参考；路径 <code>data/processed/vadcompose_v2_reference_50hz/</code></td>
+<td>Tracker <strong>跟随目标</strong>；尚未经物理过滤</td>
+</tr>
+<tr>
+<td><strong>Single-policy baseline（记 G）</strong></td>
+<td>全量 train 上的一台 PPO；主对照 <strong>@4000</strong>；训练时 <strong><code>num_envs=4096</code></strong></td>
+<td>不是 specialist；不是蒸馏学生</td>
+</tr>
+<tr>
+<td><strong>G0</strong></td>
+<td>同一 single-policy run 的 <strong>@1999</strong>；specialist 共同 resume 点</td>
+<td>不是主对照终点</td>
+</tr>
+<tr>
+<td><strong>Specialist（Spec）</strong></td>
+<td>自 G0 按 semantic cluster 续训的专属 PPO；<strong>semantic K=8</strong>；每进程 <strong><code>num_envs=4096</code></strong></td>
+<td>评测时组 oracle，非默认可部署单网</td>
+</tr>
+<tr>
+<td><strong>Specialist oracle</strong></td>
+<td>用<strong>已知 cluster 标签</strong>选 locked Spec</td>
+<td>评测上界</td>
+</tr>
+<tr>
+<td><strong>DAgger（本文）</strong></td>
+<td>离线迭代蒸馏；学生轮次 <strong>D0…D9</strong>；标签 = locked Spec</td>
+<td>非 interactive online DAgger</td>
+</tr>
+<tr>
+<td><strong>D6 GTrXL</strong></td>
+<td>DAgger 第 6 轮 GTrXL 学生（best-by-val）；<strong>本报告过滤与视频中的执行器</strong></td>
+<td>lock 字段名仍为 <code>d7</code>，值为 <code>D6_GTrXL</code></td>
+</tr>
+<tr>
+<td><strong>BM SR</strong></td>
+<td><code>beyondmimic_style_full_motion_sr</code>（↑）；MPJPE 不 gate</td>
+<td>非 legacy adaptive-start SR</td>
+</tr>
+<tr>
+<td><strong><code>VAD_Cleaned_50Hz_Rollouts_V1</code></strong></td>
+<td>上一版：D7 tracker 过滤后的 50Hz 执行态 / planner 集；盘上目录 <code>Tracked_Cleaned_VADCompose_V1_planner50hz/</code></td>
+<td>勿与 V2 混合</td>
+</tr>
+<tr>
+<td><strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong></td>
+<td>本版：D6 GTrXL 过滤后的 50Hz 执行态 / planner 集；盘上目录 <code>Tracked_Cleaned_VADCompose_V2_planner50hz/</code></td>
+<td><strong>不是</strong> “VADCompose V2” 审查包本身</td>
+</tr>
+<tr>
+<td><strong>Filter accept（现行）</strong></td>
+<td>整段完成、无 terminate、帧数一致、状态有限；<strong>MPJPE 只记不卡</strong></td>
+<td>非 Tracking-MPJPE / EE 质量门</td>
+</tr>
+<tr>
+<td><strong>Tracking MPJPE</strong></td>
+<td>执行体相对 motion reference 的全身关节位置误差（m）</td>
+<td>全身平均会掩盖腕/踝局部误差</td>
+</tr>
+<tr>
+<td><strong>EE error</strong></td>
+<td>末端执行器（腕/踝等）相对 reference 的位置误差</td>
+<td>与全身 MPJPE 互补；本报告未作 gate</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-method">3. Method</h2>
+<h3 id="31-tracker">3.1 Tracker 训练（先）</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stack</td>
+<td>UniLab–MuJoCo · RSL-RL <strong>PPO</strong></td>
+</tr>
+<tr>
+<td>Train motion set</td>
+<td><code>vadcompose_v2_unilab_npz/</code> · train <strong>1113</strong> clips（8 动作；seed <code>20260719</code> frozen split）</td>
+</tr>
+<tr>
+<td>Parallelism</td>
+<td>每个 PPO 训练进程 <strong><code>num_envs=4096</code></strong></td>
+</tr>
+<tr>
+<td>Env contract</td>
+<td>BeyondMimic terminate <code>0.25 / 0.8 / 0.25</code>；<code>truncate_on_clip_end</code>；<code>action_scale=2.0</code></td>
+</tr>
+<tr>
+<td>Recipe（摘要）</td>
+<td>全量 train → <strong>G0@1999</strong> → 并行续训 <strong>G@4000</strong> 与 8× <strong>Spec</strong>（各 +2000）→ Phase B 锁 Spec → <strong>DAgger×10</strong>（MLP+GTrXL）→ best-by-val <strong>D6 GTrXL</strong></td>
+</tr>
+<tr>
+<td>Eval</td>
+<td>val 139 + test 140；<code>rollouts=4</code>；macro = 8-cluster unweighted BM SR</td>
+</tr>
+<tr>
+<td>Product root</td>
+<td><code>outputs/plan1_bm_ppo_spec_from_g1999/</code></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-text">full-train PPO (num_envs=4096) → G0@1999
+        ├─ continue full-train → G@4000
+        └─ 8× Spec resume +2000
+              → lock Spec → DAgger×10 → D6 GTrXL (best-by-val)
+</code></pre>
+<h3 id="32-tracker-vad_cleaned_50hz_rollouts_v2">3.2 用 tracker 产出 <code>VAD_Cleaned_50Hz_Rollouts_V2</code>（后）</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Motion reference</td>
+<td><code>vadcompose_v2_reference_50hz/</code>（与 train split 同行集，exact 50Hz）</td>
+</tr>
+<tr>
+<td>Executor</td>
+<td>locked <strong>D6 GTrXL</strong>（<code>checkpoint_lock_d6_gtrxl_v2.json</code>）</td>
+</tr>
+<tr>
+<td>Export</td>
+<td><code>scripts/export_vadcompose_50hz_phc.py</code>：整段 MuJoCo rollout；accept = 跑完且未 terminate（<strong>MPJPE / EE 不 gate</strong>）</td>
+</tr>
+<tr>
+<td>Planner pack</td>
+<td><code>VAD_base_model.data.build_filtered50</code> → 盘上 <code>Tracked_Cleaned_VADCompose_V2_planner50hz/</code></td>
+</tr>
+<tr>
+<td>相对 V1</td>
+<td>同 reference / split / terminate；tracker <strong>D7→D6</strong>；产物名 <strong>Rollouts_V1 → Rollouts_V2</strong></td>
+</tr>
+<tr>
+<td>Overlay</td>
+<td>成功/失败 rollout 的叠画录像；蓝 ghost = motion reference，solid = D6 物理执行；关节序 UniLab/MuJoCo（无 IsaacLab PERM）</td>
+</tr>
+<tr>
+<td>建议加严（未实施）</td>
+<td>在现行 filter 之上再加 <strong>Tracking MPJPE</strong> 与 <strong>EE</strong> 阈值/分位数门（见 §5）</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tracker student ≥ baseline</td>
+<td style="text-align: right;">test BM SR ≥ G</td>
+<td style="text-align: right;">D6 <strong>0.993</strong>；G <strong>0.960</strong></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Rollouts_V2 accept</td>
+<td style="text-align: right;">≥99% 量级</td>
+<td style="text-align: right;"><strong>1384/1392 = 99.4%</strong></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Planner parents = accepted</td>
+<td style="text-align: right;">1384</td>
+<td style="text-align: right;"><code>n_selected_parent_clips=1384</code></td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec and path map</summary>
+
+### Path map（产品名 → 磁盘）
+
+| Product name | On-disk path |
+| --- | --- |
+| Motion-tracking train set | `data/processed/vadcompose_v2_unilab_npz/` |
+| Motion reference 50Hz | `data/processed/vadcompose_v2_reference_50hz/` |
+| `VAD_Cleaned_50Hz_Rollouts_V1` | `data/processed/Tracked_Cleaned_VADCompose_V1_planner50hz/` |
+| `VAD_Cleaned_50Hz_Rollouts_V2` | `data/processed/Tracked_Cleaned_VADCompose_V2_planner50hz/` |
+| Filter rollouts (raw NPZ) | `outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v2/` |
+
+### Run Spec（Rollouts_V2；原文）
+
+来源：[`docs/plans/2026-07-23-plan-experiment-50hz-d6-gtrxl-v2-dataset.md`](../plans/2026-07-23-plan-experiment-50hz-d6-gtrxl-v2-dataset.md)
+
+
+<pre><code>Run Spec — 50Hz D6 GTrXL Tracker Dataset V2
+Question: 同 exact-50Hz reference / BM terminate / frozen split 下，用 D6 GTrXL 重采集 executed states → Rollouts_V2
+Data: vadcompose_v2_reference_50hz manifests；1113/139/140
+Filter: full clip completion, no termination, exact frame count, finite；MPJPE audit-only
+Tracker: D6 GTrXL；lock checkpoint_lock_d6_gtrxl_v2.json；action_scale=2.0
+Output: d6_gtrxl_rollouts_v2/ + Tracked_Cleaned_VADCompose_V2_planner50hz/
+</code></pre>
+
+
+Tracker / 蒸馏 Run Spec 见 MoE 报告折叠区。
+
+</details>
+
+<h2 id="4-results">4. Results</h2>
+<h3 id="41-tracker-success-ratebeyondmimic">4.1 Tracker 最终 success rate（BeyondMimic）</h3>
+<p>采样：val 139 + test 140；<code>rollouts=4</code>；macro unweighted。</p>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th style="text-align: right;">val BM SR ↑</th>
+<th style="text-align: right;">test BM SR ↑</th>
+<th style="text-align: right;">test MPJPE (m) ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single-policy baseline（G@4000）</td>
+<td style="text-align: right;">0.945</td>
+<td style="text-align: right;">0.960</td>
+<td style="text-align: right;">0.0325</td>
+</tr>
+<tr>
+<td>Specialist oracle（locked Spec）</td>
+<td style="text-align: right;">0.994</td>
+<td style="text-align: right;">0.977</td>
+<td style="text-align: right;">0.0338</td>
+</tr>
+<tr>
+<td><strong>D6 GTrXL</strong>（best-by-val；过滤所用）</td>
+<td style="text-align: right;"><strong>0.994</strong></td>
+<td style="text-align: right;"><strong>0.993</strong></td>
+<td style="text-align: right;"><strong>0.0300</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Authoritative：<code>outputs/plan1_bm_ppo_spec_from_g1999/eval_phase_d_final_val_test_x4/summary.json</code>。</p>
+<h3 id="42-vad_cleaned_50hz_rollouts_v2">4.2 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 规模</h3>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th style="text-align: right;">n</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Motion-tracking train / val / test</td>
+<td style="text-align: right;"><strong>1113 / 139 / 140</strong></td>
+<td>tracker 训练与评测切分</td>
+</tr>
+<tr>
+<td>Motion reference（同行集）</td>
+<td style="text-align: right;">1113 / 139 / 140</td>
+<td>过滤输入</td>
+</tr>
+<tr>
+<td>Filter accepted → Rollouts_V2 parents</td>
+<td style="text-align: right;"><strong>1107 / 137 / 140 = 1384</strong></td>
+<td>reject <strong>8</strong>；<strong>99.4%</strong></td>
+</tr>
+<tr>
+<td>Planner chunks</td>
+<td style="text-align: right;"><strong>3626 / 497 / 432</strong></td>
+<td><code>history=5</code>, <code>L_max=160</code></td>
+</tr>
+</tbody>
+</table>
+<p>Authoritative：<code>outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v2/report_*.json</code>；<code>data/processed/Tracked_Cleaned_VADCompose_V2_planner50hz/data_contract.json</code>。</p>
+<h3 id="43-live-overlay-filter-accepted-rollouts6">4.3 Live overlay — filter-accepted rollouts（6 段）</h3>
+<p>下列视频是 <strong>现行 filter 已接受</strong> 的成功采样 rollout（整段跑完、未 terminate），不是未过滤的 reference 回放。叠画约定：蓝色半透明 = motion reference；实体 = <strong>D6 GTrXL</strong> 在 MuJoCo 中的物理执行。现行 gate <strong>不</strong>要求 Tracking MPJPE / EE 低于某阈值，故 accepted 仍可能有局部跟随误差。</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Segment</th>
+<th>Video</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kick</td>
+<td><code>val:612:1:69:127</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/kick__val_612_1_69_127.mp4"></video></td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td><code>val:1724:1:101:205</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/wave_arms__val_1724_1_101_205.mp4"></video></td>
+</tr>
+<tr>
+<td>walk</td>
+<td><code>val:305:0:0:36</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/walk__val_305_0_0_36.mp4"></video></td>
+</tr>
+<tr>
+<td>punch</td>
+<td><code>val:8:2:437:487</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/punch__val_8_2_437_487.mp4"></video></td>
+</tr>
+<tr>
+<td>handshake</td>
+<td><code>val:408:1:80:114</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/handshake__val_408_1_80_114.mp4"></video></td>
+</tr>
+<tr>
+<td>clap</td>
+<td><code>val:738:0:0:56</code></td>
+<td><video controls loop muted playsinline src="assets/accepted/clap__val_738_0_0_56.mp4"></video></td>
+</tr>
+</tbody>
+</table>
+<p>Accepted 画廊（14）：<a href="assets/accepted/index.html"><code>live_rollout_videos/index.html</code></a></p>
+<h3 id="44-live-overlay-filter-rejected-rollouts5">4.4 Live overlay — filter-rejected rollouts（5 段）</h3>
+<p>下列为 <strong>现行 filter 拒绝</strong> 的 rollout：执行在 clip 结束前 terminate，或未跑满参考帧。全集共 <strong>8</strong> 条；此处 5 段 + 画廊其余 3 段覆盖全集。叠画约定与 §4.3 相同。</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Segment</th>
+<th>Video</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td><code>val:567:2:605:731</code></td>
+<td><video controls loop muted playsinline src="assets/rejected/walk__val_567_2_605_731.mp4"></video></td>
+</tr>
+<tr>
+<td>clap</td>
+<td><code>val:950:1:55:98</code></td>
+<td><video controls loop muted playsinline src="assets/rejected/clap__val_950_1_55_98.mp4"></video></td>
+</tr>
+<tr>
+<td>kick</td>
+<td><code>val:469:0:0:100</code></td>
+<td><video controls loop muted playsinline src="assets/rejected/kick__val_469_0_0_100.mp4"></video></td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td><code>val:29:0:0:930</code></td>
+<td><video controls loop muted playsinline src="assets/rejected/wave_arms__val_29_0_0_930.mp4"></video></td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td><code>val:1958:2:740:811</code></td>
+<td><video controls loop muted playsinline src="assets/rejected/cross_arms__val_1958_2_740_811.mp4"></video></td>
+</tr>
+</tbody>
+</table>
+<p>Rejected 画廊（8）：<a href="assets/rejected/index.html"><code>fail_render/live_rollout_videos/index.html</code></a></p>
+<h2 id="5-analysis">5. Analysis</h2>
+<ul>
+<li><strong>Finding:</strong> Tracker 侧 D6 GTrXL test BM SR 高于 single-policy baseline（§4.1）；同一执行器按「跑完且未 terminate」得到 <code>VAD_Cleaned_50Hz_Rollouts_V2</code> 接受率 99.4%（§4.2）。§4.3 视频即该合同下的成功采样。</li>
+<li><strong>Working interpretation（已确认）:</strong> 现行 filter 只保证 <strong>可跑完</strong>，不保证局部 tracking 质量。公开 SONIC 审计（<a href="https://lingfanb.github.io/openresults/results/hierarchical-rollout-tracking-audit/">hierarchical rollout tracking audit</a>）在 15 条代表 clip 上归纳：动作越快、连续变化越多，execution 越易出现局部 <strong>delay</strong>（wave-arms 最明显；kick 上臂晚于腿）；delay 常伴 <strong>amplitude</strong> 不对称；全身 MPJPE 掩盖腕/踝等 <strong>EE / geometry</strong> 集中误差；慢动作或部分 walk 视觉上更一致。本栈 overlay 应用同一读法，但执行器与 SONIC 不同，数字不可直接混表。</li>
+<li><strong>Unknown:</strong> 8 条 reject 未做逐条动力学归因；accepted 集上尚未公布与 SONIC 对齐的 delay / EE 量化表。</li>
+<li><strong>Next（further work）:</strong></li>
+<li>在现行 filter 之上加 <strong>Tracking MPJPE</strong> 与 <strong>EE</strong>（腕/踝）阈值或分位数门，再导出更干净的 Rollouts 子集。</li>
+<li>针对与本报告同类的 50Hz cleaned rollouts，与 SONIC 在 delay、amplitude、EE trajectory / keypoint 上做 <strong>同协议量化对照</strong>（不替代各自产品线主指标）。</li>
+</ul>
+<h2 id="6-appendix">6. Appendix</h2>
+<details>
+<summary>Calculations, evidence, related audit</summary>
+
+### Worked examples
+
+
+<pre><code class="language-text">tracker_split = 1113 + 139 + 140 = 1392
+rollouts_v2_accepted = 1107 + 137 + 140 = 1384
+accept_rate = 1384 / 1392 ≈ 0.9943
+D6_test_SR − G_test_SR ≈ 0.9926 − 0.9596 = +0.033
+</code></pre>
+
+
+### Evidence
+
+- Tracker train contract: `outputs/plan1_scale/data_contract.json`
+- Phase D SR: `outputs/plan1_bm_ppo_spec_from_g1999/eval_phase_d_final_val_test_x4/summary.json`
+- MoE report: `docs/report/2026-07-23-MOE-unilab-specialist-distill-report.md`
+- D6 lock: `outputs/plan50_bm_tracker_filter/checkpoint_lock_d6_gtrxl_v2.json`
+- Filter reports: `outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v2/report_*.json`
+- Rollouts_V2: `data/processed/Tracked_Cleaned_VADCompose_V2_planner50hz/data_contract.json`
+- Rollouts_V1: `data/processed/Tracked_Cleaned_VADCompose_V1_planner50hz/`
+
+### Related public audit（SONIC；结论摘要）
+
+来源：[Hierarchical rollout tracking audit](https://lingfanb.github.io/openresults/results/hierarchical-rollout-tracking-audit/)（GMR reference → frozen SONIC，15 条代表 clip）。与本报告 UniLab PPO tracker **不是同一执行器**。
+
+公开页 Conclusion 要点（转述，供对照读 overlay）：
+
+- 动作越快、连续变化越多，physical execution 越容易跟不上 reference → 局部 **delay**（startup 后仍持续）。
+- **Delay：** wave-arms 最明显；kick 中手臂 delay 比腿部更清楚。
+- **Amplitude：** 常随 delay 出现；非全身统一缩小；wave-arms 可见右腕缩幅、左腕过冲。
+- **Geometry：** EE trajectory、wrist/ankle 与 root/waist 可偏离；全身 MPJPE 不能表达误差集中部位。
+- **Action dependence：** 慢动作或部分 walk 在 overlay 中更一致。
+
+</details>
+</main>
+</body>
+</html>
