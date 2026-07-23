@@ -189,70 +189,78 @@ Verdict: <code>PASS</code></p>
               → lock Spec → DAgger×10 → D6 GTrXL (best-by-val)
 </code></pre>
 <h3 id="32-tracker-vad_cleaned_50hz_rollouts_v2">3.2 用 tracker 产出 <code>VAD_Cleaned_50Hz_Rollouts_V2</code>（后）</h3>
+<p>本节回答：固定 50Hz 参考动作后，用哪台 tracker 在 MuJoCo 里整段跟随，怎样才算「收下」，以及收下的片段如何打成下游可用的 Rollouts_V2。</p>
+<p><strong>流水线（按顺序）</strong></p>
+<ol>
+<li><strong>参考动作</strong>：与 tracker 训练同一切分、严格 50Hz 的 motion reference（<code>vadcompose_v2_reference_50hz/</code>）。</li>
+<li><strong>物理跟随</strong>：锁定的 <strong>D6 GTrXL</strong> 在 MuJoCo 中整段执行（lock：<code>checkpoint_lock_d6_gtrxl_v2.json</code>；导出：<code>scripts/export_vadcompose_50hz_phc.py</code>）。</li>
+<li><strong>现行收下条件</strong>：整段跑完且未触发 terminate；<strong>不</strong>用 Tracking MPJPE / EE 卡控（二者仅作审计或后续加严候选，见 §5）。</li>
+<li><strong>打包装箱</strong>：对收下片段跑 <code>VAD_base_model.data.build_filtered50</code>，落盘为 <code>Tracked_Cleaned_VADCompose_V2_planner50hz/</code>，产品名即 <strong><code>VAD_Cleaned_50Hz_Rollouts_V2</code></strong>。</li>
+</ol>
 <table>
 <thead>
 <tr>
-<th>Item</th>
-<th>Setup</th>
+<th>项</th>
+<th>说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Motion reference</td>
-<td><code>vadcompose_v2_reference_50hz/</code>（与 train split 同行集，exact 50Hz）</td>
+<td>跟什么</td>
+<td><code>vadcompose_v2_reference_50hz/</code>：与 train / val / test 同行集，时间轴为 exact 50Hz</td>
 </tr>
 <tr>
-<td>Executor</td>
-<td>locked <strong>D6 GTrXL</strong>（<code>checkpoint_lock_d6_gtrxl_v2.json</code>）</td>
+<td>谁来跟</td>
+<td>已锁定的 <strong>D6 GTrXL</strong>（<code>checkpoint_lock_d6_gtrxl_v2.json</code>）</td>
 </tr>
 <tr>
-<td>Export</td>
-<td><code>scripts/export_vadcompose_50hz_phc.py</code>：整段 MuJoCo rollout；accept = 跑完且未 terminate（<strong>MPJPE / EE 不 gate</strong>）</td>
+<td>怎样导出</td>
+<td><code>scripts/export_vadcompose_50hz_phc.py</code> 做整段 MuJoCo rollout；<strong>收下</strong> = 跑完且未 terminate</td>
 </tr>
 <tr>
-<td>Planner pack</td>
-<td><code>VAD_base_model.data.build_filtered50</code> → 盘上 <code>Tracked_Cleaned_VADCompose_V2_planner50hz/</code></td>
+<td>怎样打包</td>
+<td><code>build_filtered50</code> → 盘上 <code>Tracked_Cleaned_VADCompose_V2_planner50hz/</code></td>
 </tr>
 <tr>
-<td>相对 V1</td>
-<td>同 reference / split / terminate；tracker <strong>D7→D6</strong>；产物名 <strong>Rollouts_V1 → Rollouts_V2</strong></td>
+<td>相对上一版 V1</td>
+<td>reference、切分与 terminate 合同不变；执行器由 <strong>D7 换为 D6</strong>；产品名由 <strong>Rollouts_V1 换为 Rollouts_V2</strong></td>
 </tr>
 <tr>
-<td>Overlay</td>
-<td>成功/失败 rollout 的叠画录像；蓝 ghost = motion reference，solid = D6 物理执行；关节序 UniLab/MuJoCo（无 IsaacLab PERM）</td>
+<td>叠画录像怎么看</td>
+<td>蓝半透明 = motion reference；实体 = D6 物理执行；关节序为 UniLab/MuJoCo（不做 IsaacLab PERM）</td>
 </tr>
 <tr>
-<td>建议加严（未实施）</td>
-<td>在现行 filter 之上再加 <strong>Tracking MPJPE</strong> 与 <strong>EE</strong> 阈值/分位数门（见 §5）</td>
+<td>尚未加的质量门</td>
+<td>可在现行「可跑完」过滤之上，再加 Tracking MPJPE 与 EE（腕/踝）阈值或分位数门；<strong>本版未实施</strong>（§5）</td>
 </tr>
 </tbody>
 </table>
 <table>
 <thead>
 <tr>
-<th>Criterion</th>
-<th style="text-align: right;">Threshold</th>
-<th style="text-align: right;">Measured</th>
-<th>Verdict</th>
+<th>验收项</th>
+<th style="text-align: right;">期望</th>
+<th style="text-align: right;">实测</th>
+<th>结论</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Tracker student ≥ baseline</td>
+<td>Tracker 不低于 single-policy baseline</td>
 <td style="text-align: right;">test BM SR ≥ G</td>
 <td style="text-align: right;">D6 <strong>0.993</strong>；G <strong>0.960</strong></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Rollouts_V2 accept</td>
-<td style="text-align: right;">≥99% 量级</td>
-<td style="text-align: right;"><strong>1384/1392 = 99.4%</strong></td>
+<td>Rollouts_V2 收下比例</td>
+<td style="text-align: right;">约 ≥99%</td>
+<td style="text-align: right;"><strong>1384 / 1392 = 99.4%</strong></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Planner parents = accepted</td>
+<td>Planner 父 clip 数与收下条数一致</td>
 <td style="text-align: right;">1384</td>
-<td style="text-align: right;"><code>n_selected_parent_clips=1384</code></td>
+<td style="text-align: right;"><code>n_selected_parent_clips = 1384</code></td>
 <td>PASS</td>
 </tr>
 </tbody>
