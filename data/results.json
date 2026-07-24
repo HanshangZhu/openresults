@@ -1,6 +1,42 @@
 {
   "results": [
     {
+      "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
+      "title": "Preliminary: anti-jitter Spec_legvel vs D6 GTrXL (walk/kick)",
+      "date": "2026-07-24",
+      "project": "VAD Alignment",
+      "category": "Tracker Training",
+      "status": "INCONCLUSIVE",
+      "summary": "Cold-start G_jvel_ar \u2192 Spec fork@2500 with action_rate=-1 and leg joint-vel; tip walk/kick BM SR=1.0 and lower hf_v vs OldSpec, but walk initiation still visually behind SONIC. Preliminary \u2014 does not replace D6.",
+      "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
+      "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
+      "thumbnailAlt": "3\u00d72 comparison frame: walk/kick \u00d7 SONIC / D6 / Expert Spec_legvel",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "SONIC",
+        "D6 GTrXL",
+        "Jitter",
+        "Preliminary"
+      ],
+      "metrics": [
+        {
+          "value": "1.0",
+          "label": "walk/kick val BM SR"
+        },
+        {
+          "value": "2.41",
+          "label": "walk hf_v (\u2193 vs 8.04)"
+        },
+        {
+          "value": "3.61",
+          "label": "kick hf_v (\u2193 vs 6.20)"
+        }
+      ]
+    },
+    {
       "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
       "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
       "date": "2026-07-23",

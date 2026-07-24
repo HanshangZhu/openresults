@@ -1,0 +1,45 @@
+{
+  "schema": "report_sonic_grid3x2_v1",
+  "created_utc": "2026-07-24T17:18:40.721034+00:00",
+  "layout": {
+    "grid3x2": "rows=walk|kick ; cols=SONIC bare | D6 GTrXL | Expert Spec_legvel@4999",
+    "cell": "blue ghost=reference \u00b7 solid=tracker",
+    "sync": "all panels padded/trimmed to 513 frames @50fps (walk length); kick holds last frame after end"
+  },
+  "columns": [
+    "SONIC bare",
+    "D6 GTrXL (report student)",
+    "Expert Spec_legvel@4999"
+  ],
+  "rows": [
+    {
+      "action": "walk",
+      "stem": "00044_walk_val_1492_1_340_546",
+      "segment_id": "val:1492:1:340:546"
+    },
+    {
+      "action": "kick",
+      "stem": "00035_kick_val_1402_1_84_237",
+      "segment_id": "val:1402:1:84:237"
+    }
+  ],
+  "sources": {
+    "panels_from": "outputs/plan1_bm_ppo_spec_g2500_ar_legvel/render_grid2x2_canon/{walk,kick}/panels/{01_sonic,02_d6,04_expert}.mp4",
+    "expert_walk": {
+      "run": "spec_c6_from_g2500_ar_legvel_2500_20260724_160533_2748334",
+      "ckpt": 4999
+    },
+    "expert_kick": {
+      "run": "spec_c4_from_g2500_ar_legvel_2500_20260724_160533_2748333",
+      "ckpt": 4999
+    },
+    "d6_note": "offline NPZ; root_rot xyzw\u2192wxyz fix applied 2026-07-24",
+    "g_panel_omitted": "G@4000 kept in canon 2\u00d72; dropped here to keep 3-col SONIC-focus layout"
+  },
+  "outputs": {
+    "grid3x2": "media/grid3x2_walk_kick__sonic_d6_expert.mp4",
+    "walk_1x3": "media/grid1x3_walk__sonic_d6_expert.mp4",
+    "kick_1x3": "media/grid1x3_kick__sonic_d6_expert.mp4",
+    "workdir": "outputs/plan1_bm_ppo_spec_g2500_ar_legvel/render_grid3x2_sonic_report"
+  }
+}
