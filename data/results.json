@@ -7,7 +7,7 @@
       "project": "VAD Alignment",
       "category": "Tracker Training",
       "status": "INCONCLUSIVE",
-      "summary": "Cold-start G_jvel_ar \u2192 Spec fork@2500 with action_rate=-1 and leg joint-vel; tip walk/kick BM SR=1.0 and lower hf_v vs OldSpec, but walk initiation still visually behind SONIC. Preliminary \u2014 does not replace D6.",
+      "summary": "Heavier action-rate + leg joint-vel rewards vs the D6-era teachers. Agreed: kick usable; walk pending. hf_v medians walk 8.04\u21922.41, kick 6.20\u21923.61.",
       "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
       "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
       "thumbnailAlt": "3\u00d72 comparison frame: walk/kick \u00d7 SONIC / D6 / Expert Spec_legvel",

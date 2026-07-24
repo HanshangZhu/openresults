@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Preliminary：抗抖续训 vs D6 GTrXL（walk / kick）</title>
+<title>Preliminary：walk / kick 抗抖（相对 D6）</title>
 <style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
 --cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
 --mono:"SFMono-Regular",Consolas,monospace}
@@ -41,235 +41,76 @@ html.openresults-gated body { background: #08111d; }
 <header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>
 
 <main>
-<p class="source">Public OpenResults copy · preliminary · source slug <code>2026-07-24-preliminary-anti-jitter-vs-d6</code></p>
-<h1 id="preliminary-vs-d6-gtrxlwalk-kick">Preliminary：抗抖续训 vs D6 GTrXL（walk / kick）</h1>
+<p class="source">Public OpenResults copy · preliminary</p>
+<h1 id="preliminarywalk-kick-d6">Preliminary：walk / kick 抗抖（相对 D6）</h1>
 <blockquote>
-<p><strong>PRELIMINARY REPORT</strong> — 阶段进展，非整条 MoE 线结案。<br>
-Date/scale: <code>2026-07-24</code> / walk·kick val（n=18 / 14）· tip@4999<br>
-Output profile: <code>html-checkpoint-report</code><br>
-Results profile: <code>training-physical</code><br>
-Verdict: <code>INCONCLUSIVE</code><br>
-Aligns with: <a href="../moe-unilab-specialist-distill-d6/">MOE UniLab specialist distill (D6) — OpenResults</a>（D6 GTrXL 身份与 BM 合同）</p>
+<p><strong>PRELIMINARY</strong> · 2026-07-24 · 对齐对照：<a href="../moe-unilab-specialist-distill-d6/">D6 GTrXL 报告</a></p>
 </blockquote>
-<p>本页回答：在 <strong>D6 GTrXL report 已锁定</strong> 的前提下，我们<strong>具体怎么续训</strong>了一版 walk/kick <strong>Expert Spec</strong>，以及它相对 <strong>SONIC / D6 / 旧 Spec</strong> 目前停在哪里。数字与视频仅为当前 tip 快照，不替代 MoE 主报告。</p>
+<p>D6 那版 walk/kick 能跑完，但动作抖。这次只改训练奖励，重训 kick / walk 两个专家，看抖能不能压下去。</p>
 <hr>
 <h2 id="1-conclusion">1. Conclusion</h2>
-<p><strong>INCONCLUSIVE（preliminary）。</strong></p>
 <ul>
-<li>Decisive evidence: tip <strong>Spec_legvel@4999</strong> 在 walk/kick val 上 <strong>BM SR = 1.0</strong>；相对 MoE 线 <strong>OldSpec_lock</strong>，median <code>hf_v_ratio</code> walk <strong>8.04→2.41</strong>、kick <strong>6.20→3.61</strong>（主表）。</li>
-<li>Counter-signal: 肉眼（user 确认）— <strong>kick 接近可用</strong>；<strong>walk 起步两步仍明显不如 SONIC</strong>（SONIC 贴 reference，参考不迈步时亦不迈步）。<code>hf_v</code>↓ 不等于起步跟踪已过关。</li>
-<li>Not shown: 未重跑完整 semantic K=8 ×4；未把 Spec_legvel 再蒸馏成可与 <strong>D6 GTrXL</strong> 同角色的单学生；未证明可替换 D6 作 report student。</li>
-<li>Decision: 本页只作 <strong>preliminary 对照与续训说明</strong>；是否改 D6 / 再开 DAgger / 改 walk 起步合同 — <strong>待用户确认</strong>，不在此结案。</li>
+<li><strong>Kick：可用</strong>（你我共识，看视频）。</li>
+<li><strong>Walk：待确认</strong>（数字抗抖有改善；起步两步肉眼仍不如 SONIC，是否过关未定）。</li>
+<li>支持「jitter 改善」的数字：相对 D6 线用的旧 kick/walk 专家（OldSpec），执行相对参考动作的高频速度比 <strong><code>hf_v_ratio</code> 中位数</strong>——walk <strong>8.04 → 2.41</strong>，kick <strong>6.20 → 3.61</strong>（越小越不抖）。两者 BeyondMimic SR 仍为 <strong>1.0</strong>。</li>
 </ul>
-<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
-<p>研究问题：相对 MoE 报告中的 <strong>D6 GTrXL</strong>（高 BM SR、但 walk/kick 执行仍抖），我们用什么<strong>续训配方</strong>得到当前 walk/kick Expert，以及它在 BM / 抖动 / 肉眼三条尺上停在哪。</p>
+<h2 id="2">2. 这次怎么训的</h2>
+<ol>
+<li>先在<strong>全部训练数据</strong>上，用加重后的奖励从零训一台单策略（约 5000 iter）。</li>
+<li>从中间检查点（约 <strong>2500</strong> iter）分出 <strong>kick</strong>、<strong>walk</strong> 两个专家，各再训 <strong>2500</strong> iter（终点约 <strong>4999</strong>）。</li>
+<li><strong>没有</strong>接着 D6 的权重训；D6 只作视频对照（同 clip、蓝鬼 = 参考动作）。</li>
+</ol>
+<h2 id="3-d6-reward">3. 相对 D6 那一版，reward 改了什么</h2>
+<p>D6 的老师来自当时默认跟踪奖励（关节速度跟踪基本关着，动作变化惩罚很弱）。这次针对抖，主要改了：</p>
 <table>
 <thead>
 <tr>
-<th>Term</th>
-<th>Operational definition in this report</th>
-<th>Scope / not to confuse with</th>
+<th>奖励项</th>
+<th style="text-align: right;">D6 那一版（旧默认 / 旧专家）</th>
+<th style="text-align: right;">这次</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>D6 GTrXL</strong></td>
-<td>MoE 报告 Phase D <strong>best-by-val</strong> DAgger 学生（GTrXL）；标签=locked Spec</td>
-<td>本页未重新训 D6；视频格用其已落盘 rollout NPZ</td>
+<td>动作变化惩罚 <code>action_rate_l2</code></td>
+<td style="text-align: right;">−0.1</td>
+<td style="text-align: right;"><strong>−1.0</strong>（加重，少抖指令）</td>
 </tr>
 <tr>
-<td><strong>OldSpec_lock</strong></td>
-<td>MoE Phase B 锁定的 kick/walk Spec（c4@3500 / c6@2000）</td>
-<td>非本页新训 Expert</td>
+<td>全身关节速度跟踪 <code>motion_joint_vel</code></td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">单策略阶段曾开到 1.0；专家阶段 <strong>关掉（0）</strong></td>
 </tr>
 <tr>
-<td><strong>G_jvel_ar</strong></td>
-<td>2026-07-24 <strong>冷启</strong> single-policy；<code>motion_joint_vel=1.0</code> + <code>action_rate_l2=-1.0</code>；run <code>g_jvel_ar_cold_*</code></td>
-<td>非 MoE 报告里的 G@4000</td>
-</tr>
-<tr>
-<td><strong>Spec_legvel / Expert</strong></td>
-<td>自 <strong>G_jvel_ar@2500</strong> fork 的 kick(c4)+walk(c6) Spec；<code>ar=-1.0</code> + <strong><code>motion_joint_vel_leg=2.0</code></strong>；tip@4999</td>
-<td>专家策略，非 DAgger 学生</td>
-</tr>
-<tr>
-<td><strong>SONIC bare</strong></td>
-<td>frozen GEAR-SONIC；同 clip 对照上界</td>
-<td>非 UniLab PPO 续训产物</td>
-</tr>
-<tr>
-<td><strong>BM SR</strong></td>
-<td><code>beyondmimic_style_full_motion_sr</code>（↑）；本页仅 walk/kick <strong>val</strong></td>
-<td>非 MoE 宏平均 val/test×4</td>
-</tr>
-<tr>
-<td><strong>hf_v_ratio</strong></td>
-<td>执行相对 reference 的高频速度能量比中位（↓）；抗抖主读数</td>
-<td>非 BM terminate；不刻画起步相位</td>
-</tr>
-<tr>
-<td><strong>续训（本文）</strong></td>
-<td>冷启 G 消融 → @2500 fork Spec +2500；<strong>不是</strong>从 D6 权重接着训</td>
-<td>非对 D6 做 FT</td>
+<td><strong>腿</strong>关节速度跟踪 <code>motion_joint_vel_leg</code>（髋膝踝 12 维）</td>
+<td style="text-align: right;">无</td>
+<td style="text-align: right;">专家阶段 <strong>+2.0</strong>（新增）</td>
 </tr>
 </tbody>
 </table>
-<h2 id="3-method">3. Method — 我们具体怎么续训的</h2>
-<p>与 MoE 报告流水线（G0→Spec∥G→lock→DAgger→<strong>D6</strong>）<strong>并行的抗抖支线</strong>，不是改 D6 权重。</p>
-<pre><code class="language-text">【MoE 主线 · 已结案数字】
-  G0@1999 → Spec×8 ∥ G@4000 → teachers.lock → DAgger → D6 GTrXL
-  （见 2026-07-23 MOE report；本页 D6 格只复用该学生）
-
-【本页抗抖支线 · preliminary】
-  Phase A  冷启 3×G 消融（全 train, num_envs=4096, 5000 iter）
-           g_jvel | g_ar1p0 | g_jvel_ar
-             └─ 选用 g_jvel_ar（叠 jvel + 加重 action_rate）
-  Phase B  从 g_jvel_ar **@2500**（非 tip@4999）fork
-           kick(c4) + walk(c6)，PARALLEL=2，各 +2500 → tip@4999
-           reward:
-             action_rate_l2 = −1.0
-             motion_joint_vel（全身）= 0.0
-             motion_joint_vel_leg = 2.0   ← NEW（hip+knee+ankle, 12 DOF）
-</code></pre>
-<table>
-<thead>
-<tr>
-<th>Item</th>
-<th>Setup</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Stack</td>
-<td>UniLab–MuJoCo RSL-RL PPO；与 MoE 同 env/BM terminate/<code>action_scale=2.0</code></td>
-</tr>
-<tr>
-<td>Data</td>
-<td>Phase A：全 train 1113；Phase B Spec：semantic cluster <strong>kick / walk</strong> only</td>
-</tr>
-<tr>
-<td>Base ckpt</td>
-<td><code>g_jvel_ar_cold_20260724_033837_2424012</code> <strong>@2500</strong></td>
-</tr>
-<tr>
-<td>Expert tip</td>
-<td>kick <code>…2748333</code> / walk <code>…2748334</code> <strong>@4999</strong></td>
-</tr>
-<tr>
-<td>Evaluation</td>
-<td>walk/kick <strong>val</strong> BM + median <code>hf_v_ratio</code>；focus 视频 vs SONIC / D6</td>
-</tr>
-<tr>
-<td>Evidence</td>
-<td><code>outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/</code></td>
-</tr>
-</tbody>
-</table>
-<table>
-<thead>
-<tr>
-<th>Criterion</th>
-<th style="text-align: right;">Threshold</th>
-<th style="text-align: right;">Measured</th>
-<th>Verdict</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Spec BM 可接受</td>
-<td style="text-align: right;">walk/kick val SR ≥ OldSpec</td>
-<td style="text-align: right;">均为 <strong>1.0</strong></td>
-<td>PASS（本切片）</td>
-</tr>
-<tr>
-<td>抗抖相对 OldSpec</td>
-<td style="text-align: right;"><code>hf_v</code> 明显↓</td>
-<td style="text-align: right;">walk 8.04→2.41；kick 6.20→3.61</td>
-<td>PASS（本切片）</td>
-</tr>
-<tr>
-<td>肉眼 ≥ SONIC 起步</td>
-<td style="text-align: right;">walk 起步贴 ref</td>
-<td style="text-align: right;">用户判定 <strong>不如 SONIC</strong></td>
-<td>FAIL（视觉）</td>
-</tr>
-<tr>
-<td>可替换 D6 为学生</td>
-<td style="text-align: right;">未测</td>
-<td style="text-align: right;">—</td>
-<td><strong>BLOCKED / preliminary</strong></td>
-</tr>
-</tbody>
-</table>
-<details>
-<summary>Differences from MoE D6 setup · confirmed Run Spec</summary>
-
-### Differences from MoE report / D6
-
-- **不改** D6：不从 D6 权重 FT；D6 仍是 Distill 学生身份。
-- **新冷启 G**：reward 相对 MoE 基线（`jvel=0, ar=-0.1`）加重平滑与关节速度。
-- **Spec 只开 2 簇**（kick+walk），不是 ×8；fork 点是 **G_jvel_ar@2500**，不是 G0@1999。
-- **新 reward**：`motion_joint_vel_leg`（腿 12 DOF），全身 `motion_joint_vel=0` 防双重计。
-- 作废路径：`spec_from_ar1p0` tip@4999（已删）；勿与本 tip 混淆。
-
-### Run Spec（confirmed）
-
-路径：`docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md`
-
-
-<pre><code>Run Spec — g2500-ar-legvel-walk-kick
-Question/Hypothesis : 从 g_jvel_ar@2500 fork kick+walk Spec，
-  action_rate_l2=-1.0 + motion_joint_vel_leg=2.0，
-  能否压 walk/kick hf_v_ratio 与 leg |Δq̇|，且 BM SR 可接受？
-先导探针 : per-joint error g_jvel_ar@4999（已完成）
-Stack : UniLab PPO Spec ×2 from cold G@2500
-改动清单 :
-  - reward.scales.action_rate_l2 | −0.1→−1.0（相对旧 Spec）
-  - reward.scales.motion_joint_vel | 保持/置 0（Spec 阶段关全身 jvel）
-  - reward.scales.motion_joint_vel_leg | NEW 0→2.0
-  - init | g_jvel_ar@2500；clusters 4+6 parallel
-对照 : 旧 Spec lock c4/c6；G tip；g_jvel_ar@4999
-预算 : +2500×2，GPU0，~1.5–2 h wall
-Command : bash scripts/run_spec_g2500_ar_legvel_walk_kick.sh
-Output : outputs/plan1_bm_ppo_spec_g2500_ar_legvel/
-</code></pre>
-
-
-Phase A 三臂冷启：`docs/plans/2026-07-24-plan-experiment-g0-jvel-track-g5k-spec.md`。
-
-</details>
-
+<p>其余环境与评测合同与 D6 报告一致（UniLab–MuJoCo PPO、BeyondMimic terminate 等）。</p>
 <h2 id="4-results">4. Results</h2>
-<p>采样：semantic <strong>val</strong>；kick n=14、walk n=18；本页 BM/jitter 来自 tip 目录（非 MoE Phase D ×4）。<br>
-D6 宏数字引自 MoE 主报告，仅作身份对齐，<strong>不与本表 walk/kick 切片做严格同协议相减</strong>。</p>
-<h3 id="41-walk-kick-val-tip">4.1 Walk / kick val（本 tip）</h3>
+<p>Walk val n=18，kick val n=14。权威文件：<code>outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/</code>。</p>
 <table>
 <thead>
 <tr>
-<th>Configuration</th>
-<th style="text-align: right;">kick BM SR ↑</th>
-<th style="text-align: right;">walk BM SR ↑</th>
+<th>策略</th>
+<th style="text-align: right;">kick SR ↑</th>
+<th style="text-align: right;">walk SR ↑</th>
 <th style="text-align: right;">kick hf_v ↓</th>
 <th style="text-align: right;">walk hf_v ↓</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>OldSpec_lock（MoE 锁）</td>
+<td>旧专家（D6 老师那条线）</td>
 <td style="text-align: right;">1.000</td>
 <td style="text-align: right;">1.000</td>
 <td style="text-align: right;">6.20</td>
 <td style="text-align: right;">8.04</td>
 </tr>
 <tr>
-<td>G_jvel_ar@4999</td>
-<td style="text-align: right;">0.643</td>
-<td style="text-align: right;">0.944</td>
-<td style="text-align: right;">3.89</td>
-<td style="text-align: right;">4.96</td>
-</tr>
-<tr>
-<td><strong>Spec_legvel@4999（Expert）</strong></td>
+<td><strong>这次专家 @4999</strong></td>
 <td style="text-align: right;"><strong>1.000</strong></td>
 <td style="text-align: right;"><strong>1.000</strong></td>
 <td style="text-align: right;"><strong>3.61</strong></td>
@@ -277,78 +118,25 @@ D6 宏数字引自 MoE 主报告，仅作身份对齐，<strong>不与本表 wal
 </tr>
 </tbody>
 </table>
-<p>Authoritative：<code>outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/bm_summary.json</code>、<code>…/jitter/summary.json</code>。</p>
-<h3 id="42-d6-moe-tip">4.2 D6 身份对齐（MoE 主报告，非本 tip 重评）</h3>
-<table>
-<thead>
-<tr>
-<th>Configuration</th>
-<th style="text-align: right;">val BM SR ↑</th>
-<th style="text-align: right;">test BM SR ↑</th>
-<th>备注</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>D6 GTrXL</td>
-<td style="text-align: right;">0.994</td>
-<td style="text-align: right;">0.993</td>
-<td>MoE §5.1；宏平均 K=8</td>
-</tr>
-<tr>
-<td>SONIC bare（BM post-hoc）</td>
-<td style="text-align: right;">0.982</td>
-<td style="text-align: right;">0.988</td>
-<td>MoE §5.4</td>
-</tr>
-<tr>
-<td>D6 accepted walk/kick 抖动</td>
-<td style="text-align: right;">—</td>
-<td style="text-align: right;">—</td>
-<td>MoE §5.4：walk jerk 中位 ~6.4× ref（<strong>SR 不刻画</strong>）</td>
-</tr>
-</tbody>
-</table>
-<h3 id="43-representative-video32">4.3 Representative video（3×2）</h3>
-<p>列：<strong>SONIC bare | D6 GTrXL | Expert Spec_legvel@4999</strong>；行：<strong>walk / kick</strong>；蓝鬼 = reference。</p>
+<p><code>hf_v_ratio</code>：执行轨迹相对同 clip 参考动作的高频速度能量比中位数；<strong>↓ = 更不抖</strong>。<br>
+BM SR 只说明能不能跟完，<strong>不</strong>衡量抖不抖。</p>
+<h3 id="sonic-d6">视频（SONIC | D6 | 这次专家）</h3>
 <video controls loop muted playsinline src="assets/grid3x2_walk_kick__sonic_d6_expert.mp4"></video>
 
-<p>分行：<a href="assets/grid1x3_walk__sonic_d6_expert.mp4"><code>assets/grid1x3_walk__sonic_d6_expert.mp4</code></a> · <a href="assets/grid1x3_kick__sonic_d6_expert.mp4"><code>assets/grid1x3_kick__sonic_d6_expert.mp4</code></a></p>
 <h2 id="5-analysis">5. Analysis</h2>
 <ul>
-<li><strong>Finding:</strong> 续训支线在 walk/kick val 上把 <strong>BM 拉回 1.0</strong>，并把 <code>hf_v</code> 压到明显低于 OldSpec（主表）；路径是 <strong>冷启 G_jvel_ar → @2500 Spec fork + leg-vel</strong>，不是从 D6 FT。</li>
-<li><strong>Working interpretation（user 确认视觉）:</strong> kick 跟踪已接近可用；walk <strong>起步</strong>仍弱于 SONIC——参考早期几乎不迈步时，SONIC 跟着不迈，Expert 仍会抢步。数字抗抖与起步相位是两件尺。</li>
-<li><strong>Unknown / 待验证:</strong> Spec_legvel 蒸馏成学生后能否在宏 SR 上贴齐 D6，同时保住 <code>hf_v</code>；walk 起步是否要单独合同（initiation window）。</li>
-<li><strong>Next:</strong> 保持 preliminary；是否以本 Expert 替换 MoE locked walk/kick teacher、或开新 DAgger — <strong>等用户拍板</strong>。</li>
+<li><strong>Finding:</strong> 加重动作变化惩罚 + 腿速度跟踪后，walk/kick 的 <code>hf_v</code> 相对旧专家明显下降，SR 仍满。</li>
+<li><strong>共识:</strong> kick 肉眼可用；walk 抗抖数字好了，起步是否过关 <strong>待确认</strong>。</li>
+<li><strong>Not shown:</strong> 还没把新专家重新蒸馏成像 D6 那样的单学生；也没说要替换 D6。</li>
+<li><strong>Next:</strong> 等 walk 视觉拍板后再定是否续做蒸馏 / 改起步。</li>
 </ul>
-<h2 id="6-appendix">6. Appendix</h2>
 <details>
-<summary>Terms, calculations, evidence, and reproduction</summary>
-
-### Worked examples
+<summary>路径与算式</summary>
 
 
-<pre><code class="language-text">walk hf_v: OldSpec 8.038 → Spec_legvel 2.405
-  ratio_vs_old = 8.038 / 2.405 ≈ 3.34×  (lower is better; ~3.3× improvement)
-kick hf_v: 6.199 / 3.614 ≈ 1.72×
-Spec_legvel BM: kick 14/14=1.0; walk 18/18=1.0
-</code></pre>
-
-
-### Evidence paths
-
-- Tip BM/jitter: `outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/`
-- Plans: `docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md`、`…-g0-jvel-track-g5k-spec.md`
-- MoE / D6: `docs/report/2026-07-23-MOE-unilab-specialist-distill-report.md`
-- Canon 2×2 panels: `outputs/plan1_bm_ppo_spec_g2500_ar_legvel/render_grid2x2_canon/`
-- 3×2 assemble: `outputs/…/render_grid3x2_sonic_report/` · sidecar `assets/grid3x2_walk_kick__sonic_d6_expert.mp4.json`
-- Leg-vel reward: `align_va_unilab/envs/motion_tracking/g1/tracking.py`（`motion_joint_vel_leg`）
-
-### Commands
-
-
-<pre><code class="language-bash">bash scripts/run_spec_g2500_ar_legvel_walk_kick.sh
-# videos already under report/sonic/assets/
+<pre><code class="language-text">walk hf: 8.038 / 2.405 ≈ 3.3× 更低
+kick hf: 6.199 / 3.614 ≈ 1.7× 更低
+Plan: docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md
 </code></pre>
 
 
