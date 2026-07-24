@@ -45,25 +45,103 @@ html.openresults-gated body { background: #08111d; }
 <h1 id="preliminary-reportwalk-kick-d6-gtrxl">Preliminary report：walk / kick 抗抖（相对 D6 GTrXL）</h1>
 <blockquote>
 <p><strong>Status:</strong> preliminary · <strong>Date:</strong> 2026-07-24<br>
-<strong>对照报告：</strong> <a href="../moe-unilab-specialist-distill-d6/">D6 GTrXL（MoE UniLab distill）</a></p>
+<strong>对照报告：</strong> <a href="../moe-unilab-specialist-distill-d6/">D6 GTrXL（MoE UniLab distill）</a><br>
+<strong>Results profile:</strong> <code>training-physical</code></p>
 </blockquote>
 <p>D6 GTrXL 学生在 locomotion 上 BeyondMimic 成功率很高，但 walk / kick 的物理执行仍明显抖动。本报告记录一次<strong>仅调整奖励、重训 kick 与 walk 专家</strong>的实验，并报告高频抖动是否下降。</p>
 <hr>
 <h2 id="1-conclusion">1. Conclusion</h2>
 <ul>
 <li><strong>Kick：</strong> 代表性视频上判定为<strong>可用</strong>（双方审阅后的共识）。</li>
-<li><strong>Walk：</strong> <strong>尚未接受。</strong> 抖动指标已改善，但起步相对参考与 SONIC 仍偏弱；是否过关待定。</li>
-<li><strong>抖动证据：</strong> 相对 D6 时期锁定的 kick / walk 专家（OldSpec），<code>hf_v_ratio</code> 中位数由 walk <strong>8.04 → 2.41</strong>、kick <strong>6.20 → 3.61</strong>（越低越平滑）。两动作 BeyondMimic SR 仍为 <strong>1.0</strong>（val；walk (n=18)，kick (n=14)）。</li>
+<li><strong>Walk：</strong> <strong>尚未接受。</strong> 主抖动指标已下降，但起步相对参考与 SONIC 仍偏弱；是否过关待定。</li>
+<li><strong>抖动证据：</strong> 相对 D6 时期锁定的 kick / walk 专家（OldSpec），主指标 <strong><code>hf_v_ratio</code> 中位数</strong>（↓）由 walk <strong>8.04 → 2.41</strong>、kick <strong>6.20 → 3.61</strong>。两动作 BeyondMimic SR 仍为 <strong>1.0</strong>（val；walk (n=18)，kick (n=14)）。</li>
 </ul>
-<p><code>hf_v_ratio</code> 表示执行轨迹相对同 clip 参考动作的高频关节速度能量比，是「抖动减轻」的定量依据。BM SR 只反映能否跟完整段，不度量平滑程度。</p>
-<h2 id="2-method">2. Method</h2>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>研究问题：在与 D6 报告相同的跟踪合同下，加强动作平滑与腿部速度跟踪后，kick / walk 专家的高频抖动是否下降，以及视觉上是否可接受。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D6 GTrXL</strong></td>
+<td>MoE 报告 Phase D 按 val 选出的 DAgger 学生（GTrXL）；标签来自 locked Spec</td>
+<td>本报告不重训 D6；视频中仅作同 clip 对照</td>
+</tr>
+<tr>
+<td><strong>OldSpec</strong></td>
+<td>D6 时期 Phase B 锁定的 kick / walk 专家（本表对照）</td>
+<td>非本次 tip</td>
+</tr>
+<tr>
+<td><strong>本次 tip / Spec_legvel@4999</strong></td>
+<td>自单策略约 @2500 分出的 kick、walk 专家，终点约 @4999</td>
+<td>专家策略，不是蒸馏学生</td>
+</tr>
+<tr>
+<td><strong>SONIC bare</strong></td>
+<td>冻结的 GEAR-SONIC 执行轨迹；同 clip 视觉上界</td>
+<td>非 UniLab PPO 训练产物</td>
+</tr>
+<tr>
+<td><strong>BM SR</strong></td>
+<td><code>beyondmimic_style_full_motion_sr</code>（↑）；固定 clip 起点；整段未触发 terminate 为成功</td>
+<td>不度量抖动；本页仅 walk/kick <strong>val</strong></td>
+</tr>
+<tr>
+<td><strong><code>hf_v_ratio</code>（主抖动指标，↓）</strong></td>
+<td>对关节位置序列差分得到关节速度（×50 Hz），对全部关节做 FFT；取频谱功率落在 <strong>[8, 25] Hz</strong> 的占比，再算 <strong>执行 / 参考</strong>。本页报表为各 val clip 上该比值的<strong>中位数</strong>。实现：<code>scripts/score_tracker_jitter_metrics.py</code> → <code>band_power_frac</code>；评测脚本同合同。</td>
+<td><strong>不是</strong>绝对速度 RMS，也不是 jerk 比；≠ BM SR / MPJPE。主表简写 <strong>hf_v</strong> = 本指标中位数</td>
+</tr>
+<tr>
+<td><strong>代表视频</strong></td>
+<td>列 = SONIC · D6 · 本次 tip；蓝鬼 = 参考动作</td>
+<td>定性，不替代 <code>hf_v_ratio</code></td>
+</tr>
+</tbody>
+</table>
+<p>一句话：<code>hf_v_ratio</code> 回答的是「相对参考动作，执行里有多少关节速度能量落在 8–25 Hz 高频带」；比值越低，高频颤振相对参考越少。</p>
+<h2 id="3-method">3. Method</h2>
 <ol>
-<li>在全部训练集上，用下文加强后的奖励<strong>从零</strong>训练一台单策略（约 5000 iterations）。</li>
+<li>在全部训练集上，用下文加强后的奖励从零训练一台单策略（约 5000 iterations）。</li>
 <li>约在 <strong>2500</strong> iteration 处分出 <strong>kick</strong>、<strong>walk</strong> 两个专家，各再训练 <strong>2500</strong> iterations（终点约 <strong>4999</strong>）。</li>
-<li><strong>不</strong>从 D6 权重继续训练。D6 仅作为同 clip 的视频对照（实体 = 策略，蓝色半透明 = 参考动作）。</li>
+<li>不从 D6 权重继续训练。D6 仅作同 clip 视频对照。</li>
 </ol>
-<h2 id="3-d6">3. 相对 D6 时期的奖励改动</h2>
-<p>D6 的老师沿用当时默认跟踪奖励：动作变化惩罚较弱，且无关节速度跟踪。本次主要改动如下。</p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BM SR 可接受</td>
+<td style="text-align: right;">walk/kick val SR ≥ OldSpec</td>
+<td style="text-align: right;">均为 1.0</td>
+<td>PASS（本切片）</td>
+</tr>
+<tr>
+<td><code>hf_v_ratio</code> 相对 OldSpec 下降</td>
+<td style="text-align: right;">中位数明显降低</td>
+<td style="text-align: right;">walk 8.04→2.41；kick 6.20→3.61</td>
+<td>PASS（本切片）</td>
+</tr>
+<tr>
+<td>视觉可接受</td>
+<td style="text-align: right;">kick / walk 均过关</td>
+<td style="text-align: right;">kick 可用；walk 起步未过关</td>
+<td><strong>PARTIAL</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="d6">相对 D6 时期的奖励改动</h3>
 <table>
 <thead>
 <tr>
@@ -81,7 +159,7 @@ html.openresults-gated body { background: #08111d; }
 <tr>
 <td>全身关节速度跟踪 <code>motion_joint_vel</code></td>
 <td style="text-align: right;">0</td>
-<td style="text-align: right;">单策略阶段为 1.0；专家阶段为 <strong>0</strong></td>
+<td style="text-align: right;">单策略阶段 1.0；专家阶段 <strong>0</strong></td>
 </tr>
 <tr>
 <td>腿部关节速度跟踪 <code>motion_joint_vel_leg</code>（髋、膝、踝；12 DoF）</td>
@@ -91,13 +169,33 @@ html.openresults-gated body { background: #08111d; }
 </tbody>
 </table>
 <p>仿真环境、<code>action_scale</code> 与 BeyondMimic 终止条件与 D6 报告一致（UniLab–MuJoCo PPO）。</p>
+<details>
+<summary>Run Spec（confirmed）</summary>
+
+路径：`docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md`
+
+
+<pre><code>Run Spec — g2500-ar-legvel-walk-kick
+Question/Hypothesis : 从 g_jvel_ar@2500 fork kick+walk Spec，
+  action_rate_l2=-1.0 + motion_joint_vel_leg=2.0，
+  能否压 walk/kick hf_v_ratio 与 leg |Δq̇|，且 BM SR 可接受？
+Stack : UniLab PPO Spec ×2 from g_jvel_ar@2500
+Command : bash scripts/run_spec_g2500_ar_legvel_walk_kick.sh
+Output : outputs/plan1_bm_ppo_spec_g2500_ar_legvel/
+</code></pre>
+
+
+</details>
+
 <h2 id="4-results">4. Results</h2>
+<p>主表中 <strong>hf_v</strong> = 上表定义的 <strong><code>hf_v_ratio</code> 中位数</strong>（↓）。<br>
+数据：<code>outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/</code>（<code>bm_summary.json</code>，<code>jitter/summary.json</code>）。</p>
 <table>
 <thead>
 <tr>
-<th>策略</th>
-<th style="text-align: right;">kick SR ↑</th>
-<th style="text-align: right;">walk SR ↑</th>
+<th>Policy</th>
+<th style="text-align: right;">kick BM SR ↑</th>
+<th style="text-align: right;">walk BM SR ↑</th>
 <th style="text-align: right;">kick hf_v ↓</th>
 <th style="text-align: right;">walk hf_v ↓</th>
 </tr>
@@ -119,23 +217,31 @@ html.openresults-gated body { background: #08111d; }
 </tr>
 </tbody>
 </table>
-<p>数据来源：<code>outputs/plan1_bm_ppo_spec_g2500_ar_legvel/eval_interim_ckpt4999/</code>。</p>
 <h3 id="sonic-d6-tip">代表视频（列：SONIC · D6 · 本次 tip）</h3>
 <video controls loop muted playsinline src="assets/grid3x2_walk_kick__sonic_d6_expert.mp4"></video>
 
-<h2 id="5-remarks">5. Remarks</h2>
+<h2 id="5-analysis">5. Analysis</h2>
 <ul>
-<li>加强动作变化惩罚并加入腿部速度跟踪后，本 val 切片上 <code>hf_v_ratio</code> 明显下降，BM SR 保持为 1.0。</li>
-<li>视觉结论：<strong>kick 可用；walk 待确认</strong>（起步相对 SONIC）。</li>
-<li>本报告不涵盖：将新专家再蒸馏为 D6 角色的单学生，或以本 tip 替换 MoE 报告中的 D6。</li>
+<li><strong>Finding:</strong> 本 val 切片上，<code>hf_v_ratio</code> 相对 OldSpec 明显下降，BM SR 保持 1.0（主表）。</li>
+<li><strong>Working interpretation（已共识）:</strong> kick 视觉可用；walk 数字抗抖改善，起步质量待确认。</li>
+<li><strong>Unknown:</strong> 新专家蒸馏为单学生后，宏 SR 与 <code>hf_v_ratio</code> 能否同时保住。</li>
+<li><strong>Not shown / next:</strong> 不以本 tip 替换 MoE 报告中的 D6；walk 接受与否待视觉拍板。</li>
 </ul>
 <details>
-<summary>路径与算式</summary>
+<summary>Appendix：算式与实现</summary>
 
 
-<pre><code class="language-text">Plan: docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md
-walk hf: 8.038 → 2.405（约 3.3× 降低）
-kick hf: 6.199 → 3.614（约 1.7× 降低）
+<pre><code class="language-text">v = diff(joint_pos) * 50          # rad/s, all DoF
+frac(traj) = power in [8,25] Hz / total FFT power   # band_power_frac
+hf_v_ratio(clip) = frac(exec) / max(frac(ref), 1e-8)
+report value = median over val clips
+
+walk: 8.038 → 2.405  (~3.3× lower)
+kick: 6.199 → 3.614  (~1.7× lower)
+
+code: scripts/score_tracker_jitter_metrics.py::band_power_frac
+      scripts/score_g0_reward_ablation_jitter.py::score_traj
+plan: docs/plans/2026-07-24-plan-experiment-g2500-ar-legvel.md
 </code></pre>
 
 
