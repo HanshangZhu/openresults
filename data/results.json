@@ -2,12 +2,12 @@
   "results": [
     {
       "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
-      "title": "Preliminary: anti-jitter Spec_legvel vs D6 GTrXL (walk/kick)",
+      "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
       "date": "2026-07-24",
       "project": "VAD Alignment",
       "category": "Tracker Training",
       "status": "INCONCLUSIVE",
-      "summary": "Heavier action-rate + leg joint-vel rewards vs the D6-era teachers. Agreed: kick usable; walk pending. hf_v medians walk 8.04\u21922.41, kick 6.20\u21923.61.",
+      "summary": "Reward-only specialist retrain vs D6-era teachers. Kick accepted visually; walk pending. hf_v medians: walk 8.04\u21922.41, kick 6.20\u21923.61.",
       "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
       "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
       "thumbnailAlt": "3\u00d72 comparison frame: walk/kick \u00d7 SONIC / D6 / Expert Spec_legvel",
