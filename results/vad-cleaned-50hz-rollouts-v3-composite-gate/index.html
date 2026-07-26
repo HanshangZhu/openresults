@@ -47,6 +47,16 @@ Verdict: <code>PASS</code></p>
 </ul>
 <h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
 <p>本报告回答：在"不抖动、物理可执行"的前提下，如何从 rollout 采出可用于 Latent Diffusion Planner 训练的 50Hz 执行态数据，以及每个动作该由哪个执行器产出。</p>
+<p>出发点是两个执行器<strong>互补且都已实测到的失败模式</strong>：</p>
+<ul>
+<li><strong>D6 的失败在 locomotion</strong>：六个上肢/蹲起动作 jerk 比 0.84–1.16、相位延迟 0 ms（可用）；但 walk/kick 上 jerk 比 6.77 / 4.40，且执行态运动量达参考的 2.7× / 1.9×——多出的运动在参考里不存在，是它自生的抖动。</li>
+<li><strong>SONIC 的失败在两种"高分陷阱"</strong>：locomotion 忠实（jerk 比 1.14 / 1.45、运动量保留 1.01 / 1.03、腿部延迟 20–40 ms），但它会<strong>把动作低通抹平</strong>（crouch 运动量只剩参考的 0.85，即蹲浅了 15%）、并且<strong>上肢系统性晚 80–100 ms</strong>（用延迟买平滑）。</li>
+</ul>
+<p>由此得到两个设计决定，构成本报告的 Method：</p>
+<ul>
+<li><strong>按动作分配执行器</strong>：kick·walk → SONIC（取其 locomotion），其余六个 → D6（取其上肢与零延迟）；</li>
+<li><strong>门必须三部分</strong>：只卡抖动的单边门会被上述两个陷阱刷分——低通抹平能把 jerk 比刷得比参考还低，延迟不改变任何整段统计量。所以在抖动上界之外，加运动量<strong>双边</strong>区间（式 3，堵抹平与虚增）和相位延迟上界（式 4，堵延迟换平滑）。各式的精确定义见 §3.1。</li>
+</ul>
 <table>
 <thead>
 <tr>
@@ -67,24 +77,14 @@ Verdict: <code>PASS</code></p>
 <td>不可与我们的 PPO/蒸馏 checkpoint 互换加载</td>
 </tr>
 <tr>
-<td><strong>jerk 比 / accel 比</strong></td>
-<td>执行态 jerk（或 accel）RMS ÷ 同一参考片段的同量；1.0 = 与参考同水平</td>
-<td>比值型，不是绝对量；<code>score_tracker_jitter_metrics.score_pair</code> 实现</td>
+<td><strong>生产门（三部分门）</strong></td>
+<td>式 (1)–(4) 的合取，逐 clip 判定，决定是否进入 V3</td>
+<td>与"校准门"(式 5) 不同，见 §3.1</td>
 </tr>
 <tr>
-<td><strong>运动量保留率</strong></td>
-<td>执行态关节速度 RMS ÷ 参考关节速度 RMS；1.0 = 忠实</td>
-<td>&lt;1 表示被低通抹平，&gt;1 表示凭空多出运动（抖动即此类）</td>
-</tr>
-<tr>
-<td><strong>相位延迟</strong></td>
-<td>执行态与参考的关节速度序列互相关最优滞后，取绝对值（ms）</td>
-<td>按动作主体部位取：locomotion 取腿、其余取臂</td>
-</tr>
-<tr>
-<td><strong>三部分门</strong></td>
-<td>jerk≤1.5 且 accel≤1.5 且 运动量保留∈[0.85,1.15] 且 主体部位延迟≤40 ms</td>
-<td>V2 只有前两项且为单边</td>
+<td><strong>校准门</strong></td>
+<td>式 (5)：用 42 条人工标注验证"数值能否复现人眼判定"的 walk 侧门</td>
+<td>只用于校准论证，不用于 V3 筛选</td>
 </tr>
 <tr>
 <td><strong>减速段过冲</strong></td>
@@ -104,6 +104,30 @@ Verdict: <code>PASS</code></p>
 </tbody>
 </table>
 <h2 id="3-method">3. Method</h2>
+<h3 id="31-gate-definition">3.1 Gate definition</h3>
+<p>记 <code>q_exec, q_ref ∈ R^{T×29}</code> 为同一 clip 的执行态与参考关节角序列（50 Hz，取公共前缀 T 帧），<code>f = 50</code>。逐关节有限差分：</p>
+<pre><code class="language-text">v = Δq · f        （关节速度）        a = Δv · f        （加速度）        j = Δa · f        （jerk）
+RMS(x) = sqrt( mean(x²) )，对全部 29 关节 × 全部帧池化
+
+生产门（V3 入选判据，四条同时满足）：
+(1) 抖动-jerk      R_j = RMS(j_exec) / RMS(j_ref)                        R_j ≤ 1.5
+(2) 抖动-accel     R_a = RMS(a_exec) / RMS(a_ref)                        R_a ≤ 1.5
+(3) 运动量保留      R_v = RMS(v_exec) / RMS(v_ref)               0.85 ≤ R_v ≤ 1.15（双边）
+(4) 相位延迟       τ* = argmax_{|τ| ≤ 200 ms} ρ( shift(v_exec^G, τ), v_ref^G )      |τ*| ≤ 40 ms
+                  ρ = 逐关节去均值后的归一化互相关；关节组 G：动作 ∈ {walk, kick} 取腿部
+                  关节 (0–11)，其余动作取手臂关节 (15–28)
+
+入选 ⇔ (1) ∧ (2) ∧ (3) ∧ (4)
+
+校准门（仅用于验证&quot;数值门能否复现人工判定&quot;，不参与 V3 筛选）：
+(5) over_ref_far ≤ 3.65  ∧  amp_ratio ≥ 0.79
+    over_ref_far = 远离落地 ≥120 ms 的安静帧上，腿部关节速度 8–25 Hz 频带能量 ÷ 同一
+                   参考自身该频带能量（1.0 = 与参考同水平）
+    amp_ratio    = 腿部 0.5–4 Hz 主运动带幅度 ÷ 参考同量（≥ 0.79 为过）
+</code></pre>
+<p>各式对应堵住的失败通道：(1)(2) 拦 D6 式的自生抖动；(3) 双边拦 SONIC 式的低通抹平（下界）与抖动性虚增（上界）；(4) 拦 SONIC 式的延迟换平滑。式 (1)–(3) 实现在 <code>scripts/score_tracker_jitter_metrics.py::score_pair</code>，式 (4) 在 <code>scripts/build_v3_rollout_dataset.py::phase_lag_ms</code>，式 (5) 在 <code>scripts/probe_jitter_attribution.py</code>。</p>
+<p>生产门用 (1)(2) 而非校准门 (5) 做抖动项的原因：式 (5) 依赖"安静帧"的存在，短 clip（&lt;140 帧）常常算不出读数（实测 2 条无读数，其中 1 条仅靠幅度会误判）；式 (1)(2) 全 clip 可算，且其阈值 1.5 是 V2 报告事前提出的口径。</p>
+<h3 id="32-setup-and-acceptance">3.2 Setup and acceptance</h3>
 <table>
 <thead>
 <tr>
@@ -126,11 +150,11 @@ Verdict: <code>PASS</code></p>
 </tr>
 <tr>
 <td>门</td>
-<td>三部分（见术语表），逐 clip 判定</td>
+<td>生产门 = 式 (1)–(4) 合取，逐 clip 判定</td>
 </tr>
 <tr>
 <td>人工验收</td>
-<td>每动作随机抽 30 条（共 240）渲染 ref 叠加视频，前端目视；另 42 条逐 clip 标注用于门的校准</td>
+<td>每动作随机抽 30 条（共 240）渲染 ref 叠加视频，前端目视；另 42 条逐 clip 标注用于校准门 (5)</td>
 </tr>
 </tbody>
 </table>
@@ -146,18 +170,18 @@ Verdict: <code>PASS</code></p>
 <tbody>
 <tr>
 <td>walk 平滑度较 V2 改善</td>
-<td style="text-align: right;">过门率 &gt; 50%</td>
+<td style="text-align: right;">生产门过门率 &gt; 50%</td>
 <td style="text-align: right;">92%（V2 口径下 D6 为 0.5%）</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>门与人工判定一致（walk）</td>
+<td>校准门 (5) 复现人工判定（walk）</td>
 <td style="text-align: right;">≥ 85%</td>
 <td style="text-align: right;">18/18 = 100%</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>门与人工判定一致（kick）</td>
+<td>整段平均指标复现人工判定（kick）</td>
 <td style="text-align: right;">≥ 85% 且置换检验 p&lt;0.05</td>
 <td style="text-align: right;">最佳 87%，但 p=0.825</td>
 <td>FAIL</td>
