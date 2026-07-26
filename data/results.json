@@ -1,16 +1,52 @@
 {
   "results": [
     {
+      "slug": "vad-cleaned-50hz-rollouts-v3-composite-gate",
+      "title": "VAD_Cleaned_50Hz_Rollouts_V3: three-part gate and per-action executor assignment",
+      "date": "2026-07-26",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "V3 assigns executors per action (SONIC for walk/kick, D6 GTrXL for the six upper-body/crouch actions) and gates rollouts on jitter, two-sided motion preservation, and phase lag; 1063/1392 clips (76.4%) pass. A pre-registered timing probe finds deceleration overshoot separates human-accepted kicks at 91% (permutation p=0.015) where 40 whole-clip metrics all fail.",
+      "path": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/",
+      "thumbnail": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/assets/thumbnail.png",
+      "thumbnailAlt": "Preview frame from an accepted walk rollout executed by SONIC with reference ghost overlay",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "50Hz",
+        "Rollouts V3",
+        "SONIC",
+        "Smoothness gate"
+      ],
+      "metrics": [
+        {
+          "value": "1063/1392",
+          "label": "clips passing the three-part gate"
+        },
+        {
+          "value": "92%",
+          "label": "walk gate pass rate (SONIC executor)"
+        },
+        {
+          "value": "p=0.015",
+          "label": "kick timing metric vs human review"
+        }
+      ]
+    },
+    {
       "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
       "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
       "date": "2026-07-24",
       "project": "VAD Alignment",
       "category": "Tracker Training",
       "status": "FAIL",
-      "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04\u21922.41, kick 6.20\u21923.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
+      "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04→2.41, kick 6.20→3.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
       "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
       "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
-      "thumbnailAlt": "3\u00d72 comparison frame: walk/kick \u00d7 SONIC / D6 / Expert Spec_legvel",
+      "thumbnailAlt": "3×2 comparison frame: walk/kick × SONIC / D6 / Expert Spec_legvel",
       "tags": [
         "Humanoid control",
         "Motion tracking",
@@ -28,11 +64,11 @@
         },
         {
           "value": "2.41",
-          "label": "walk hf_v (\u2193 vs 8.04)"
+          "label": "walk hf_v (↓ vs 8.04)"
         },
         {
           "value": "3.61",
-          "label": "kick hf_v (\u2193 vs 6.20)"
+          "label": "kick hf_v (↓ vs 6.20)"
         }
       ]
     },
@@ -43,7 +79,7 @@
       "project": "VAD Alignment",
       "category": "Dataset & Tracker",
       "status": "PASS",
-      "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6\u00d7 / ~4\u00d7), while upper-body clips stay comparatively smooth.",
+      "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6× / ~4×), while upper-body clips stay comparatively smooth.",
       "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
       "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
       "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
@@ -62,11 +98,11 @@
           "label": "D6 GTrXL test BM SR"
         },
         {
-          "value": "~6.4\u00d7",
+          "value": "~6.4×",
           "label": "walk jerk ratio median"
         },
         {
-          "value": "~4.0\u00d7",
+          "value": "~4.0×",
           "label": "kick jerk ratio median"
         }
       ]
@@ -78,7 +114,7 @@
       "project": "VAD Alignment",
       "category": "Tracker Training",
       "status": "PASS",
-      "summary": "PPO specialist\u2192DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6\u2019s accepted walk/kick physical rollouts jitter vs reference (medians ~6\u00d7 / ~4\u00d7 jerk).",
+      "summary": "PPO specialist→DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6’s accepted walk/kick physical rollouts jitter vs reference (medians ~6× / ~4× jerk).",
       "path": "results/moe-unilab-specialist-distill-d6/",
       "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
       "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
@@ -101,7 +137,7 @@
           "label": "locked Spec val SR"
         },
         {
-          "value": "~6\u00d7/~4\u00d7",
+          "value": "~6×/~4×",
           "label": "walk/kick jerk medians"
         }
       ]

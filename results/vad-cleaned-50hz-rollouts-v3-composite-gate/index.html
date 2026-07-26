@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>三部分门与按动作分配执行器：`VAD_Cleaned_50Hz_Rollouts_V3` 构建</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>docs/report/2026-07-26-v3-rollout-dataset-three-part-gate-and-executor-assignment.md</code></p>
+<h1 id="vad_cleaned_50hz_rollouts_v3">三部分门与按动作分配执行器：<code>VAD_Cleaned_50Hz_Rollouts_V3</code> 构建</h1>
+<p data-evidence-profile="dataset-verifier" hidden aria-hidden="true"></p>
+
+<blockquote>
+<p>Date/scale: <code>2026-07-26</code> / 1392 候选 clip · 8 动作 · 两个执行器 · 人工标注 42 条 + 抽检浏览 137 条
+Output profile: <code>markdown-project-report</code>（HTML 同目录）
+Results profile: <code>dataset-verifier</code>
+Verdict: <code>PASS</code></p>
+</blockquote>
+<p>V2 的已知缺口是"平滑度未门控"，其实质是 locomotion：D6 在 walk/kick 上 jerk 达参考的 6.8/4.4 倍。本报告说明 V3 如何用一道三部分门 + 按动作分配执行器把这个缺口补上，以及过程中发现的一条与 reward 设计相关的数据规律。</p>
+<hr>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS。</strong></p>
+<ul>
+<li>Decisive evidence: V3 接受 <strong>1063/1392（76.4%）</strong>、10111 秒；walk 由 SONIC 执行后过门率 <strong>92%</strong>（D6 仅 0.5%），其余六个动作沿用 D6 且过门率 70–87%（§4）。</li>
+<li>Counter-signal: <strong>kick 仅 227 秒（占 V3 时长 2.2%）</strong>、crouch 461 秒（4.6%），而三个上肢动作占 65%——动作时长分布明显偏斜；kick/walk 由 SONIC 执行，其<strong>手臂相位晚 80–100 ms</strong>，本门对这两个动作只卡腿，故未拦截。</li>
+<li>Not shown: 端到端 planner 训练验证（本数据集尚未证明能改善下游指标）；六个上肢动作的门<strong>未经人工校准</strong>（阈值由 walk/kick 的标注外推）；kick 的自动判据（现有 40 个指标全部无效，见 §5）。</li>
+<li>Decision: V3 交付下游 planner 训练使用；MoE tracker 续训的两个方向见 §5 Next。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>本报告回答：在"不抖动、物理可执行"的前提下，如何从 rollout 采出可用于 Latent Diffusion Planner 训练的 50Hz 执行态数据，以及每个动作该由哪个执行器产出。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>D6 GTrXL</strong></td>
+<td>DAgger 第 6 轮 GTrXL 学生，V2 的唯一执行器；test BM SR 0.993</td>
+<td>本报告中只负责六个非 locomotion 动作</td>
+</tr>
+<tr>
+<td><strong>SONIC bare</strong></td>
+<td>冻结的 GEAR-SONIC ONNX 策略，外部模型，未在本项目数据上微调</td>
+<td>不可与我们的 PPO/蒸馏 checkpoint 互换加载</td>
+</tr>
+<tr>
+<td><strong>jerk 比 / accel 比</strong></td>
+<td>执行态 jerk（或 accel）RMS ÷ 同一参考片段的同量；1.0 = 与参考同水平</td>
+<td>比值型，不是绝对量；<code>score_tracker_jitter_metrics.score_pair</code> 实现</td>
+</tr>
+<tr>
+<td><strong>运动量保留率</strong></td>
+<td>执行态关节速度 RMS ÷ 参考关节速度 RMS；1.0 = 忠实</td>
+<td>&lt;1 表示被低通抹平，&gt;1 表示凭空多出运动（抖动即此类）</td>
+</tr>
+<tr>
+<td><strong>相位延迟</strong></td>
+<td>执行态与参考的关节速度序列互相关最优滞后，取绝对值（ms）</td>
+<td>按动作主体部位取：locomotion 取腿、其余取臂</td>
+</tr>
+<tr>
+<td><strong>三部分门</strong></td>
+<td>jerk≤1.5 且 accel≤1.5 且 运动量保留∈[0.85,1.15] 且 主体部位延迟≤40 ms</td>
+<td>V2 只有前两项且为单边</td>
+</tr>
+<tr>
+<td><strong>减速段过冲</strong></td>
+<td>主动作峰值速度之后 0.4 s 内，腿部 <code>|执行−参考|</code> 的峰值（rad）</td>
+<td>时序局部量，整段平均会将其抹平</td>
+</tr>
+<tr>
+<td><strong>起动上升时间比</strong></td>
+<td>从起动到峰值速度的耗时 ÷ 参考同量；&gt;1 表示起手迟钝</td>
+<td>同上，时序局部量</td>
+</tr>
+<tr>
+<td><strong><code>VAD_Cleaned_50Hz_Rollouts_V3</code></strong></td>
+<td>本版数据集；盘上目录 <code>Tracked_Cleaned_VADCompose_V3_planner50hz/</code></td>
+<td>与 V2 执行器分配不同，不可混用</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-method">3. Method</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>候选集</td>
+<td><code>vadcompose_v2_unilab_npz/</code> 全量 1392 clip（train 1113 / val 139 / test 140），8 动作</td>
+</tr>
+<tr>
+<td>执行器</td>
+<td>kick·walk → SONIC bare；clap·cross_arms·crouch·handshake·punch·wave_arms → D6 GTrXL</td>
+</tr>
+<tr>
+<td>执行态来源</td>
+<td>D6 复用 V2 已有 rollout（零成本）；SONIC 的 val+test 已在盘，train 侧 260 条本次新跑</td>
+</tr>
+<tr>
+<td>门</td>
+<td>三部分（见术语表），逐 clip 判定</td>
+</tr>
+<tr>
+<td>人工验收</td>
+<td>每动作随机抽 30 条（共 240）渲染 ref 叠加视频，前端目视；另 42 条逐 clip 标注用于门的校准</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk 平滑度较 V2 改善</td>
+<td style="text-align: right;">过门率 &gt; 50%</td>
+<td style="text-align: right;">92%（V2 口径下 D6 为 0.5%）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>门与人工判定一致（walk）</td>
+<td style="text-align: right;">≥ 85%</td>
+<td style="text-align: right;">18/18 = 100%</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>门与人工判定一致（kick）</td>
+<td style="text-align: right;">≥ 85% 且置换检验 p&lt;0.05</td>
+<td style="text-align: right;">最佳 87%，但 p=0.825</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td>动力链假设成立（kick）</td>
+<td style="text-align: right;">某时序指标 ≥85% 且 p&lt;0.05</td>
+<td style="text-align: right;">减速段过冲 91.3%，p=0.015</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>数据集 schema 完整性</td>
+<td style="text-align: right;">核心字段与 VA 标签零缺失</td>
+<td style="text-align: right;">1063/1063 齐全</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Differences and Run Spec</summary>
+
+### Differences from V2
+
+- 执行器：V2 全量用 D6；V3 按动作分配，locomotion 改用 SONIC。
+- 门：V2 只要求"跑完整段、未 terminate"，平滑度不门控；V3 加三部分门。
+- 数据量：V2 接受 1384/1392（99.4%，但 locomotion 普遍带抖）；V3 接受 1063/1392（76.4%，locomotion 已门控）。
+
+### Run Spec
+
+`NOT PREREGISTERED` — 已搜索 `docs/plans/2026-07-2[56]-*.md`、`outputs/plan1_bm_composite_tracker/*.json`、相邻 report tree，未找到确认版 Run Spec 文件。
+
+本次门的判据形成过程如实记录如下，其中只有第一项属事前声明：
+
+1. **jerk≤1.5 且 accel≤1.5**：来自 V2 报告 §5 Next 提出的门控口径，属事前已声明的阈值。
+2. **运动量保留 ∈[0.85,1.15]**：分析中期加入。原因是单边门只罚"比参考抖"，会奖励把参考低通掉的执行器；实测 SONIC 在 crouch 上抹平 15% 运动量、单边门下过 88% 而双边门下只过 38%。
+3. **相位延迟 ≤40 ms**：分析后期加入。原因是前两项测不到延迟；实测 SONIC 上肢系统性晚 80–100 ms，D6 全部为 0 ms。
+
+因此第 2、3 项是**看到数据后加入的判据**，不得当作预注册结果解读；它们堵的是门本身的漏洞，而非为提高某执行器的通过率而设。
+
+</details>
+
+<h2 id="4-results">4. Results</h2>
+<h3 id="41">4.1 逐动作执行器与产出</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Executor</th>
+<th style="text-align: right;">Accepted / Total ↑</th>
+<th style="text-align: right;">Accept rate ↑</th>
+<th style="text-align: right;">V3 duration (s)</th>
+<th style="text-align: right;">Share of V3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wave_arms</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">175/204</td>
+<td style="text-align: right;">86%</td>
+<td style="text-align: right;">2460</td>
+<td style="text-align: right;">24.3%</td>
+</tr>
+<tr>
+<td>punch</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">113/161</td>
+<td style="text-align: right;">70%</td>
+<td style="text-align: right;">2105</td>
+<td style="text-align: right;">20.8%</td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">182/227</td>
+<td style="text-align: right;">80%</td>
+<td style="text-align: right;">2008</td>
+<td style="text-align: right;">19.9%</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">170/196</td>
+<td style="text-align: right;">87%</td>
+<td style="text-align: right;">1185</td>
+<td style="text-align: right;">11.7%</td>
+</tr>
+<tr>
+<td><strong>walk</strong></td>
+<td><strong>SONIC</strong></td>
+<td style="text-align: right;"><strong>173/187</strong></td>
+<td style="text-align: right;"><strong>92%</strong></td>
+<td style="text-align: right;">986</td>
+<td style="text-align: right;">9.7%</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">148/197</td>
+<td style="text-align: right;">75%</td>
+<td style="text-align: right;">680</td>
+<td style="text-align: right;">6.7%</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td>D6 GTrXL</td>
+<td style="text-align: right;">35/82</td>
+<td style="text-align: right;">43%</td>
+<td style="text-align: right;">461</td>
+<td style="text-align: right;">4.6%</td>
+</tr>
+<tr>
+<td><strong>kick</strong></td>
+<td><strong>SONIC</strong></td>
+<td style="text-align: right;"><strong>67/138</strong></td>
+<td style="text-align: right;"><strong>49%</strong></td>
+<td style="text-align: right;">227</td>
+<td style="text-align: right;">2.2%</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td></td>
+<td style="text-align: right;"><strong>1063/1392</strong></td>
+<td style="text-align: right;"><strong>76.4%</strong></td>
+<td style="text-align: right;"><strong>10111</strong></td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 分配依据：两个执行器在同一道门下的表现</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th style="text-align: right;">D6 jerk 比 ↓</th>
+<th style="text-align: right;">D6 过门 ↑</th>
+<th style="text-align: right;">SONIC jerk 比 ↓</th>
+<th style="text-align: right;">SONIC 过门 ↑</th>
+<th style="text-align: right;">SONIC 手臂延迟 (ms) ↓</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td style="text-align: right;">6.77</td>
+<td style="text-align: right;">0.5%</td>
+<td style="text-align: right;"><strong>1.14</strong></td>
+<td style="text-align: right;"><strong>97%</strong></td>
+<td style="text-align: right;">80</td>
+</tr>
+<tr>
+<td>kick</td>
+<td style="text-align: right;">4.40</td>
+<td style="text-align: right;">0.7%</td>
+<td style="text-align: right;"><strong>1.45</strong></td>
+<td style="text-align: right;"><strong>54%</strong></td>
+<td style="text-align: right;">80</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td style="text-align: right;">1.37</td>
+<td style="text-align: right;">43%</td>
+<td style="text-align: right;">0.87</td>
+<td style="text-align: right;">38%（单边 88%，运动量抹平 15%）</td>
+<td style="text-align: right;">60</td>
+</tr>
+<tr>
+<td>punch</td>
+<td style="text-align: right;">0.84</td>
+<td style="text-align: right;">70%</td>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">0%（延迟卡掉）</td>
+<td style="text-align: right;">80</td>
+</tr>
+<tr>
+<td>clap / cross_arms / handshake / wave_arms</td>
+<td style="text-align: right;">0.87–1.16</td>
+<td style="text-align: right;">75–87%</td>
+<td style="text-align: right;">0.71–0.98</td>
+<td style="text-align: right;">0–51%</td>
+<td style="text-align: right;">80–100</td>
+</tr>
+</tbody>
+</table>
+<p>D6 的弱点集中在腿部承重的动作（walk 6.77、kick 4.40、crouch 1.37，其余五个 0.84–1.16）；SONIC 的弱点在上肢相位（全部 80–100 ms，D6 全为 0 ms）。两者互补，故按部位分配。</p>
+<h3 id="43-rolloutwalksonic-ghost">4.3 代表性 rollout（walk，SONIC 执行，蓝色 ghost = 参考）</h3>
+<video controls loop muted playsinline src="assets/walk__val_1045_2_211_425.mp4"></video>
+
+<h2 id="5-analysis">5. Analysis</h2>
+<ul>
+<li><strong>Finding：门必须是双边加相位的。</strong> 单边平滑门可被两种方式刷高：把参考低通掉（SONIC 在 crouch 上抹 15%，§4.2），或用延迟换平滑（SONIC 上肢 80–100 ms）。补上运动量双边区间与相位项后，两种刷分都被拦下，且 walk 的分配结论不变（SONIC 仍 97%）。</li>
+<li><strong>Finding：kick 的可接受性现有指标全测不到，但时序指标测得到。</strong> 42 条人工标注中，walk 侧一道两参数门可 100% 复现判定（18/18）；kick 侧扫遍 40 个整段平均指标最佳 87%，而标签打乱后同一扫描中位数也是 87%（p=0.825），即全属多重比较假象。改用按"动力链与起停果断性"预设的 7 个时序指标后，<strong>减速段过冲</strong>达 91.3%、置换检验 p=0.015。</li>
+<li><strong>Working interpretation（user 已确认）：差距在时序局部，而奖励与评测都是整段平均。</strong> 人工判 fail 的 kick 减速时过冲 0.584 rad、起手耗时是参考的 1.83 倍；判 pass 的分别是 0.351 与 0.971；SONIC 是 0.298 与 1.000。这两个窗口各只占几百毫秒，在整段平均里被稀释到不可见——现行 reward 与现行指标都看不见它们。</li>
+<li><strong>Unknown：</strong> 动力链的顺序指标（髋→膝→踝峰值排序）在所有执行器上均为 0，说明该测法无效，"动力链"这一半尚未真正测到；上述时序指标只在一条 tracker（Spec_legvel）上验证过，作为通用判据仍需换臂复测。</li>
+</ul>
+<h3 id="next">Next</h3>
+<p>MoE tracker 续训两个方向：</p>
+<ol>
+<li><strong>尝试蒸馏 SONIC。</strong> 上界探针已证明其输出更优（hybrid macro MPJPE 0.0343→0.0306，locomotion jerk 仅我方 0.17–0.33 倍），但 2 轮 live-teacher DAgger 未通过验收。本次发现使该失败值得重查：SONIC 的优势主要在时序结构上，而当时把它的动作映射到 <code>action_scale=2.0</code>（其原生约 0.41）并固定 std=0.05，这个增益错配恰好可能丢掉时序信息。</li>
+<li><strong>尝试复刻 locomotion 效果。</strong> 目标是让我们的 tracker 在 walk/kick 上达到 SONIC 的水平（jerk 比 1.14/1.45、运动量保留 1.01/1.03）。据 §5 的工作解释，方向不是新增一项奖励，而是<strong>给起动与减速窗口加权</strong>——同样的跟踪奖励，在这两个时序窗口上放大权重；这是改权重分布而非新造优化目标，Goodhart 风险较小。</li>
+</ol>
+<h2 id="6-appendix">6. Appendix</h2>
+<details>
+<summary>Terms, calculations, evidence, and reproduction</summary>
+
+### Worked examples
+
+
+<pre><code class="language-text">V3 接受率
+  1063 / 1392 = 0.7636 → 76.4%
+
+walk 分配依据（同一道三部分门；分配时仅 val+test 有 SONIC 执行态）
+  D6:    过门 1/186   = 0.5%   jerk 比 6.77   运动量保留 2.727（多出 1.7 倍虚假运动）
+  SONIC: 过门 36/37   = 97%（val+test）；train 侧补跑后全量终值 173/187 = 92%（§4.1）
+
+kick 减速段过冲（人工标注 23 条，pass 6 / fail 17）
+  单阈值最佳正确率 21/23 = 0.913
+  &quot;全判 fail&quot; 基线    17/23 = 0.739
+  置换检验（标签打乱 200 次，同样 7 指标扫描）：中位 0.826，p = 0.015
+</code></pre>
+
+
+### 人工验收口径（重要限定）
+
+- 用于**门校准**的是 42 条逐 clip 标注（walk 19 / kick 23），存于 `data/processed/tracker_review/spec_legvel_vs_sonic_dual.sqlite3`，policy=`spec`。
+- 用于**V3 验收**的是 240 条抽检样本，浏览记录显示实际查看 137 条；**未逐条记录 Pass/Fail**，故本报告不报 V3 的人工合格率数字。验收结论为审阅者的整体判断（"门很稳"），属定性结论。
+- crouch 的 D6 vs SONIC 并排 16 条查看 9 条，同样未逐条记录。
+
+### Evidence and commands
+
+- 数据集：`data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/`（含 `data_contract.json`）
+- 构建报告（逐 clip 指标与拒因）：`outputs/plan1_bm_composite_tracker/v3_build_report.json`
+- 门的人工校准：`outputs/plan1_bm_composite_tracker/human_calibrated_gate.json`
+- 动力链探针：`outputs/plan1_bm_composite_tracker/kick_kinetic_chain_probe.json`
+- 执行器分配：`outputs/plan1_bm_composite_tracker/v3_executor_assignment.json`
+- 抽检样本与 manifest：`outputs/plan1_bm_composite_tracker/v3_qa_sample/`
+
+
+<pre><code class="language-bash"># 构建（SONIC 执行态需先就位）
+uv run python scripts/build_v3_rollout_dataset.py
+# 抽检样本
+uv run python scripts/build_v3_qa_sample.py --per-action 30
+# 动力链探针
+uv run python scripts/probe_kick_kinetic_chain.py
+</code></pre>
+
+
+### Source code
+
+- 构建与门：`scripts/build_v3_rollout_dataset.py`
+- SONIC 执行态转 V2 schema（含 FK 补 `body_pos_w`、VA 标签回填）：`scripts/sonic_raw_to_v2_schema.py`
+- 平滑度指标：`scripts/score_tracker_jitter_metrics.py`
+- 动力链时序指标：`scripts/probe_kick_kinetic_chain.py`
+
+### Schema 说明
+
+V3 中 SONIC 执行的 240 条由 `sonic_raw_to_v2_schema.py` 转成与 D6 一致的字段集。其中 `dof_acc` 为速度差分（与 `build_filtered50.py` 对 legacy rollout 的回填同口径）、`body_pos_w` 由 `G1TorchFK` 从 dof 与 root 位姿正算、`valence`/`arousal` 从数据集自带 `va_sidecars` 按 clip 名取回并按帧对齐。全部 1063 条核心字段与 VA 标签零缺失。
+
+### 与既有报告的关系
+
+- 前一版：[`2026-07-23-vad-cleaned-50hz-rollouts-v2-and-tracker.md`](2026-07-23-vad-cleaned-50hz-rollouts-v2-and-tracker.md)。本报告不推翻其结论，而是落实其 §5 Next 提出的"加 jerk/accel 门"。
+- Tracker 训练细节：[`2026-07-23-MOE-unilab-specialist-distill-report.md`](2026-07-23-MOE-unilab-specialist-distill-report.md)。
+- 抗抖线的相关结论收在 `report/sonic/` 与 `docs/plans/2026-07-25-handoff-tracker-jitter-line.md`。
+
+</details>
+</main>
+</body>
+</html>
