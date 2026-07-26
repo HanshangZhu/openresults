@@ -68,7 +68,7 @@ Verdict: <code>PASS</code></p>
 <tbody>
 <tr>
 <td><strong>D6 GTrXL</strong></td>
-<td>DAgger 第 6 轮 GTrXL 学生，V2 的唯一执行器；test BM SR 0.993</td>
+<td>DAgger 第 6 轮 GTrXL 学生，V2 的唯一执行器；test BM SR 0.993。训练与蒸馏过程见 <a href="../moe-unilab-specialist-distill-d6/">MOE specialist distill 报告</a></td>
 <td>本报告中只负责六个非 locomotion 动作</td>
 </tr>
 <tr>
@@ -125,8 +125,18 @@ RMS(x) = sqrt( mean(x²) )，对全部 29 关节 × 全部帧池化
                    参考自身该频带能量（1.0 = 与参考同水平）
     amp_ratio    = 腿部 0.5–4 Hz 主运动带幅度 ÷ 参考同量（≥ 0.79 为过）
 </code></pre>
-<p>各式对应堵住的失败通道：(1)(2) 拦 D6 式的自生抖动；(3) 双边拦 SONIC 式的低通抹平（下界）与抖动性虚增（上界）；(4) 拦 SONIC 式的延迟换平滑。式 (1)–(3) 实现在 <code>scripts/score_tracker_jitter_metrics.py::score_pair</code>，式 (4) 在 <code>scripts/build_v3_rollout_dataset.py::phase_lag_ms</code>，式 (5) 在 <code>scripts/probe_jitter_attribution.py</code>。</p>
-<p>生产门用 (1)(2) 而非校准门 (5) 做抖动项的原因：式 (5) 依赖"安静帧"的存在，短 clip（&lt;140 帧）常常算不出读数（实测 2 条无读数，其中 1 条仅靠幅度会误判）；式 (1)(2) 全 clip 可算，且其阈值 1.5 是 V2 报告事前提出的口径。</p>
+<p>每一式各堵一条 §2 已实测的失败通道：</p>
+<ul>
+<li><strong>式 (1)(2)</strong> 拦<strong>自生抖动</strong>：执行态凭空多出的高频运动（D6 在 locomotion 上的失败模式）。</li>
+<li><strong>式 (3)</strong> 双边：下界拦<strong>低通抹平</strong>（SONIC 把 crouch 蹲浅 15%），上界拦<strong>运动量虚增</strong>（抖动的另一种表现形式）。</li>
+<li><strong>式 (4)</strong> 拦<strong>用延迟买平滑</strong>（SONIC 上肢晚 80–100 ms）。延迟不改变任何整段统计量，式 (1)–(3) 对它全盲，必须单独设项。</li>
+</ul>
+<p>抖动项用式 (1)(2) 而不用校准门的 <code>over_ref_far</code>，两个原因：</p>
+<ul>
+<li><strong>覆盖</strong>：式 (5) 依赖足够多的"安静帧"，短 clip（&lt;140 帧）常算不出读数——42 条标注中 2 条如此，其中 1 条只看幅度会被误判为 pass。式 (1)(2) 对任意长度 clip 可算。</li>
+<li><strong>口径来源</strong>：阈值 1.5 是 V2 报告 §5 事前提出的门控口径，不是本次看数据拟合的。</li>
+</ul>
+<p>实现位置：式 (1)–(3) 在 <code>scripts/score_tracker_jitter_metrics.py::score_pair</code>；式 (4) 在 <code>scripts/build_v3_rollout_dataset.py::phase_lag_ms</code>；式 (5) 在 <code>scripts/probe_jitter_attribution.py</code>。</p>
 <h3 id="32-setup-and-acceptance">3.2 Setup and acceptance</h3>
 <table>
 <thead>
