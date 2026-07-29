@@ -1,0 +1,175 @@
+{
+  "schema": "endeffector_trace_provenance_v1",
+  "walk": {
+    "clip": "00003_walk_val_1006_0_0_83",
+    "action": "walk",
+    "split": "train",
+    "executor": "SONIC",
+    "fps": 50,
+    "frames": 205,
+    "selection": "accepted clip with the LARGEST peak_ee_speed_p99_mps among 51 candidates in the duration window — deliberately the hardest, not the typical",
+    "gate_metrics": {
+      "j_ratio": 1.2436504728498259,
+      "a_ratio": 1.1967534450933335,
+      "v_rms_ratio": 1.0745859610895414,
+      "lag_leg_ms": 20.0,
+      "lag_arm_ms": 80.0
+    },
+    "frames_of_reference": {
+      "root": "world",
+      "feet_wrists": "pelvis-relative (executed minus its own pelvis; reference minus its own pelvis)",
+      "error_row": "world-frame euclidean distance per body"
+    },
+    "body_index_map": {
+      "pelvis": {
+        "executed": 0,
+        "reference": 1
+      },
+      "left foot": {
+        "executed": 3,
+        "reference": 7
+      },
+      "right foot": {
+        "executed": 6,
+        "reference": 13
+      },
+      "left wrist": {
+        "executed": 10,
+        "reference": 23
+      },
+      "right wrist": {
+        "executed": 13,
+        "reference": 30
+      }
+    },
+    "per_body_error": {
+      "pelvis": {
+        "median_m": 0.177547250785089,
+        "p95_m": 0.22777323976132738,
+        "max_m": 0.23554594386192096
+      },
+      "left foot": {
+        "median_m": 0.17892766679334773,
+        "p95_m": 0.2660858014359784,
+        "max_m": 0.2813454872774916
+      },
+      "right foot": {
+        "median_m": 0.2104812170396529,
+        "p95_m": 0.2848527722717634,
+        "max_m": 0.3054180462521602
+      },
+      "left wrist": {
+        "median_m": 0.21446423831168565,
+        "p95_m": 0.26935582829358035,
+        "max_m": 0.2889047489253764
+      },
+      "right wrist": {
+        "median_m": 0.1723742268363927,
+        "p95_m": 0.3086351993122214,
+        "max_m": 0.3555736490765638
+      }
+    },
+    "sources": {
+      "executed": "data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/train/00003_walk_val_1006_0_0_83.npz",
+      "reference": "data/processed/vadcompose_v2_unilab_npz/train/00003_walk_val_1006_0_0_83.npz"
+    },
+    "figure": "docs/report/media/2026-07-29-v3-rev3/traces_walk_fast-ee.png",
+    "duration_window_s": [
+      4.0,
+      10.0
+    ],
+    "candidates_in_window": 51,
+    "select_mode": "fast-ee",
+    "reference_stressors": {
+      "peak_ee_speed_p99_mps": 2.763334406733586,
+      "ref_hf_rms_rad_s": 0.19025473785968133,
+      "mean_arousal": 0.9797043641892875
+    }
+  },
+  "wave_arms": {
+    "clip": "00549_wave_arms_val_208_0_0_116",
+    "action": "wave_arms",
+    "split": "train",
+    "executor": "D6 GTrXL",
+    "fps": 50,
+    "frames": 288,
+    "selection": "accepted clip with the LARGEST peak_ee_speed_p99_mps among 67 candidates in the duration window — deliberately the hardest, not the typical",
+    "gate_metrics": {
+      "j_ratio": 0.9156553254491338,
+      "a_ratio": 1.0396321757783755,
+      "v_rms_ratio": 0.9703018519653802,
+      "lag_leg_ms": 20.0,
+      "lag_arm_ms": 0.0
+    },
+    "frames_of_reference": {
+      "root": "world",
+      "feet_wrists": "pelvis-relative (executed minus its own pelvis; reference minus its own pelvis)",
+      "error_row": "world-frame euclidean distance per body"
+    },
+    "body_index_map": {
+      "pelvis": {
+        "executed": 0,
+        "reference": 1
+      },
+      "left foot": {
+        "executed": 3,
+        "reference": 7
+      },
+      "right foot": {
+        "executed": 6,
+        "reference": 13
+      },
+      "left wrist": {
+        "executed": 10,
+        "reference": 23
+      },
+      "right wrist": {
+        "executed": 13,
+        "reference": 30
+      }
+    },
+    "per_body_error": {
+      "pelvis": {
+        "median_m": 0.02851128503543983,
+        "p95_m": 0.051903409494079844,
+        "max_m": 0.05282545793674496
+      },
+      "left foot": {
+        "median_m": 0.025193432858175928,
+        "p95_m": 0.03798368546026452,
+        "max_m": 0.041168472002206746
+      },
+      "right foot": {
+        "median_m": 0.016700671325743842,
+        "p95_m": 0.02158166549406239,
+        "max_m": 0.023066567378726668
+      },
+      "left wrist": {
+        "median_m": 0.044859320795040625,
+        "p95_m": 0.11602460994399033,
+        "max_m": 0.1413137521998404
+      },
+      "right wrist": {
+        "median_m": 0.03199684930611747,
+        "p95_m": 0.06630901839209734,
+        "max_m": 0.07191368352766753
+      }
+    },
+    "sources": {
+      "executed": "data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/train/00549_wave_arms_val_208_0_0_116.npz",
+      "reference": "data/processed/vadcompose_v2_unilab_npz/train/00549_wave_arms_val_208_0_0_116.npz"
+    },
+    "figure": "docs/report/media/2026-07-29-v3-rev3/traces_wave_arms_fast-ee.png",
+    "duration_window_s": [
+      4.0,
+      10.0
+    ],
+    "candidates_in_window": 67,
+    "select_mode": "fast-ee",
+    "reference_stressors": {
+      "peak_ee_speed_p99_mps": 3.4137829475684853,
+      "ref_hf_rms_rad_s": 0.08772203346907397,
+      "mean_arousal": 0.9961197225170003
+    }
+  }
+}

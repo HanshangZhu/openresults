@@ -1,0 +1,16 @@
+{
+  "schema": "render_provenance_v1",
+  "clip": "00016_walk_val_1174_0_0_40",
+  "action": "walk",
+  "split": "val",
+  "source_npz": "data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/val/00016_walk_val_1174_0_0_40.npz",
+  "executor": "SONIC",
+  "fps": 50,
+  "frames": 98,
+  "views": {
+    "rollout_ref_ghost.mp4": "executed rollout with the reference drawn as a blue translucent ghost",
+    "rollout_exec_only.mp4": "same executed rollout, reference overlay off"
+  },
+  "renderer": "scripts/render_ref_tracker_overlay_mujoco.py via scripts/build_v3_qa_sample.py",
+  "note": "Both videos show the SAME executed trajectory; the toggle only adds/removes the reference overlay. The dataset stores executed state only."
+}

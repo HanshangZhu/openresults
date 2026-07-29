@@ -1,0 +1,163 @@
+{
+  "schema": "endeffector_trace_provenance_v1",
+  "walk": {
+    "clip": "00456_walk_val_1797_2_538_711",
+    "action": "walk",
+    "split": "train",
+    "executor": "SONIC",
+    "fps": 50,
+    "frames": 430,
+    "selection": "accepted clip closest to this action's median on (j_ratio, a_ratio, v_rms_ratio), z-scored, within the stated duration window — not chosen by eye",
+    "gate_metrics": {
+      "j_ratio": 1.1108932372371194,
+      "a_ratio": 1.1475534079011565,
+      "v_rms_ratio": 0.9982465092861351,
+      "lag_leg_ms": 40.0,
+      "lag_arm_ms": 100.0
+    },
+    "frames_of_reference": {
+      "root": "world",
+      "feet_wrists": "pelvis-relative (executed minus its own pelvis; reference minus its own pelvis)",
+      "error_row": "world-frame euclidean distance per body"
+    },
+    "body_index_map": {
+      "pelvis": {
+        "executed": 0,
+        "reference": 1
+      },
+      "left foot": {
+        "executed": 3,
+        "reference": 7
+      },
+      "right foot": {
+        "executed": 6,
+        "reference": 13
+      },
+      "left wrist": {
+        "executed": 10,
+        "reference": 23
+      },
+      "right wrist": {
+        "executed": 13,
+        "reference": 30
+      }
+    },
+    "per_body_error": {
+      "pelvis": {
+        "median_m": 0.1269565255968051,
+        "p95_m": 0.35413606390482266,
+        "max_m": 0.3578857063718738
+      },
+      "left foot": {
+        "median_m": 0.07264216968247503,
+        "p95_m": 0.32102498905235827,
+        "max_m": 0.34338486618926956
+      },
+      "right foot": {
+        "median_m": 0.13536697705292722,
+        "p95_m": 0.3874940164595994,
+        "max_m": 0.3918306746048698
+      },
+      "left wrist": {
+        "median_m": 0.12229402890228956,
+        "p95_m": 0.3424190443450403,
+        "max_m": 0.3535842429282818
+      },
+      "right wrist": {
+        "median_m": 0.1434937505659905,
+        "p95_m": 0.3801092798430563,
+        "max_m": 0.3917025019909948
+      }
+    },
+    "sources": {
+      "executed": "data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/train/00456_walk_val_1797_2_538_711.npz",
+      "reference": "data/processed/vadcompose_v2_unilab_npz/train/00456_walk_val_1797_2_538_711.npz"
+    },
+    "figure": "docs/report/media/2026-07-29-v3-rev3/traces_walk.png",
+    "duration_window_s": [
+      4.0,
+      10.0
+    ],
+    "candidates_in_window": 51
+  },
+  "wave_arms": {
+    "clip": "00008_wave_arms_val_1131_0_0_92",
+    "action": "wave_arms",
+    "split": "val",
+    "executor": "D6 GTrXL",
+    "fps": 50,
+    "frames": 228,
+    "selection": "accepted clip closest to this action's median on (j_ratio, a_ratio, v_rms_ratio), z-scored, within the stated duration window — not chosen by eye",
+    "gate_metrics": {
+      "j_ratio": 0.8780638447173504,
+      "a_ratio": 0.970754623069464,
+      "v_rms_ratio": 0.9914988988448339,
+      "lag_leg_ms": 20.0,
+      "lag_arm_ms": 0.0
+    },
+    "frames_of_reference": {
+      "root": "world",
+      "feet_wrists": "pelvis-relative (executed minus its own pelvis; reference minus its own pelvis)",
+      "error_row": "world-frame euclidean distance per body"
+    },
+    "body_index_map": {
+      "pelvis": {
+        "executed": 0,
+        "reference": 1
+      },
+      "left foot": {
+        "executed": 3,
+        "reference": 7
+      },
+      "right foot": {
+        "executed": 6,
+        "reference": 13
+      },
+      "left wrist": {
+        "executed": 10,
+        "reference": 23
+      },
+      "right wrist": {
+        "executed": 13,
+        "reference": 30
+      }
+    },
+    "per_body_error": {
+      "pelvis": {
+        "median_m": 0.00991900267420433,
+        "p95_m": 0.028864360633256342,
+        "max_m": 0.029836661898995958
+      },
+      "left foot": {
+        "median_m": 0.004865556085645548,
+        "p95_m": 0.006469798080416862,
+        "max_m": 0.0066712785168976906
+      },
+      "right foot": {
+        "median_m": 0.001472915212140441,
+        "p95_m": 0.0025681000091836007,
+        "max_m": 0.0028910410278042697
+      },
+      "left wrist": {
+        "median_m": 0.01984381528472746,
+        "p95_m": 0.047572864529025566,
+        "max_m": 0.049407994501983035
+      },
+      "right wrist": {
+        "median_m": 0.03542936827882494,
+        "p95_m": 0.08958930031355822,
+        "max_m": 0.09165002241878893
+      }
+    },
+    "sources": {
+      "executed": "data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz/val/00008_wave_arms_val_1131_0_0_92.npz",
+      "reference": "data/processed/vadcompose_v2_unilab_npz/val/00008_wave_arms_val_1131_0_0_92.npz"
+    },
+    "figure": "docs/report/media/2026-07-29-v3-rev3/traces_wave_arms.png",
+    "duration_window_s": [
+      4.0,
+      10.0
+    ],
+    "candidates_in_window": 67
+  }
+}

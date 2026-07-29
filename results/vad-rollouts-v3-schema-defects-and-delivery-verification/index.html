@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>V3 rollout 数据集的字段缺陷、交付前核验与失效包络（revision 3）</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>docs/report/2026-07-29-v3-rollout-dataset-schema-defects-and-delivery-verification.md</code></p>
+<h1 id="v3-rollout-revision-3">V3 rollout 数据集的字段缺陷、交付前核验与失效包络（revision 3）</h1>
+<p data-evidence-profile="dataset-verifier" hidden aria-hidden="true"></p>
+
+<blockquote>
+<p>Date/scale: <code>2026-07-29</code> / 1063 clip · 8 动作 · 两个执行器 · 5 个字段缺陷 · 4 路交付审计
+Output profile: <code>markdown-project-report</code>
+Results profile: <code>dataset-verifier</code>
+Verdict: <code>PASS</code></p>
+</blockquote>
+<p>已交付的 V3 数据集（revision 1）里有五处字段级缺陷，其中两处会让下游读到错的数值而任何既有检查都发现不了。本报告记录缺陷与修复、交付前核验，以及数据集本身的位置精度包络；筛选口径来自
+<a href="../vad-cleaned-50hz-rollouts-v3-composite-gate/">三部分门与执行器分配报告</a>，本次未改动。</p>
+<hr>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS。</strong></p>
+<ul>
+<li>Decisive evidence: 接受集与 revision 1 <strong>完全相同</strong>（1063 条，clip 名逐一相同），因为门只读 <code>dof</code> 与参考轨迹，而这两者在新旧导出之间逐字节相同；五处缺陷全部修复并被落盘契约校验器确认（§3 判据表）。</li>
+<li>Counter-signal: <strong>门不测世界坐标位置</strong>。walk 的世界系肢体偏差中位 0.116 m、最差 1.314 m；但同一批 clip 对齐骨盆后中位 0.044 m、全数据集最差也只有 0.128 m（§4 主表、图 2）。局部动作可信，全局轨迹最坏差一米以上，且这些 clip 是按设计入选的，不是漏网。</li>
+<li>Not shown: 未做端到端 planner 训练验证——本次修复不声称改善任何下游指标；<code>reference_body_pos_w</code> 是 anchor-relative 量，不是可复用的参考轨迹（§2）。</li>
+<li>Decision: 交付 <code>..._rev3.tar.zst</code>（sha256 <code>0162201916ec4b27…</code>）；revision 1 与 2 标记作废，持有旧副本者需替换。消费世界坐标轨迹的下游须自行处理漂移。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p><strong>研究问题：交付给下游 planner 训练的这份执行态数据集，其字段内容是否与它自己声明的契约一致；修复后筛选结论是否仍然成立；以及它的位置精度在最坏情况下能差到多少。</strong></p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>accepted set</td>
+<td>通过三部分门（抖动 / 运动量 / 相位）的 clip 集合，本次沿用既有口径未改动</td>
+<td>不是"人工验收通过"；人工只做抽检浏览</td>
+</tr>
+<tr>
+<td>gate-relevant field</td>
+<td>门实际读取的字段：执行态 <code>dof</code> 与参考树的 <code>joint_pos</code>。其余字段变化不影响筛选结果</td>
+<td>与"下游会读的字段"不同，后者由 planner loader 决定</td>
+</tr>
+<tr>
+<td>revision 1 / 2 / 3</td>
+<td>同一数据集的三次构建。1 已交付；2 打包后审计不通过、从未交付；3 为当前交付版</td>
+<td>不是数据集代际 V1/V2/V3</td>
+</tr>
+<tr>
+<td>世界系肢体偏差</td>
+<td>双脚 + 双腕四点，执行与参考同帧世界坐标欧氏距离，逐 clip 取时间中位后按动作聚合。单位 m，↓ 更好</td>
+<td>包含根部漂移；与门读的关节量无关</td>
+</tr>
+<tr>
+<td>对齐骨盆后偏差</td>
+<td>同上四点，但两侧各减去各自骨盆位置后再比。两者之差即累积漂移</td>
+<td><strong>不是</strong>去掉了误差，而是把"全局位置错"与"肢体动作错"拆开</td>
+</tr>
+<tr>
+<td>参考侧 stressor</td>
+<td>难度只从参考轨迹取：末端峰值速度（p99）、参考关节速度 8–25 Hz 能量、clip 平均 arousal</td>
+<td>从执行态取会循环论证——抖的执行既高频又误差大</td>
+</tr>
+<tr>
+<td><code>reference_body_pos_w</code></td>
+<td>采集环境每步相对机器人当前 anchor 重算的参考体位，仅 D6 半边有</td>
+<td><strong>不是</strong>可复用的参考轨迹；它是执行态的闭式函数，无法为另一执行器重建</td>
+</tr>
+<tr>
+<td>contract check</td>
+<td><code>scripts/validate_v3_dataset.py</code>：读数据集自带 <code>data_contract.json</code> 的必需字段与声明源，逐 clip 核对内容不变量；检查了 0 个文件显式判为失败</td>
+<td>与导出期的 <code>validate_vadcompose_50hz_phc.py</code> 不同，后者只作用于导出 manifest</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-method">3. Method</h2>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Setting</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>输入（D6，六个上肢动作）</td>
+<td><code>outputs/plan50_bm_tracker_filter/d6_gtrxl_rollouts_v3_reffix</code>（修复后重导出，1384 条）</td>
+</tr>
+<tr>
+<td>输入（SONIC，kick/walk）</td>
+<td><code>v3_sonic_raw</code>（train）+ <code>eval_sonic_bare_vs_d6/raw</code>（val/test）</td>
+</tr>
+<tr>
+<td>参考树</td>
+<td><code>data/processed/vadcompose_v2_unilab_npz</code>，本次未改动</td>
+</tr>
+<tr>
+<td>VA 标签源</td>
+<td><code>vadcompose_v2_unilab_npz/va_sidecars</code>，契约中声明为 <code>schema.va_label_source</code></td>
+</tr>
+<tr>
+<td>落盘方式</td>
+<td>逐条拷贝（revision 1 为符号链接）</td>
+</tr>
+<tr>
+<td>门</td>
+<td>沿用既有三部分门，阈值与执行器分配均未改动</td>
+</tr>
+<tr>
+<td>位置偏差口径</td>
+<td>全部 1063 条，逐 clip 时间中位 → 按动作取中位 / p90 / 最大，无抽样</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>接受集不变</td>
+<td>clip 名集合与 revision 1 完全相同</td>
+<td>1063 == 1063，集合相等</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>门输入未被改动</td>
+<td>门读取的字段逐字节相同</td>
+<td>1384 条 × 21 字段中 20 个字节相同；门重放两边均 823 条通过，对称差 0</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>无冻结参考</td>
+<td>冻结 clip 数 = 0</td>
+<td>0 / 1063</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>核心字段齐备且约定统一</td>
+<td>16 项必需字段全有；<code>root_rot</code> == <code>root_quat_wxyz</code> 置换</td>
+<td>1063 / 1063</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>单一 VA 版本</td>
+<td>与声明源偏差 = 0 的 clip 数 = 全部</td>
+<td>1063 / 1063</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>校验器非空转</td>
+<td>同一校验器在旧版本上须报失败</td>
+<td>revision 1 报 1064 处、revision 2 报 496 处</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>交付字节可核验</td>
+<td>解包后重验通过</td>
+<td><code>ok=true</code>，1063 条，0 失败</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 状态</summary>
+<p><code>NOT PREREGISTERED — no confirmed Run Spec found after searching: docs/plans/</code>（无 v3 重建或交付相关条目）、<code>outputs/plan50_bm_tracker_filter/</code>（仅有执行脚本 <code>rerun_v3_reffix.sh</code>，非确认版 spec）、既有 V3 报告的 Run Spec 段。</p>
+<p>本次为对既有产物的纠错重建 + 交付核验，沿用已确认的门与执行器分配，未引入新的实验设计或新阈值。§4 的位置偏差与 stressor 分析同样是事后测量，不是预注册判据；筛选口径的确认版 Run Spec 见既有 V3 报告。</p>
+</details>
+<h2 id="4-results">4. Results</h2>
+<h3 id="1063">主表 — 逐动作构成与位置偏差（全部 1063 条）</h3>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>clip 数</th>
+<th>执行器</th>
+<th>世界系 中位 (m ↓)</th>
+<th>世界系 p90 (m ↓)</th>
+<th>世界系 最大 (m ↓)</th>
+<th>对齐骨盆 中位 (m ↓)</th>
+<th>对齐骨盆 最大 (m ↓)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td>173</td>
+<td>SONIC</td>
+<td>0.116</td>
+<td>0.271</td>
+<td><strong>1.314</strong></td>
+<td>0.044</td>
+<td>0.120</td>
+</tr>
+<tr>
+<td>kick</td>
+<td>67</td>
+<td>SONIC</td>
+<td>0.092</td>
+<td>0.205</td>
+<td>0.345</td>
+<td>0.057</td>
+<td>0.128</td>
+</tr>
+<tr>
+<td>punch</td>
+<td>113</td>
+<td>D6</td>
+<td>0.044</td>
+<td>0.110</td>
+<td>0.181</td>
+<td>0.040</td>
+<td>0.105</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td>35</td>
+<td>D6</td>
+<td>0.042</td>
+<td>0.080</td>
+<td>0.100</td>
+<td>0.047</td>
+<td>0.120</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>170</td>
+<td>D6</td>
+<td>0.034</td>
+<td>0.044</td>
+<td>0.113</td>
+<td>0.040</td>
+<td>0.105</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>148</td>
+<td>D6</td>
+<td>0.031</td>
+<td>0.048</td>
+<td>0.096</td>
+<td>0.043</td>
+<td>0.105</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td>175</td>
+<td>D6</td>
+<td>0.030</td>
+<td>0.047</td>
+<td>0.131</td>
+<td>0.033</td>
+<td>0.089</td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>182</td>
+<td>D6</td>
+<td>0.029</td>
+<td>0.049</td>
+<td>0.150</td>
+<td>0.033</td>
+<td>0.102</td>
+</tr>
+</tbody>
+</table>
+<p>世界系最大值与最小的动作中位相差 45 倍（0.029 → 1.314），对齐骨盆后全部收敛到 0.033–0.128 m。两个 locomotion 动作的世界系中位是上肢动作的 3–4 倍，对齐后基本持平。</p>
+<p><img alt="VA 标签版本分裂与三个版本的校验结果" src="assets/fig1_va_vintage_and_validator.png"></p>
+<p><strong>图 1（校验）</strong>：左，revision 2 中每条 clip 的 VA 与冻结 sidecar 的最大偏差，按执行器分色，纵轴对数——SONIC 半边全部落在 0，D6 半边 496 条非零、275 条超过 0.05。右，同一契约校验器在三个版本上报出的失败 clip 数。</p>
+<p><img alt="逐动作两种坐标系的偏差对比与失效包络" src="assets/fig2_failure_slice.png"></p>
+<p><strong>图 2（失效切片）</strong>：左，每个动作两根条形——世界系与对齐骨盆后，两者之差即累积根部漂移，条形重合的动作没有漂移问题。右，三条 clip 的逐帧世界系偏差：典型 walk、数据集内最差 walk、最差 wave_arms。右图 clip 按结果选取（该动作世界系偏差最大者），这正是包络图的用途。</p>
+<h3 id="rollout">代表性 rollout</h3>
+<video src="assets/rollout_ref_ghost.mp4" controls width="480"></video>
+
+<p><code>val/00016_walk_val_1174_0_0_40</code>（walk，SONIC 执行，98 帧 @50Hz），叠加蓝色半透明参考。同一轨迹关闭参考的版本为 <code>rollout_exec_only.mp4</code>；数据集只存执行态，参考不入库。</p>
+<h2 id="5-analysis">5. Analysis</h2>
+<ul>
+<li><strong>Finding：接受集不变，是因为门读取的输入没被改动，不是因为改动小。</strong> 门只消费执行态 <code>dof</code> 与参考树 <code>joint_pos</code>；两次导出在这些字段上逐字节相同，门重放两边同为 823 条通过、对称差 0（§3 判据表第 2 行）。既有报告的过门率、逐动作数字与人工验收结论继续成立；<code>frame_mpjpe_m</code> 亦逐字节相同，已记录的 MPJPE 与 SR 数字不受影响。</li>
+<li><strong>Finding：失效模式只有一种——全局漂移，且只出现在 locomotion。</strong> 世界系偏差跨动作相差 45 倍，对齐骨盆后全部落进 0.033–0.128 m（主表）。最差那条 walk 世界系 1.314 m、对齐后 0.105 m：参考走出去再折返，执行没折返到位，而步态本身跟得住（图 2 右）。上肢动作即使取最差 clip 也只到 0.096–0.181 m。把相对偏差按各动作参考自身的活动幅度归一后为 7.8%–18.7%，locomotion 落在较好的一端（walk 9.2%），即根部漂移不牵连相对动作质量（表 A3）。</li>
+<li><strong>Working interpretation（待验证）：难度指标解释不了这些偏差，动作类型才能。</strong> 三个参考侧 stressor 与漂移的合并秩相关为 0.44 / 0.57 / 0.39，按动作分组后平均降到 0.19 / 0.24 / 0.16；对肢体偏差更彻底，动作内平均 0.08 / 0.07 / −0.00，且符号在动作间翻转。arousal 对肢体偏差的动作内相关正好为 0，说明它是动作类型的代理变量，不是独立难度轴（表 A3）。</li>
+<li><strong>Next：把契约回读固化进流程，并给下游一个明确口径。</strong> <code>scripts/validate_v3_dataset.py</code> 已接入本次交付，后续数据集构建打包前须先通过它。消费<strong>相对姿态</strong>的下游可直接使用；消费<strong>世界坐标轨迹</strong>的须自行处理漂移，或按主表 p90 列设阈值筛选。同族导出 <code>outputs/plan50_bm_tracker_filter/d7_gtrxl_rollouts</code>（1177 条）仍 100% 携带冻结参考且无 validation 记录，未喂任何已交付数据集，是否重导出待定。</li>
+</ul>
+<h2 id="6-appendix">6. Appendix</h2>
+<details>
+<summary>表 A1 — 五处缺陷、影响范围与修复</summary>
+<table>
+<thead>
+<tr>
+<th>缺陷</th>
+<th>影响范围</th>
+<th>为什么既有检查看不见</th>
+<th>修复</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reference_body_pos_w</code> 每帧存同一姿态</td>
+<td>823 条（D6 半边全部）</td>
+<td>字段存在、形状正确、数值有限，形状检查全过</td>
+<td>改用修复后的重导出，0/1384 冻结</td>
+</tr>
+<tr>
+<td><code>root_rot</code> 两半边两种四元数约定</td>
+<td>全部 1063 条</td>
+<td>置换后的单位四元数模长仍为 1</td>
+<td>SONIC 侧改写为 xyzw；<code>root_quat_wxyz</code> 补齐到每条 clip</td>
+</tr>
+<tr>
+<td>VA 标签混两个插值版本</td>
+<td>496 / 823 条 D6（275 条偏差 &gt; 0.05，最大 0.394）</td>
+<td>无任何检查拿契约声明的源头核对内容</td>
+<td>全部 1063 条统一盖 sidecar 版本</td>
+</tr>
+<tr>
+<td><code>reference_frame_index</code> 从 1 起数</td>
+<td>240 条（SONIC 半边全部）</td>
+<td>契约只写字段名，未写取值范围</td>
+<td>转换时改为 0 起，并加保护避免二次偏移</td>
+</tr>
+<tr>
+<td><code>fps</code> dtype 两半边不同</td>
+<td>全部</td>
+<td>同上</td>
+<td>统一 int64</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details>
+<summary>表 A2 — 契约校验器在三个版本上的结果</summary>
+<table>
+<thead>
+<tr>
+<th>Revision</th>
+<th>clip 数</th>
+<th>失败 clip</th>
+<th>主要失败原因</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1063</td>
+<td>1064</td>
+<td>缺 <code>root_quat_wxyz</code>、帧索引违约、四元数键不一致、fps dtype 不统一</td>
+<td>已交付，作废</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1063</td>
+<td>496</td>
+<td>VA 与声明源不符</td>
+<td>未交付，作废</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>1063</strong></td>
+<td><strong>0</strong></td>
+<td>—</td>
+<td><strong>交付</strong></td>
+</tr>
+</tbody>
+</table>
+<p>失败数 1064 大于 clip 数，因为其中一条为数据集级失败（fps dtype 不统一），不归属单条 clip。</p>
+</details>
+<details>
+<summary>表 A3 — 参考侧 stressor 与偏差的秩相关</summary>
+<p>三个 stressor 全部只从参考轨迹计算：末端峰值速度（四个末端点相对骨盆速度的逐帧最大值取 p99）、参考关节速度的 8–25 Hz 带通能量 RMS、clip 平均 arousal。</p>
+<table>
+<thead>
+<tr>
+<th>stressor</th>
+<th>→ 根漂移（合并 / 动作内均值）</th>
+<th>→ 对齐骨盆后肢体偏差（合并 / 动作内均值）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>末端峰值速度</td>
+<td>0.44 / <strong>0.19</strong></td>
+<td>0.22 / <strong>0.08</strong></td>
+</tr>
+<tr>
+<td>参考高频能量</td>
+<td>0.57 / <strong>0.24</strong></td>
+<td>0.27 / <strong>0.07</strong></td>
+</tr>
+<tr>
+<td>clip 平均 arousal</td>
+<td>0.39 / <strong>0.16</strong></td>
+<td>0.14 / <strong>−0.00</strong></td>
+</tr>
+</tbody>
+</table>
+<p>动作内相关很不均匀：漂移侧 crouch 0.44–0.56、punch 0.31–0.40，而 cross_arms 与 kick 接近 0；肢体偏差侧符号在动作间翻转（clap 对高频为 −0.44，walk 为 +0.44）。合并口径不消动作身份这个混淆项，动作内口径消掉，两者结论不同时以后者为准。</p>
+<p>归一化后的相对偏差与根部朝向误差（同一批 1063 条）：</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>相对偏差 / 参考活动幅度</th>
+<th>根部 yaw 误差 中位 (°)</th>
+<th>末帧 (°)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clap</td>
+<td>18.7%</td>
+<td>1.9</td>
+<td>1.6</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td>14.2%</td>
+<td>2.9</td>
+<td>3.5</td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>11.7%</td>
+<td>1.4</td>
+<td>1.6</td>
+</tr>
+<tr>
+<td>kick</td>
+<td>11.2%</td>
+<td>5.4</td>
+<td>9.4</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>11.0%</td>
+<td>3.1</td>
+<td>1.7</td>
+</tr>
+<tr>
+<td>walk</td>
+<td>9.2%</td>
+<td>4.5</td>
+<td>7.2</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td>9.1%</td>
+<td>2.3</td>
+<td>2.1</td>
+</tr>
+<tr>
+<td>punch</td>
+<td>7.8%</td>
+<td>2.5</td>
+<td>2.8</td>
+</tr>
+</tbody>
+</table>
+<p>绝对相对偏差跨动作只差 1.7 倍（0.033–0.057 m），而各动作参考自身的活动幅度差 2.2 倍（0.229–0.506 m），故归一化后的排序与绝对值不同。locomotion 的根部 yaw 误差是上肢动作的 2–3 倍，朝向偏差乘以行程会放大成位置漂移（7.2° × 2 m ≈ 0.25 m，与 walk 根漂移中位 0.185 m 同量级）；本报告未做逐 clip 归因，此处仅为量级对照，不是分解结论。</p>
+</details>
+<details>
+<summary>逐时轨迹图（四张，含 stress 选取）</summary>
+<p>按"该动作已入选 clip 中门指标最接近中位、时长 4–10 秒"自动选取的典型 clip：</p>
+<p><img alt="walk 典型" src="assets/traces_walk.png"></p>
+<p><img alt="wave_arms 典型" src="assets/traces_wave_arms.png"></p>
+<p>按参考侧 stressor 取该时长窗口内最极端的 clip：</p>
+<p><img alt="walk 最高频" src="assets/traces_walk_high-hf.png"></p>
+<p><img alt="wave_arms 最快末端" src="assets/traces_wave_arms_fast-ee.png"></p>
+<p>四行分别为：根部世界坐标（高度与水平行程）、双脚相对骨盆高度、双腕相对骨盆高度、逐帧世界系偏差。根部画世界坐标是因为全局漂移是真实失效模式，画成相对坐标会按定义把它抹掉；肢体画相对骨盆是为了不让根部漂移渗进每条曲线。</p>
+<p>时长窗口是绘图约束不是质量筛选，故这四张图里的"最极端"是窗口内的极端，与主表最大值列不是同一条 clip。</p>
+<p>body 索引两边不通用：执行态存 14 个 tracked body（<code>src/VAD_base_model/geometry/g1_fk.py</code> 的 <code>TRACKED_BODIES</code>），参考树保留 MuJoCo 全量并把 <code>world</code> 留在 index 0，故 pelvis 为 1。配对由平均世界距离核验，落在 0.05–0.07 m 的跟踪误差量级，而非配错会产生的米级。</p>
+<p>选取规则与逐 body 偏差见 <code>assets/traces*.json</code>。</p>
+</details>
+<details>
+<summary>交付物与作废物</summary>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>大小</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data/Tracked_Cleaned_VADCompose_V3_planner50hz_rev3.tar.zst</code></td>
+<td>631,291,053 B</td>
+<td><strong>交付</strong>。sha256 <code>0162201916ec4b27694def77db002329ede4f15a9d9f5199575cfcc0d0b04670</code></td>
+</tr>
+<tr>
+<td><code>..._rev2_SUPERSEDED.tar.zst</code></td>
+<td>631,253,913 B</td>
+<td>从未交付（VA 混版本）</td>
+</tr>
+<tr>
+<td><code>..._rev1_SUPERSEDED.tar.zst</code></td>
+<td>563,536,164 B</td>
+<td>2026-07-26 构建，已交付过；冻结参考 + 缺 <code>root_quat_wxyz</code></td>
+</tr>
+</tbody>
+</table>
+<p>不解包识别版本：读包内 <code>data_contract.json</code> 的 <code>revision</code> 字段；或检查任一 clip 是否含 <code>root_quat_wxyz</code>（revision 1 无）。</p>
+<p>Split 构成：train 850 / val 103 / test 110。执行器特有字段按契约 <code>per_executor_optional_fields</code> 声明保留，不为另一半边伪造——D6 专有六项 <code>body_ang_vel_w</code>、<code>body_quat_wxyz</code>、<code>contact_points</code>、<code>frame_mpjpe_m</code>、<code>policy_action</code>、<code>reference_body_pos_w</code>；SONIC 专有两项 <code>derived_fields</code>、<code>executor</code>。</p>
+</details>
+<details>
+<summary>头条数字的重算方式</summary>
+<p><strong>接受集相同（1063 == 1063）</strong></p>
+<pre><code class="language-bash">uv run python -c &quot;
+from pathlib import Path
+a={p.name for p in Path('data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz').glob('*/*.npz')}
+b={p.name for p in Path('data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz_rev1_SUPERSEDED').glob('*/*.npz')}
+print(len(a), len(b), a==b)&quot;
+</code></pre>
+<p><strong>契约校验（revision 3 → 0 失败）</strong></p>
+<pre><code class="language-bash">uv run python scripts/validate_v3_dataset.py \
+  --dataset data/processed/Tracked_Cleaned_VADCompose_V3_planner50hz
+</code></pre>
+<p><strong>主表与图 2</strong></p>
+<pre><code class="language-bash">uv run python scripts/plot_v3_failure_slice.py
+</code></pre>
+<p>单条 clip 的世界系偏差 = 双脚双腕四点 <code>‖执行 − 参考‖</code> 的逐帧均值再取时间中位；对齐骨盆后 = 同式但两侧各减去各自骨盆位置。逐动作数字落盘于 <code>assets/per_action_deviation.json</code> 与 <code>fig2_failure_slice.json</code>。</p>
+<p><strong>VA 偏差 496 / 275 / 0.394</strong>：对 revision 2 的每条 clip 取 <code>max(|valence − sidecar|, |arousal − sidecar|)</code>，sidecar 按 clip 帧数截断或边缘补齐后比较。统计落盘于 <code>assets/va_deviation_stats.json</code>。</p>
+</details>
+<details>
+<summary>Evidence and commands</summary>
+<ul>
+<li>重建与审计证据：<code>outputs/plan1_bm_composite_tracker/v3_rev2_rebuild_evidence.json</code>（含 <code>revision_3_addendum</code>）</li>
+<li>契约校验报告：<code>outputs/plan1_bm_composite_tracker/v3_rev3_dataset_validation.json</code></li>
+<li>构建记录（逐 clip 门指标与拒因）：<code>outputs/plan1_bm_composite_tracker/v3_build_report.json</code></li>
+<li>数据契约：数据集目录内 <code>data_contract.json</code></li>
+<li>位置偏差与包络：<code>docs/report/assets/{per_action_deviation,fig2_failure_slice,traces*}.json</code></li>
+</ul>
+<p>构建命令：</p>
+<pre><code class="language-bash">uv run python scripts/build_v3_rollout_dataset.py
+# 默认 --d6-rollouts 指向修复后的重导出，--revision 3，非 --link-d6（逐条拷贝）
+</code></pre>
+</details>
+<details>
+<summary>Source code</summary>
+<ul>
+<li>构建：<code>scripts/build_v3_rollout_dataset.py</code>（<code>materialize_clip</code> 执行三项归一化：补 <code>root_quat_wxyz</code>、统一 fps dtype、重盖 VA 标签）</li>
+<li>SONIC schema 转换：<code>scripts/sonic_raw_to_v2_schema.py</code>（四元数约定与帧索引起点在此修正）</li>
+<li>契约校验：<code>scripts/validate_v3_dataset.py</code></li>
+<li>导出期校验：<code>scripts/validate_vadcompose_50hz_phc.py</code>（新增冻结参考内容检查与 <code>vacuous</code> 判定）</li>
+<li>逐时轨迹与 stressor：<code>scripts/plot_v3_endeffector_traces.py</code>（<code>--select median|fast-ee|high-hf|high-arousal</code>）</li>
+<li>失效切片：<code>scripts/plot_v3_failure_slice.py</code></li>
+</ul>
+</details>
+<details>
+<summary>与既有报告的关系</summary>
+<p>本报告<strong>不推翻</strong>
+<a href="../vad-cleaned-50hz-rollouts-v3-composite-gate/">2026-07-26 三部分门与执行器分配报告</a>。
+该报告的主题是筛选口径的设计与依据，其全部数字与结论在本次重建后继续成立（§5 第一条）。本报告负责数据集文件本身的缺陷、修复、交付核验与位置精度包络。</p>
+</details>
+</main>
+</body>
+</html>

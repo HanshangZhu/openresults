@@ -1,0 +1,82 @@
+{
+  "schema": "failure_slice_provenance_v1",
+  "figure": "docs/report/media/2026-07-29-v3-rev3/fig2_failure_slice.png",
+  "left_panel": {
+    "walk": {
+      "n": 173,
+      "median_world_m": 0.11482072542694449,
+      "median_pelvis_aligned_m": 0.04512861899709226
+    },
+    "kick": {
+      "n": 67,
+      "median_world_m": 0.09621456169179257,
+      "median_pelvis_aligned_m": 0.05894195318131957
+    },
+    "punch": {
+      "n": 113,
+      "median_world_m": 0.045309853001697514,
+      "median_pelvis_aligned_m": 0.04107490574320591
+    },
+    "crouch": {
+      "n": 35,
+      "median_world_m": 0.04242501989643528,
+      "median_pelvis_aligned_m": 0.0470808194578944
+    },
+    "cross_arms": {
+      "n": 170,
+      "median_world_m": 0.0354398049247117,
+      "median_pelvis_aligned_m": 0.04086552502926633
+    },
+    "clap": {
+      "n": 148,
+      "median_world_m": 0.03180316060209622,
+      "median_pelvis_aligned_m": 0.04504479586785404
+    },
+    "wave_arms": {
+      "n": 175,
+      "median_world_m": 0.029773334083270226,
+      "median_pelvis_aligned_m": 0.033668951096547495
+    },
+    "handshake": {
+      "n": 182,
+      "median_world_m": 0.029683870529024478,
+      "median_pelvis_aligned_m": 0.032580786939487065
+    }
+  },
+  "right_panel": {
+    "01024_walk_val_837_1_53_95": {
+      "label": "walk · typical",
+      "selected_as": "median",
+      "action": "walk",
+      "median_world_m": 0.11482072542694449,
+      "median_pelvis_aligned_m": 0.05920785619179508,
+      "final_m": 0.1450431690122237,
+      "frames": 102
+    },
+    "00679_walk_val_353_1_50_1298": {
+      "label": "walk · worst in dataset",
+      "selected_as": "worst",
+      "action": "walk",
+      "median_world_m": 1.3024834926285807,
+      "median_pelvis_aligned_m": 0.10969127542896798,
+      "final_m": 1.6510837900295072,
+      "frames": 3118
+    },
+    "00119_wave_arms_val_739_2_672_755": {
+      "label": "wave_arms · worst in dataset",
+      "selected_as": "worst",
+      "action": "wave_arms",
+      "median_world_m": 0.13325133644101594,
+      "median_pelvis_aligned_m": 0.054844169434974055,
+      "final_m": 0.1311492401815865,
+      "frames": 206
+    }
+  },
+  "limb_set": [
+    "L foot",
+    "R foot",
+    "L wrist",
+    "R wrist"
+  ],
+  "note": "Stressor ranking uses reference-side high-frequency joint-velocity energy; ranking on the executed trajectory would be circular."
+}
