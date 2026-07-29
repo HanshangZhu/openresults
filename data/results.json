@@ -2,15 +2,15 @@
   "results": [
     {
       "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
-      "title": "Rollouts V3 revision 3: schema defects, delivery verification, and the tracking-quality envelope",
+      "title": "Rollouts V3: delivery verification and the tracking-quality envelope",
       "date": "2026-07-29",
       "project": "VAD Alignment",
       "category": "Dataset & Tracker",
       "status": "PASS",
-      "summary": "The shipped V3 dataset carried five field-level defects, two of which no existing check could detect: a reference trajectory that stored one pose repeated for every frame, and a root_rot key holding xyzw on one executor half and wxyz on the other (a permuted unit quaternion still has unit norm, so every norm check passed). Rebuilding leaves the accepted set bit-identical because the gate reads only joint angles. Measuring what the gate never measured: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m), but after aligning the pelvis every action collapses into 0.033-0.128 m — the failure mode is purely accumulated root drift, and only in locomotion.",
+      "summary": "50Hz executed-state humanoid trajectories for planner training: 1063 of 1392 candidate clips pass a three-part gate on jitter, motion preservation and phase lag. The gate reads joint angles only, so this report measures what it never did — world-frame limb deviation spans 45x across actions (0.029 to 1.314 m), but collapses to 0.033-0.128 m once the pelvis is aligned. The failure mode is accumulated root drift and it appears only in locomotion; relative limb motion holds everywhere. Ships with a contract checker that reports 1064 and 496 failures on the two builds this one replaces.",
       "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
       "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
-      "thumbnailAlt": "Per-action limb deviation in world frame versus pelvis-aligned, beside the per-frame deviation envelope for the worst and a typical walk clip",
+      "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
       "tags": [
         "Humanoid control",
         "Motion tracking",
@@ -23,16 +23,16 @@
       ],
       "metrics": [
         {
-          "value": "0 / 1063",
-          "label": "clips failing the shipped contract check (1064 on the superseded build)"
-        },
-        {
-          "value": "5",
-          "label": "field defects fixed, two undetectable by any prior check"
+          "value": "1063/1392",
+          "label": "clips passing the three-part gate (76.4%)"
         },
         {
           "value": "0.033-0.128 m",
-          "label": "pelvis-aligned limb deviation, all 8 actions (world frame reaches 1.314 m)"
+          "label": "pelvis-aligned limb deviation, all 8 actions"
+        },
+        {
+          "value": "1.314 m",
+          "label": "worst world-frame deviation, from root drift alone"
         }
       ]
     },

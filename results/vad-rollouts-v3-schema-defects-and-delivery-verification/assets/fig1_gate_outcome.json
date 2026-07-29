@@ -1,0 +1,118 @@
+{
+  "schema": "gate_outcome_provenance_v1",
+  "figure": "docs/report/media/2026-07-29-v3-rev3/fig1_gate_outcome.png",
+  "gate": {
+    "jerk_max": 1.5,
+    "accel_max": 1.5,
+    "vrms_lo": 0.85,
+    "vrms_hi": 1.15,
+    "lag_max_ms": 40.0
+  },
+  "per_action": {
+    "crouch": {
+      "executor": "D6_GTrXL",
+      "total": 82,
+      "accepted": 35,
+      "reasons": {
+        "jerk": 36,
+        "accel": 41,
+        "motion_preservation": 26
+      },
+      "accept_rate": 0.427
+    },
+    "kick": {
+      "executor": "SONIC",
+      "total": 138,
+      "accepted": 67,
+      "reasons": {
+        "jerk": 66,
+        "accel": 58,
+        "motion_preservation": 30,
+        "phase_lag": 24
+      },
+      "accept_rate": 0.486
+    },
+    "punch": {
+      "executor": "D6_GTrXL",
+      "total": 161,
+      "accepted": 113,
+      "reasons": {
+        "jerk": 22,
+        "accel": 31,
+        "motion_preservation": 27
+      },
+      "accept_rate": 0.702
+    },
+    "clap": {
+      "executor": "D6_GTrXL",
+      "total": 197,
+      "accepted": 148,
+      "reasons": {
+        "jerk": 38,
+        "accel": 43,
+        "motion_preservation": 33,
+        "phase_lag": 2,
+        "no_executed_rollout": 1
+      },
+      "accept_rate": 0.751
+    },
+    "handshake": {
+      "executor": "D6_GTrXL",
+      "total": 227,
+      "accepted": 182,
+      "reasons": {
+        "jerk": 33,
+        "accel": 44,
+        "motion_preservation": 19
+      },
+      "accept_rate": 0.802
+    },
+    "wave_arms": {
+      "executor": "D6_GTrXL",
+      "total": 204,
+      "accepted": 175,
+      "reasons": {
+        "jerk": 25,
+        "accel": 27,
+        "motion_preservation": 14,
+        "no_executed_rollout": 1
+      },
+      "accept_rate": 0.858
+    },
+    "cross_arms": {
+      "executor": "D6_GTrXL",
+      "total": 196,
+      "accepted": 170,
+      "reasons": {
+        "jerk": 21,
+        "accel": 22,
+        "motion_preservation": 7,
+        "no_executed_rollout": 1
+      },
+      "accept_rate": 0.867
+    },
+    "walk": {
+      "executor": "SONIC",
+      "total": 187,
+      "accepted": 173,
+      "reasons": {
+        "jerk": 9,
+        "accel": 4,
+        "motion_preservation": 1,
+        "phase_lag": 4
+      },
+      "accept_rate": 0.925
+    }
+  },
+  "totals": {
+    "clips_considered": 1392,
+    "accepted": 1063,
+    "accept_rate": 0.764
+  },
+  "contract_check_failures": {
+    "build 1": 1064,
+    "build 2": 496,
+    "shipped": 0
+  },
+  "note": "A clip may fail several criteria, so reject bars are independent counts and their sum can exceed the number of rejected clips."
+}
