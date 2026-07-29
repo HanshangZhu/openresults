@@ -586,6 +586,17 @@ RMS(x) = sqrt( mean(x²) )，对全部 29 关节 × 全部帧池化
 <p>控制器特有字段按契约 <code>per_executor_optional_fields</code> 声明保留，不为另一半边伪造：D6 专有六项 <code>body_ang_vel_w</code>、<code>body_quat_wxyz</code>、<code>contact_points</code>、<code>frame_mpjpe_m</code>、<code>policy_action</code>、<code>reference_body_pos_w</code>；SONIC 专有两项 <code>derived_fields</code>、<code>executor</code>。其中 <code>reference_body_pos_w</code> 是采集环境每步相对机器人当前 anchor 重算的参考体位，是执行态的闭式函数，<strong>不是</strong>可复用的参考轨迹，也无法为另一控制器重建——这是它只在 D6 半边存在的原因。</p>
 </details>
 <details>
+<summary>被拒 clip 的目视审查</summary>
+<p>判据拒掉的 329 条不在数据集内。为便于核对判据在拦什么，每个动作取 3 条被拒 clip——按判据组合分组、各取该组内<strong>最靠近阈值</strong>的一条，因为差得远的没有争议，卡在线上的才决定阈值定得对不对——再配 1 条同动作已入选 clip 作对照。</p>
+<p><code><a href="gate-gallery/"><strong>打开被拒 clip 画廊 →</strong></a>（静态只读，没有后端，无法接受标注）</code></p>
+<p>本机可用审核程序打开完整版（684 条，含全部 326 条有执行态的被拒 clip）：</p>
+<pre><code class="language-bash">PYTHONPATH=src uv run --with flask python -m VAD_evaluator.review_app.server \
+  --tracker-manifest outputs/plan1_bm_composite_tracker/v3_gate_review/tracker_review_manifest.json \
+  --db data/processed/tracker_review/v3_gate_review.sqlite3
+</code></pre>
+<p>被拒 clip 距阈值的分布：133 条在 1.2 倍以内、118 条 1.2–2 倍、68 条 2–5 倍、7 条超 5 倍。walk 一条都没超过 2 倍，clap 最脏（18 条 2–5 倍、3 条超 5 倍）。</p>
+</details>
+<details>
 <summary>逐时轨迹图（四张，含极端 clip）</summary>
 <p>按"该动作已入选 clip 中门指标最接近中位、时长 4–10 秒"自动选取的典型 clip：</p>
 <p><img alt="walk 典型" src="assets/traces_walk.png"></p>
