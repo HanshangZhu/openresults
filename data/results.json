@@ -2,12 +2,12 @@
   "results": [
     {
       "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
-      "title": "Rollouts V3: delivery verification and the tracking-quality envelope",
+      "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
       "date": "2026-07-29",
       "project": "VAD Alignment",
       "category": "Dataset & Tracker",
       "status": "PASS",
-      "summary": "50Hz executed-state humanoid trajectories for planner training: 1063 of 1392 candidate clips pass a three-part gate on jitter, motion preservation and phase lag. The gate reads joint angles only, so this report measures what it never did — world-frame limb deviation spans 45x across actions (0.029 to 1.314 m), but collapses to 0.033-0.128 m once the pelvis is aligned. The failure mode is accumulated root drift and it appears only in locomotion; relative limb motion holds everywhere. Ships with a contract checker that reports 1064 and 496 failures on the two builds this one replaces.",
+      "summary": "50Hz executed-state humanoid trajectories for planner training. Two controllers with complementary measured failure modes split the work: D6 GTrXL self-generates jitter on locomotion (jerk 6.8x/4.4x reference) while SONIC low-passes motion away and runs its arms 80-100 ms late, so kick and walk go to SONIC and the six upper-body actions to D6. Four criteria on joint kinematics keep 1063 of 1392 clips. Because none of them reads world position, this report measures that separately: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m) but collapses to 0.033-0.128 m once the pelvis is aligned — the failure mode is accumulated root drift, only in locomotion, and relative limb motion holds everywhere.",
       "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
       "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
       "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
@@ -24,15 +24,15 @@
       "metrics": [
         {
           "value": "1063/1392",
-          "label": "clips passing the three-part gate (76.4%)"
+          "label": "clips passing the four criteria (76.4%, 10111 s)"
+        },
+        {
+          "value": "92% vs 0.5%",
+          "label": "walk gate pass rate, SONIC vs D6 under the same criteria"
         },
         {
           "value": "0.033-0.128 m",
           "label": "pelvis-aligned limb deviation, all 8 actions"
-        },
-        {
-          "value": "1.314 m",
-          "label": "worst world-frame deviation, from root drift alone"
         }
       ]
     },
