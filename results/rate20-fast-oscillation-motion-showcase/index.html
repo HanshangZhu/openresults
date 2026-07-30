@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preliminary：池内快振荡上肢动作 rate20 × 五 tracker（动作展示）</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:26px 0 6px}
+p,li{color:var(--soft)}a{color:#8bc8ff}code{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#000}
+.source{font-size:12px;color:#8fa2b8;margin:2px 0 8px}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="../../assets/gate.css?v=__BUILD_VERSION__">
+<script src="../../assets/gate.js?v=__BUILD_VERSION__" defer></script>
+</head>
+<body>
+<header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>
+
+<main>
+<p class="source">OpenResults · preliminary report</p>
+<h1>Preliminary：池内快振荡上肢动作 rate20 × 五 tracker（动作展示）</h1>
+<blockquote>
+<p><strong>Status:</strong> preliminary · <strong>Date:</strong> 2026-07-30<br>
+<strong>范围：</strong>本页只展示动作执行视频，<strong>不含任何指标、比较结论或判定</strong>；
+定量结果另行成文。</p>
+</blockquote>
+
+<h2>数据筛选</h2>
+<p>在 VADCompose V2 release 全量（train + val 共 11,946 条已重定向 G1 序列，约 79 小时，20 fps）上，
+用 4 秒滑窗扫描骨盆局部坐标系下的双腕轨迹，按自相关主周期和逐周期幅度标出持续振荡的时间窗。
+只保留满足三个条件的窗口：至少 3 个完整周期、逐周期幅度不低于 0.15 m、且窗口落在已人工审核的
+参考池片段内部；动作类 walk 与 kick 整类排除。每个片段取其中最快的一个窗口，按主频从高到低取前
+20 条（1.67–2.22 Hz；类别构成 punch 9、wave_arms 7、handshake 3、cross_arms 1），展示与评分窗口直接对准标出的振荡段。</p>
+
+<h2>held lookahead 与 native lookahead 的区别</h2>
+<p>GMT (native) 每个控制步读取当前到未来 0.9 秒内的 10 个参考采样点，GMT (held) 用完全相同的
+模型权重、但把未来 9 个槽位全部替换成当前帧——两臂只差"未来参考输入"这一项。</p>
+
+<h2>怎么看视频</h2>
+<ul>
+<li>每条视频五格并排，顺序为 <code>GMT (native)</code> / <code>GMT (held)</code> /
+<code>TWIST</code> / <code>SONIC</code> / <code>D6</code>。</li>
+<li>每格中：机器人本体 = 该 tracker 的物理执行；<strong>蓝色半透明 ghost = 参考动作</strong>，
+同一时刻、同一相机。蓝色露出来的部分就是执行没跟上的部分。</li>
+</ul>
+
+<h2>20 条动作（按振荡主频降序）</h2>
+
+<h3 id="r1">#1 · wave_arms · 2.22 Hz · 振荡幅度 0.15 m</h3>
+<p class="source">clip <code>00053_wave_arms_val_1095_0_0_546</code> · 振荡段 8 个周期 · f×A 0.34 m/s</p>
+<video controls preload="none" src="assets/train_00053_wave_arms_val_1095_0_0_546__grid.mp4"></video>
+
+<h3 id="r2">#2 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
+<p class="source">clip <code>00626_punch_val_288_1_153_531</code> · 振荡段 8 个周期 · f×A 0.55 m/s</p>
+<video controls preload="none" src="assets/train_00626_punch_val_288_1_153_531__grid.mp4"></video>
+
+<h3 id="r3">#3 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
+<p class="source">clip <code>00609_punch_val_271_1_44_491</code> · 振荡段 8 个周期 · f×A 0.54 m/s</p>
+<video controls preload="none" src="assets/train_00609_punch_val_271_1_44_491__grid.mp4"></video>
+
+<h3 id="r4">#4 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
+<p class="source">clip <code>00619_punch_val_283_0_0_383</code> · 振荡段 8 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00619_punch_val_283_0_0_383__grid.mp4"></video>
+
+<h3 id="r5">#5 · wave_arms · 2.00 Hz · 振荡幅度 0.23 m</h3>
+<p class="source">clip <code>00354_wave_arms_val_1616_2_155_655</code> · 振荡段 8 个周期 · f×A 0.46 m/s</p>
+<video controls preload="none" src="assets/train_00354_wave_arms_val_1616_2_155_655__grid.mp4"></video>
+
+<h3 id="r6">#6 · punch · 2.00 Hz · 振荡幅度 0.21 m</h3>
+<p class="source">clip <code>00711_punch_val_393_0_0_118</code> · 振荡段 8 个周期 · f×A 0.42 m/s</p>
+<video controls preload="none" src="assets/train_00711_punch_val_393_0_0_118__grid.mp4"></video>
+
+<h3 id="r7">#7 · handshake · 1.82 Hz · 振荡幅度 0.29 m</h3>
+<p class="source">clip <code>00816_handshake_val_510_2_129_225</code> · 振荡段 7 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00816_handshake_val_510_2_129_225__grid.mp4"></video>
+
+<h3 id="r8">#8 · handshake · 1.82 Hz · 振荡幅度 0.29 m</h3>
+<p class="source">clip <code>00831_handshake_val_525_2_94_244</code> · 振荡段 7 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00831_handshake_val_525_2_94_244__grid.mp4"></video>
+
+<h3 id="r9">#9 · punch · 1.82 Hz · 振荡幅度 0.29 m</h3>
+<p class="source">clip <code>00560_punch_val_218_2_381_807</code> · 振荡段 7 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00560_punch_val_218_2_381_807__grid.mp4"></video>
+
+<h3 id="r10">#10 · punch · 1.82 Hz · 振荡幅度 0.29 m</h3>
+<p class="source">clip <code>00803_punch_val_4_0_0_417</code> · 振荡段 7 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00803_punch_val_4_0_0_417__grid.mp4"></video>
+
+<h3 id="r11">#11 · wave_arms · 1.82 Hz · 振荡幅度 0.27 m</h3>
+<p class="source">clip <code>00219_wave_arms_val_1399_1_81_371</code> · 振荡段 7 个周期 · f×A 0.49 m/s</p>
+<video controls preload="none" src="assets/train_00219_wave_arms_val_1399_1_81_371__grid.mp4"></video>
+
+<h3 id="r12">#12 · wave_arms · 1.82 Hz · 振荡幅度 0.25 m</h3>
+<p class="source">clip <code>00432_wave_arms_val_1756_0_0_495</code> · 振荡段 7 个周期 · f×A 0.45 m/s</p>
+<video controls preload="none" src="assets/train_00432_wave_arms_val_1756_0_0_495__grid.mp4"></video>
+
+<h3 id="r13">#13 · punch · 1.82 Hz · 振荡幅度 0.24 m</h3>
+<p class="source">clip <code>00558_punch_val_217_0_0_118</code> · 振荡段 7 个周期 · f×A 0.43 m/s</p>
+<video controls preload="none" src="assets/train_00558_punch_val_217_0_0_118__grid.mp4"></video>
+
+<h3 id="r14">#14 · wave_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
+<p class="source">clip <code>00223_wave_arms_val_1406_0_0_154</code> · 振荡段 7 个周期 · f×A 0.31 m/s</p>
+<video controls preload="none" src="assets/train_00223_wave_arms_val_1406_0_0_154__grid.mp4"></video>
+
+<h3 id="r15">#15 · wave_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
+<p class="source">clip <code>01047_wave_arms_val_880_0_0_115</code> · 振荡段 7 个周期 · f×A 0.31 m/s</p>
+<video controls preload="none" src="assets/train_01047_wave_arms_val_880_0_0_115__grid.mp4"></video>
+
+<h3 id="r16">#16 · cross_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
+<p class="source">clip <code>00786_cross_arms_val_478_1_580_780</code> · 振荡段 7 个周期 · f×A 0.30 m/s</p>
+<video controls preload="none" src="assets/train_00786_cross_arms_val_478_1_580_780__grid.mp4"></video>
+
+<h3 id="r17">#17 · wave_arms · 1.82 Hz · 振荡幅度 0.16 m</h3>
+<p class="source">clip <code>00059_wave_arms_val_1651_2_188_617</code> · 振荡段 7 个周期 · f×A 0.29 m/s</p>
+<video controls preload="none" src="assets/val_00059_wave_arms_val_1651_2_188_617__grid.mp4"></video>
+
+<h3 id="r18">#18 · handshake · 1.82 Hz · 振荡幅度 0.16 m</h3>
+<p class="source">clip <code>00130_handshake_val_910_1_256_357</code> · 振荡段 7 个周期 · f×A 0.29 m/s</p>
+<video controls preload="none" src="assets/test_00130_handshake_val_910_1_256_357__grid.mp4"></video>
+
+<h3 id="r19">#19 · punch · 1.67 Hz · 振荡幅度 0.36 m</h3>
+<p class="source">clip <code>00802_punch_val_49_1_71_208</code> · 振荡段 6 个周期 · f×A 0.60 m/s</p>
+<video controls preload="none" src="assets/train_00802_punch_val_49_1_71_208__grid.mp4"></video>
+
+<h3 id="r20">#20 · punch · 1.67 Hz · 振荡幅度 0.32 m</h3>
+<p class="source">clip <code>00540_punch_val_19_1_94_554</code> · 振荡段 6 个周期 · f×A 0.53 m/s</p>
+<video controls preload="none" src="assets/train_00540_punch_val_19_1_94_554__grid.mp4"></video>
+
+<hr>
+<p class="source">Provenance：选片与窗口来自 VADCompose V2 全量滑窗扫描
+（<code>v2_fullscan_rate_windows.json</code>，5,558 个合格窗全量落盘可复用）；
+本批 Run Spec 见研究仓库
+<code>docs/plans/2026-07-29-plan-experiment-crosstracker-stress-highfreq.md</code> §20。</p>
+</main>
+</body>
+</html>

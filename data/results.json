@@ -1,6 +1,42 @@
 {
   "results": [
     {
+      "slug": "rate20-fast-oscillation-motion-showcase",
+      "title": "Preliminary: fastest sustained upper-limb oscillations in-pool, executed by five trackers (motion showcase)",
+      "date": "2026-07-30",
+      "project": "VAD Alignment",
+      "category": "Tracker Evaluation",
+      "status": "PRELIMINARY",
+      "summary": "Motion showcase only, no metrics or verdicts. A sliding-window scan of the full VADCompose V2 release (11,946 retargeted G1 sequences, ~79 h) flags sustained wrist oscillations by autocorrelation period and per-cycle amplitude; the 20 fastest windows that fall inside reviewed reference-pool segments (walk/kick excluded, 1.67-2.22 Hz) are executed by five trackers and shown side by side with a reference ghost overlay.",
+      "path": "results/rate20-fast-oscillation-motion-showcase/",
+      "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
+      "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "VADCompose V2",
+        "Fast oscillation",
+        "Preliminary",
+        "Showcase"
+      ],
+      "metrics": [
+        {
+          "value": "20",
+          "label": "clips, fastest in-pool oscillation windows"
+        },
+        {
+          "value": "1.67-2.22 Hz",
+          "label": "wrist oscillation dominant frequency"
+        },
+        {
+          "value": "5",
+          "label": "trackers side by side per clip"
+        }
+      ]
+    },
+    {
       "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
       "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
       "date": "2026-07-29",
