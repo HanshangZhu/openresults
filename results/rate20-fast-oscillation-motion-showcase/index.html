@@ -89,6 +89,23 @@ html.openresults-gated body { background: #08111d; }
 </table>
 <p>GMT (native) − GMT (held) 的逐条保留率配对差：16/20 条为负，中位 -0.0425，σ 0.0659。</p>
 
+<h2>分信号峰峰值保留率</h2>
+<p>把幅度族的四个信号各自在打分窗内取 p95−p5 稳健峰峰值，保留率 = 执行 ÷ 参考；
+参考侧峰峰值不足 0.03 m 的条目不计保留率（该信号在这条动作里本身没有可测的摆动）。
+参考侧峰峰值中位：双腕间距 0.113 m（20/20 条可测）、
+双腕相对高度 0.041 m（16/20 条可测）、
+四末端展开 0.021 m（3/20 条可测）、
+骨盆高度 0.012 m（1/20 条可测）——后两个信号可测条数不足，
+不列保留率。</p>
+<table>
+<tr><th>臂</th><th>双腕间距保留率 中位 [IQR]</th><th>双腕相对高度保留率 中位 [IQR]</th></tr>
+<tr><td>GMT (native)</td><td>0.942 [0.866, 1.025]（n=20）</td><td>1.036 [0.752, 1.055]（n=16）</td></tr>
+<tr><td>GMT (held)</td><td>0.972 [0.909, 1.052]（n=20）</td><td>1.065 [0.846, 1.170]（n=16）</td></tr>
+<tr><td>TWIST</td><td>1.024 [0.964, 1.072]（n=20）</td><td>1.195 [1.019, 1.359]（n=16）</td></tr>
+<tr><td>SONIC</td><td>0.834 [0.728, 0.917]（n=20）</td><td>1.002 [0.827, 1.084]（n=15）</td></tr>
+<tr><td>D6</td><td>0.815 [0.744, 0.906]（n=20）</td><td>0.977 [0.889, 1.072]（n=16）</td></tr>
+</table>
+
 <h2>逐条保留率（按主频降序）</h2>
 <table>
 <tr><th>#</th><th>类</th><th>clip</th><th>f Hz</th><th>振荡幅度 m</th>
@@ -342,7 +359,7 @@ html.openresults-gated body { background: #08111d; }
 （<code>v2_fullscan_rate_windows.json</code>，5,558 个合格窗全量落盘可复用）；
 本批 Run Spec 与判定见研究仓库
 <code>docs/plans/2026-07-29-plan-experiment-crosstracker-stress-highfreq.md</code> §20。
-指标数字来自 <code>probe_amp_retention_rate20.json</code> 与 <code>metrics_rate20.json</code>，
+指标数字来自 <code>probe_amp_retention_rate20.json</code>、<code>probe_amp_family_retention_rate20.json</code> 与 <code>metrics_rate20.json</code>，
 页面由脚本从这两份产物生成，无手敲数字。</p>
 </main>
 </body>
