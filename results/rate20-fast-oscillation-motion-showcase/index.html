@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Preliminary：池内快振荡上肢动作 rate20 × 五 tracker（测量结果陈列）</title>
+<title>Preliminary：Tracker 性能审查——快振荡上肢动作 × 五 tracker</title>
 <style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
 --cyan:#62b6ff;--mono:"SFMono-Regular",Consolas,monospace}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
@@ -41,7 +41,7 @@ html.openresults-gated body { background: #08111d; }
 
 <main>
 <p class="source">OpenResults · preliminary report</p>
-<h1>Preliminary：池内快振荡上肢动作 rate20 × 五 tracker</h1>
+<h1>Preliminary：Tracker 性能审查——快振荡上肢动作 × 五 tracker</h1>
 <blockquote>
 <p><strong>Status:</strong> preliminary · <strong>Date:</strong> 2026-07-30<br>
 <strong>范围：</strong>本页完整陈列测量结果（视频、曲线、指标），
@@ -124,6 +124,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00053_wave_arms_val_1095_0_0_546__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00053_wave_arms_val_1095_0_0_546__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.950，link 误差 0.0257 m</li><li>GMT (held)：腕幅度保留率 0.890，link 误差 0.0259 m</li><li>TWIST：腕幅度保留率 1.103，link 误差 0.0630 m</li><li>SONIC：腕幅度保留率 0.944，link 误差 0.0142 m</li><li>D6：腕幅度保留率 0.773，link 误差 0.0203 m</li></ul>
 
 <h3 id="r2">#2 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
@@ -133,6 +135,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00626_punch_val_288_1_153_531__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00626_punch_val_288_1_153_531__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.657，link 误差 0.0437 m，主频 exec/ref 2.08/2.08 Hz</li><li>GMT (held)：腕幅度保留率 0.865，link 误差 0.0522 m，主频 exec/ref 2.08/2.08 Hz</li><li>TWIST：腕幅度保留率 1.089，link 误差 0.0578 m，主频 exec/ref 2.08/2.08 Hz</li><li>SONIC：腕幅度保留率 0.663，link 误差 0.0290 m，主频 exec/ref 2.08/2.08 Hz</li><li>D6：腕幅度保留率 0.880，link 误差 0.0235 m，主频 exec/ref 2.08/2.08 Hz</li></ul>
 
 <h3 id="r3">#3 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
@@ -142,6 +146,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00609_punch_val_271_1_44_491__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00609_punch_val_271_1_44_491__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 1.096，link 误差 0.0182 m</li><li>GMT (held)：腕幅度保留率 1.125，link 误差 0.0224 m</li><li>TWIST：腕幅度保留率 0.975，link 误差 0.0451 m</li><li>SONIC：腕幅度保留率 0.965，link 误差 0.0193 m</li><li>D6：腕幅度保留率 0.888，link 误差 0.0356 m</li></ul>
 
 <h3 id="r4">#4 · punch · 2.00 Hz · 振荡幅度 0.27 m</h3>
@@ -151,6 +157,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00619_punch_val_283_0_0_383__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00619_punch_val_283_0_0_383__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.824，link 误差 0.0488 m，主频 exec/ref 1.92/1.92 Hz</li><li>GMT (held)：腕幅度保留率 0.979，link 误差 0.0613 m，主频 exec/ref 1.92/1.92 Hz</li><li>TWIST：腕幅度保留率 1.087，link 误差 0.0634 m，主频 exec/ref 1.92/1.92 Hz</li><li>SONIC：腕幅度保留率 0.741，link 误差 0.0283 m，主频 exec/ref 1.92/1.92 Hz</li><li>D6：腕幅度保留率 0.894，link 误差 0.0363 m，主频 exec/ref 1.92/1.92 Hz</li></ul>
 
 <h3 id="r5">#5 · wave_arms · 2.00 Hz · 振荡幅度 0.23 m</h3>
@@ -160,6 +168,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00354_wave_arms_val_1616_2_155_655__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00354_wave_arms_val_1616_2_155_655__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.908，link 误差 0.0242 m</li><li>GMT (held)：腕幅度保留率 0.930，link 误差 0.0241 m</li><li>TWIST：腕幅度保留率 0.888，link 误差 0.0600 m</li><li>SONIC：腕幅度保留率 0.833，link 误差 0.0157 m</li><li>D6：腕幅度保留率 0.872，link 误差 0.0201 m</li></ul>
 
 <h3 id="r6">#6 · punch · 2.00 Hz · 振荡幅度 0.21 m</h3>
@@ -169,6 +179,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00711_punch_val_393_0_0_118__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00711_punch_val_393_0_0_118__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.970，link 误差 0.0231 m</li><li>GMT (held)：腕幅度保留率 0.966，link 误差 0.0246 m</li><li>TWIST：腕幅度保留率 0.973，link 误差 0.0416 m</li><li>SONIC：腕幅度保留率 0.895，link 误差 0.0182 m</li><li>D6：腕幅度保留率 0.779，link 误差 0.0358 m</li></ul>
 
 <h3 id="r7">#7 · handshake · 1.82 Hz · 振荡幅度 0.29 m</h3>
@@ -178,6 +190,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00816_handshake_val_510_2_129_225__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00816_handshake_val_510_2_129_225__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.957，link 误差 0.0181 m</li><li>GMT (held)：腕幅度保留率 0.982，link 误差 0.0200 m</li><li>TWIST：腕幅度保留率 0.997，link 误差 0.0228 m</li><li>SONIC：腕幅度保留率 1.002，link 误差 0.0083 m</li><li>D6：腕幅度保留率 0.931，link 误差 0.0250 m</li></ul>
 
 <h3 id="r8">#8 · handshake · 1.82 Hz · 振荡幅度 0.29 m</h3>
@@ -187,6 +201,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00831_handshake_val_525_2_94_244__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00831_handshake_val_525_2_94_244__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 1.569，link 误差 0.0155 m，主频 exec/ref —/2.00 Hz</li><li>GMT (held)：腕幅度保留率 1.709，link 误差 0.0174 m，主频 exec/ref —/2.00 Hz</li><li>TWIST：腕幅度保留率 1.155，link 误差 0.0383 m，主频 exec/ref 2.00/2.00 Hz</li><li>SONIC：腕幅度保留率 1.432，link 误差 0.0138 m，主频 exec/ref —/2.00 Hz</li><li>D6：腕幅度保留率 1.141，link 误差 0.0206 m，主频 exec/ref 2.00/2.00 Hz</li></ul>
 
 <h3 id="r9">#9 · punch · 1.82 Hz · 振荡幅度 0.29 m</h3>
@@ -196,6 +212,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00560_punch_val_218_2_381_807__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00560_punch_val_218_2_381_807__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.859，link 误差 0.0453 m，主频 exec/ref 1.79/1.79 Hz</li><li>GMT (held)：腕幅度保留率 0.996，link 误差 0.0579 m，主频 exec/ref 1.79/1.79 Hz</li><li>TWIST：腕幅度保留率 1.127，link 误差 0.0570 m，主频 exec/ref 1.79/1.79 Hz</li><li>SONIC：腕幅度保留率 0.758，link 误差 0.0251 m，主频 exec/ref 1.79/1.79 Hz</li><li>D6：腕幅度保留率 0.944，link 误差 0.0244 m，主频 exec/ref 1.79/1.79 Hz</li></ul>
 
 <h3 id="r10">#10 · punch · 1.82 Hz · 振荡幅度 0.29 m</h3>
@@ -205,6 +223,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00803_punch_val_4_0_0_417__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00803_punch_val_4_0_0_417__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.927，link 误差 0.0439 m，主频 exec/ref 1.72/1.72 Hz</li><li>GMT (held)：腕幅度保留率 1.019，link 误差 0.0567 m，主频 exec/ref 1.72/1.72 Hz</li><li>TWIST：腕幅度保留率 1.092，link 误差 0.0599 m，主频 exec/ref 1.72/1.72 Hz</li><li>SONIC：腕幅度保留率 0.801，link 误差 0.0240 m，主频 exec/ref 1.72/1.72 Hz</li><li>D6：腕幅度保留率 0.920，link 误差 0.0325 m，主频 exec/ref 1.72/1.72 Hz</li></ul>
 
 <h3 id="r11">#11 · wave_arms · 1.82 Hz · 振荡幅度 0.27 m</h3>
@@ -214,6 +234,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00219_wave_arms_val_1399_1_81_371__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00219_wave_arms_val_1399_1_81_371__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.903，link 误差 0.0162 m</li><li>GMT (held)：腕幅度保留率 0.972，link 误差 0.0165 m</li><li>TWIST：腕幅度保留率 0.929，link 误差 0.0237 m</li><li>SONIC：腕幅度保留率 0.839，link 误差 0.0083 m</li><li>D6：腕幅度保留率 1.034，link 误差 0.0188 m</li></ul>
 
 <h3 id="r12">#12 · wave_arms · 1.82 Hz · 振荡幅度 0.25 m</h3>
@@ -223,6 +245,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00432_wave_arms_val_1756_0_0_495__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00432_wave_arms_val_1756_0_0_495__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.931，link 误差 0.0219 m</li><li>GMT (held)：腕幅度保留率 0.975，link 误差 0.0220 m</li><li>TWIST：腕幅度保留率 0.899，link 误差 0.0573 m</li><li>SONIC：腕幅度保留率 0.850，link 误差 0.0162 m</li><li>D6：腕幅度保留率 0.870，link 误差 0.0215 m</li></ul>
 
 <h3 id="r13">#13 · punch · 1.82 Hz · 振荡幅度 0.24 m</h3>
@@ -232,6 +256,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00558_punch_val_217_0_0_118__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00558_punch_val_217_0_0_118__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.970，link 误差 0.0231 m</li><li>GMT (held)：腕幅度保留率 0.966，link 误差 0.0246 m</li><li>TWIST：腕幅度保留率 0.973，link 误差 0.0416 m</li><li>SONIC：腕幅度保留率 0.895，link 误差 0.0182 m</li><li>D6：腕幅度保留率 0.779，link 误差 0.0358 m</li></ul>
 
 <h3 id="r14">#14 · wave_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
@@ -241,6 +267,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00223_wave_arms_val_1406_0_0_154__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00223_wave_arms_val_1406_0_0_154__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 1.019，link 误差 0.0250 m</li><li>GMT (held)：腕幅度保留率 1.018，link 误差 0.0255 m</li><li>TWIST：腕幅度保留率 1.021，link 误差 0.0454 m</li><li>SONIC：腕幅度保留率 0.896，link 误差 0.0128 m</li><li>D6：腕幅度保留率 1.035，link 误差 0.0339 m</li></ul>
 
 <h3 id="r15">#15 · wave_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
@@ -250,6 +278,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_01047_wave_arms_val_880_0_0_115__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_01047_wave_arms_val_880_0_0_115__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.713，link 误差 0.0270 m，主频 exec/ref 1.92/1.92 Hz</li><li>GMT (held)：腕幅度保留率 0.754，link 误差 0.0271 m，主频 exec/ref 1.92/1.92 Hz</li><li>TWIST：腕幅度保留率 0.941，link 误差 0.0316 m，主频 exec/ref 1.85/1.92 Hz</li><li>SONIC：腕幅度保留率 1.019，link 误差 0.0148 m，主频 exec/ref —/1.92 Hz</li><li>D6：腕幅度保留率 0.942，link 误差 0.0271 m，主频 exec/ref 1.92/1.92 Hz</li></ul>
 
 <h3 id="r16">#16 · cross_arms · 1.82 Hz · 振荡幅度 0.17 m</h3>
@@ -259,6 +289,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00786_cross_arms_val_478_1_580_780__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00786_cross_arms_val_478_1_580_780__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.907，link 误差 0.0218 m</li><li>GMT (held)：腕幅度保留率 0.919，link 误差 0.0224 m</li><li>TWIST：腕幅度保留率 0.970，link 误差 0.0548 m</li><li>SONIC：腕幅度保留率 1.008，link 误差 0.0118 m</li><li>D6：腕幅度保留率 0.732，link 误差 0.0492 m</li></ul>
 
 <h3 id="r17">#17 · wave_arms · 1.82 Hz · 振荡幅度 0.16 m</h3>
@@ -268,6 +300,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/val_00059_wave_arms_val_1651_2_188_617__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/val_00059_wave_arms_val_1651_2_188_617__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.887，link 误差 0.0567 m，主频 exec/ref 1.72/1.72 Hz</li><li>GMT (held)：腕幅度保留率 0.918，link 误差 0.0569 m，主频 exec/ref 1.72/1.72 Hz</li><li>TWIST：腕幅度保留率 0.977，link 误差 0.0821 m，主频 exec/ref 1.72/1.72 Hz</li><li>SONIC：腕幅度保留率 1.062，link 误差 0.0295 m，主频 exec/ref —/1.72 Hz</li><li>D6：腕幅度保留率 1.023，link 误差 0.0613 m，主频 exec/ref 1.72/1.72 Hz</li></ul>
 
 <h3 id="r18">#18 · handshake · 1.82 Hz · 振荡幅度 0.16 m</h3>
@@ -277,6 +311,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/test_00130_handshake_val_910_1_256_357__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/test_00130_handshake_val_910_1_256_357__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.948，link 误差 0.0200 m，主频 exec/ref 1.72/1.79 Hz</li><li>GMT (held)：腕幅度保留率 1.056，link 误差 0.0199 m，主频 exec/ref 1.72/1.79 Hz</li><li>TWIST：腕幅度保留率 1.120，link 误差 0.0214 m，主频 exec/ref 1.79/1.79 Hz</li><li>SONIC：腕幅度保留率 1.914，link 误差 0.0077 m，主频 exec/ref —/1.79 Hz</li><li>D6：腕幅度保留率 1.071，link 误差 0.0251 m，主频 exec/ref 1.79/1.79 Hz</li></ul>
 
 <h3 id="r19">#19 · punch · 1.67 Hz · 振荡幅度 0.36 m</h3>
@@ -286,6 +322,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00802_punch_val_49_1_71_208__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00802_punch_val_49_1_71_208__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 1.018，link 误差 0.0424 m，主频 exec/ref 1.47/1.47 Hz</li><li>GMT (held)：腕幅度保留率 1.074，link 误差 0.0514 m，主频 exec/ref 1.47/1.47 Hz</li><li>TWIST：腕幅度保留率 1.119，link 误差 0.0693 m，主频 exec/ref 1.47/1.47 Hz</li><li>SONIC：腕幅度保留率 0.844，link 误差 0.0264 m，主频 exec/ref 1.47/1.47 Hz</li><li>D6：腕幅度保留率 0.905，link 误差 0.0329 m，主频 exec/ref 1.47/1.47 Hz</li></ul>
 
 <h3 id="r20">#20 · punch · 1.67 Hz · 振荡幅度 0.32 m</h3>
@@ -295,6 +333,8 @@ html.openresults-gated body { background: #08111d; }
 <figcaption>幅度族随时间（打分窗内，蓝色虚线 = 参考）：四末端展开、双腕间距、骨盆高度、双腕相对高度。</figcaption></figure>
 <figure><img src="assets/train_00540_punch_val_19_1_94_554__ee.png" loading="lazy">
 <figcaption>末端三轴位置（骨盆局部系，灰底 = 打分窗）。</figcaption></figure>
+<figure><img src="assets/train_00540_punch_val_19_1_94_554__joints.png" loading="lazy">
+<figcaption>手臂关节角随时间（左列 = 左臂链、右列 = 右臂链：shoulder pitch/roll/yaw、elbow、wrist roll/pitch/yaw；GMT / TWIST 无腕自由度，对应面板只有参考曲线）。</figcaption></figure>
 <ul><li>GMT (native)：腕幅度保留率 0.934，link 误差 0.0431 m，主频 exec/ref 1.67/1.67 Hz</li><li>GMT (held)：腕幅度保留率 1.035，link 误差 0.0555 m，主频 exec/ref 1.67/1.67 Hz</li><li>TWIST：腕幅度保留率 1.092，link 误差 0.0571 m，主频 exec/ref 1.67/1.67 Hz</li><li>SONIC：腕幅度保留率 0.813，link 误差 0.0231 m，主频 exec/ref 1.67/1.67 Hz</li><li>D6：腕幅度保留率 0.906，link 误差 0.0308 m，主频 exec/ref 1.67/1.67 Hz</li></ul>
 
 <hr>

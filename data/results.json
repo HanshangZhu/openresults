@@ -2,12 +2,12 @@
   "results": [
     {
       "slug": "rate20-fast-oscillation-motion-showcase",
-      "title": "Preliminary: fastest sustained upper-limb oscillations in-pool, executed by five trackers (measurements as-is)",
+      "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
       "date": "2026-07-30",
       "project": "VAD Alignment",
       "category": "Tracker Evaluation",
       "status": "PRELIMINARY",
-      "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows inside the reviewed reference pool (walk/kick excluded, 1.67-2.22 Hz, found by a sliding-window scan of the full VADCompose V2 release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family and end-effector time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
+      "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows from the reviewed VADCompose V2 reference segments (walk/kick excluded, 1.67-2.22 Hz, located by a sliding-window scan of the full release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family / end-effector / arm-joint-angle time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
       "path": "results/rate20-fast-oscillation-motion-showcase/",
       "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
       "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
