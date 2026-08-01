@@ -1,6 +1,42 @@
 {
   "results": [
     {
+      "slug": "babel-g1-8class-reference-pool-human-audit",
+      "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
+      "date": "2026-08-01",
+      "project": "VAD Alignment",
+      "category": "Dataset",
+      "status": "DATASET",
+      "summary": "What was done, no interpretation: 13,258 raw AMASS SMPL-X sequences retargeted to Unitree G1 at native 50 Hz (GMR, frame-rate patched), joined with BABEL frame-level labels, segmented into 8 action classes, filtered by automatic gates (concurrent-label policy, IK limit-jam, clap contact loss, window dedup), then reviewed segment-by-segment by a human (7 classes in full plus the first 250 walk segments). 909 segments / 35 minutes kept out of 1759. One PASS vs FAIL playback pair per class, with the reviewer's original rejection notes.",
+      "path": "results/babel-g1-8class-reference-pool-human-audit/",
+      "thumbnail": "results/babel-g1-8class-reference-pool-human-audit/assets/thumbnail.png",
+      "thumbnailAlt": "G1 robot kinematic playback frame from a kept kick reference segment",
+      "tags": [
+        "Humanoid control",
+        "G1",
+        "BABEL",
+        "AMASS",
+        "Retargeting",
+        "Dataset",
+        "Human audit",
+        "Showcase"
+      ],
+      "metrics": [
+        {
+          "value": "909 / 1759",
+          "label": "segments kept after human audit"
+        },
+        {
+          "value": "8",
+          "label": "action classes, PASS vs FAIL example each"
+        },
+        {
+          "value": "35 min",
+          "label": "audited kinematic reference at 50 Hz"
+        }
+      ]
+    },
+    {
       "slug": "rate20-fast-oscillation-motion-showcase",
       "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
       "date": "2026-07-30",

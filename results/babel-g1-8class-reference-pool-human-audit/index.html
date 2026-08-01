@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BABEL→G1 八类参考池：构建流程与全量人工审查（pass/fail 对照展示）</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:26px 0 6px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:7px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}
+video,img{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#000}
+figure{margin:10px 0}figcaption{font-size:12px;color:#8fa2b8}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 22px}
+.pair .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;margin-bottom:6px}
+.tag.ok{background:#12341f;color:#7ee0a3}.tag.bad{background:#3a1420;color:#ef7f8d}
+.note{background:var(--panel);border-left:4px solid #888;padding:8px 12px;margin:10px 0;font-size:13px}
+.source{font-size:12px;color:#8fa2b8;margin:2px 0 8px}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}.pair{grid-template-columns:1fr}}</style>
+
+<script>
+(function () {
+  try {
+    if (sessionStorage.getItem("openresults.unlocked.v1") === "1") return;
+  } catch (e) {}
+  document.documentElement.classList.add("openresults-gated");
+})();
+</script>
+<style>
+html.openresults-gated body > *:not(#openresults-gate) { visibility: hidden !important; }
+html.openresults-gated body { background: #08111d; }
+</style>
+<link rel="stylesheet" href="../../assets/gate.css?v=__BUILD_VERSION__">
+<script src="../../assets/gate.js?v=__BUILD_VERSION__" defer></script>
+</head>
+<body>
+<header style="max-width:980px;margin:auto;padding:18px 22px 0;font:14px/1.4 system-ui,sans-serif"><a href="../../index.html?v=__BUILD_VERSION__" style="color:#8bc8ff;text-decoration:none">← All public results</a></header>
+
+<main>
+<p class="source">OpenResults · dataset report</p>
+<h1>BABEL→G1 八类参考池：构建流程与全量人工审查</h1>
+<blockquote>
+<p><strong>Status:</strong> dataset · <strong>Date:</strong> 2026-08-01<br>
+<strong>范围：</strong>本页只报告做了什么（构建步骤、数量、逐段人工审查的 pass/fail 对照示例），
+不做机理解读；分析另行成文于研究仓库。</p>
+</blockquote>
+
+<h2>做了什么</h2>
+<p>从本机 AMASS 原始 SMPL-X 压缩包出发，构建一个 8 类、原生 50 Hz、逐段人工审查过的
+Unitree G1 纯运动学参考池（无任何物理执行字段）。七个步骤：</p>
+<ul>
+<li><strong>重定向：</strong>17 个 AMASS 包共 13,258 条 raw SMPL-X，经 GMR（打帧率补丁，
+原生帧率一步重采到 50 Hz）重定向到 G1，得 13,020 条母序列（40.2 小时）；抽 120 条做源率反查，
+全部确认真 50 Hz 而非插值。</li>
+<li><strong>标注对齐：</strong>BABEL 帧级标注与母序列连接（8,652 条接上），时间基不一致的
+序列按帧率比例换算，换算不可靠的 227 条整条排除。</li>
+<li><strong>切段：</strong>标注区间映射到 8 个动作类（walk / kick / crouch / punch / clap /
+wave_arms / cross_arms / handshake），端点裁 transition，最短 0.4 s，同文本相邻合并。</li>
+<li><strong>重叠标注处理：</strong>同一时间窗被多条标注覆盖时，按一张 180 对
+（动作类 × 重叠标注文本）的判定表处理——判"同一动作的第二条描述"保留，判"真并发第二动作"
+把覆盖帧裁掉；判定表由 5 次独立 LLM 分类多数票产生，投票分裂的 29 对由人工看视频裁定。</li>
+<li><strong>自动门禁：</strong>肘/腕关节贴限超过 50% 时长的段（IK 撞限）、整段两掌从未靠近的
+clap（重定向丢失接触）、完全相同时间窗的重复段，全部剔除。</li>
+<li><strong>人工审查：</strong>除 walk 外 7 类全量 + walk 前 250 段，逐段观看回放；
+fail = 风险过高剔除，剔除原因（重定向错误 / 动力学风险 / 内容不符）记录在审查库。</li>
+<li><strong>产出：</strong>审查后保留 <strong>909 段 / 35.0 分钟</strong>；schema、正解运动学
+往返、时长对齐三道机器验证 0 failures。</li>
+</ul>
+
+<h2>数量</h2>
+<table>
+<tr><th>类</th><th>审查前(自动门禁后)</th><th>人工剔除</th><th>保留</th><th>备注</th></tr>
+<tr><td>kick</td><td>298</td><td>66</td><td>232</td><td></td></tr>
+<tr><td>walk</td><td>800</td><td>38</td><td>213</td><td>审前 250 段；未审 549 段不入池</td></tr>
+<tr><td>wave_arms</td><td>180</td><td>48</td><td>132</td><td></td></tr>
+<tr><td>punch</td><td>148</td><td>23</td><td>125</td><td></td></tr>
+<tr><td>crouch</td><td>198</td><td>81</td><td>117</td><td></td></tr>
+<tr><td>clap</td><td>42</td><td>4</td><td>38</td><td></td></tr>
+<tr><td>cross_arms</td><td>71</td><td>37</td><td>34</td><td></td></tr>
+<tr><td>handshake</td><td>22</td><td>4</td><td>18</td><td></td></tr>
+<tr><td><strong>合计</strong></td><td><strong>1759</strong></td><td><strong>301</strong></td><td><strong>909</strong></td><td></td></tr>
+</table>
+
+<h2>每类 pass / fail 对照示例</h2>
+<p>每类各选一段人工审查保留（PASS）与剔除（FAIL）的段。画面为 G1 运动学回放（逐帧摆姿态，
+非物理仿真），字幕含 segment id 与 BABEL 原始标注文本；FAIL 的说明来自审查库的原始记录，
+未写理由的为内容/风格层面的风险剔除。</p>
+
+<h3>walk</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_walk.mp4" controls muted loop></video>
+<figcaption>00674_walk_babel_12225 · "walk to left" · 2.9 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_walk.mp4" controls muted loop></video>
+<figcaption>00577_walk_babel_1038 · "walk up stairs" · 审查标注：risk；爬楼动作亦在平地参考池范围外</figcaption></figure>
+</div>
+
+<h3>kick</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_kick.mp4" controls muted loop></video>
+<figcaption>00244_kick_babel_10269 · "kick left leg" · 16.1 s，连续多次踢腿</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_kick.mp4" controls muted loop></video>
+<figcaption>00255_kick_babel_10514 · "kick right leg back and forth" · 审查标注：risk</figcaption></figure>
+</div>
+
+<h3>crouch</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_crouch.mp4" controls muted loop></video>
+<figcaption>00123_crouch_babel_12486 · "squat" · 2.9 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_crouch.mp4" controls muted loop></video>
+<figcaption>00194_crouch_babel_6287 · "get down with both hand on ground" · 审查标注：动作不对，且该类中 IK 解不出的段很多</figcaption></figure>
+</div>
+
+<h3>punch</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_punch.mp4" controls muted loop></video>
+<figcaption>00492_punch_babel_5662 · "forward right punch" · 1.6 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_punch.mp4" controls muted loop></video>
+<figcaption>00513_punch_babel_6472 · "right arm side punch" · 未注明（内容/风格风险剔除）</figcaption></figure>
+</div>
+
+<h3>wave_arms</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_wave_arms.mp4" controls muted loop></video>
+<figcaption>01243_wave_arms_babel_5721 · "wave hand" · 3.0 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_wave_arms.mp4" controls muted loop></video>
+<figcaption>01169_wave_arms_babel_11341 · "wave arms" · 审查标注：末尾 20 帧需裁除（本版整段剔除，可修复回收）</figcaption></figure>
+</div>
+
+<h3>clap</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_clap.mp4" controls muted loop></video>
+<figcaption>00027_clap_babel_557 · "clap hands" · 2.9 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_clap.mp4" controls muted loop></video>
+<figcaption>01280_clap_babel_2589 · "stand with hands clasp" · 未注明（内容/风格风险剔除）</figcaption></figure>
+</div>
+
+<h3>cross_arms</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_cross_arms.mp4" controls muted loop></video>
+<figcaption>01288_cross_arms_babel_12004 · "cross arms" · 2.9 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_cross_arms.mp4" controls muted loop></video>
+<figcaption>00077_cross_arms_babel_8430 · "cross legs" · 未注明（内容/风格风险剔除）</figcaption></figure>
+</div>
+
+<h3>handshake</h3>
+<div class="pair">
+<figure><span class="tag ok">PASS</span><video src="assets/pass_handshake.mp4" controls muted loop></video>
+<figcaption>01348_handshake_babel_5129 · "shake hands" · 1.5 s</figcaption></figure>
+<figure><span class="tag bad">FAIL</span><video src="assets/fail_handshake.mp4" controls muted loop></video>
+<figcaption>01347_handshake_babel_1354 · "shake hands in front of face" · 审查标注：almost all handshakes are retargeting error</figcaption></figure>
+</div>
+
+<h2>数据来源与说明</h2>
+<div class="note">
+动作标注来自 <a href="https://babel.is.tue.mpg.de/">BABEL</a>（Punnakkal et al., CVPR 2021），
+人体动作数据来自 <a href="https://amass.is.tue.mpg.de/">AMASS</a>（Mahmood et al., ICCV 2019），
+均按其学术许可使用。本页视频全部为 Unitree G1 机器人模型的运动学回放渲染（衍生可视化），
+不包含也不再分发任何原始人体数据。数据集本体、审查库与逐段剔除记录保存在研究仓库，
+不随本页公开。
+</div>
+</main>
+</body>
+</html>
