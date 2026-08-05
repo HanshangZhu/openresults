@@ -1,0 +1,377 @@
+{
+ "generated_by": "scripts/build_curation_walkthrough_line1.py",
+ "selection_rule": "fail=显式 fail 优先+未收录字典序补齐；pass=收录集字典序前2；无质量量参与",
+ "n_raw_labels": 85,
+ "funnel": {
+  "clap": {
+   "candidates": 331,
+   "kept": 197,
+   "explicit_fail": 2
+  },
+  "cross_arms": {
+   "candidates": 365,
+   "kept": 196,
+   "explicit_fail": 0
+  },
+  "crouch": {
+   "candidates": 314,
+   "kept": 82,
+   "explicit_fail": 0
+  },
+  "handshake": {
+   "candidates": 339,
+   "kept": 227,
+   "explicit_fail": 1
+  },
+  "kick": {
+   "candidates": 318,
+   "kept": 138,
+   "explicit_fail": 0
+  },
+  "punch": {
+   "candidates": 994,
+   "kept": 161,
+   "explicit_fail": 0
+  },
+  "walk": {
+   "candidates": 328,
+   "kept": 187,
+   "explicit_fail": 32
+  },
+  "wave_arms": {
+   "candidates": 328,
+   "kept": 204,
+   "explicit_fail": 0
+  }
+ },
+ "selection": {
+  "clap": {
+   "fail": [
+    {
+     "sid": "val:14:1:46:88",
+     "raw": "clap",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:1992:1:201:519",
+     "raw": "applaud",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:1000:1:304:345",
+     "raw": "clap",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1005:1:343:379",
+     "raw": "clap",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1015:2:1106:1144",
+     "raw": "clap",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1060:0:0:41",
+     "raw": "clap",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1069:2:479:549",
+     "raw": "clap",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "cross_arms": {
+   "fail": [
+    {
+     "sid": "val:0:0:0:125",
+     "raw": "cross_arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1008:1:125:199",
+     "raw": "cross_arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1014:0:0:78",
+     "raw": "cross_arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1014:2:196:408",
+     "raw": "cross_arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1025:1:98:341",
+     "raw": "cross_arms",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1018:1:31:83",
+     "raw": "cross_arms",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1039:2:292:504",
+     "raw": "cross_arms",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "crouch": {
+   "fail": [
+    {
+     "sid": "val:1004:1:124:337",
+     "raw": "crouch with hands up side step to left series",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1015:1:1031:1106",
+     "raw": "crouch",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1022:2:121:267",
+     "raw": "crouch with hands up side step to right series",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1023:2:450:500",
+     "raw": "crouch",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1024:2:827:993",
+     "raw": "crouch",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1001:2:253:309",
+     "raw": "crouch",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:100:0:0:236",
+     "raw": "crouch",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "handshake": {
+   "fail": [
+    {
+     "sid": "val:80:0:0:41",
+     "raw": "shake hands in front of waist",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:0:2:193:671",
+     "raw": "handshake",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1029:0:0:133",
+     "raw": "shake hands in front of waist",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1039:0:0:217",
+     "raw": "handshake",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1101:2:514:1023",
+     "raw": "handshake",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1000:2:345:673",
+     "raw": "handshake",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1009:2:381:529",
+     "raw": "handshake",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "kick": {
+   "fail": [
+    {
+     "sid": "val:1016:1:56:175",
+     "raw": "kick",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1030:1:85:226",
+     "raw": "kick ball",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1032:2:185:219",
+     "raw": "air kicking right foot",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1042:2:80:232",
+     "raw": "kick",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1064:1:49:82",
+     "raw": "kick object",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1007:0:0:47",
+     "raw": "right leg kick",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1007:2:84:145",
+     "raw": "air kicking right foot",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "punch": {
+   "fail": [
+    {
+     "sid": "val:0:1:125:193",
+     "raw": "punch",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1000:0:0:304",
+     "raw": "punch",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1002:0:0:680",
+     "raw": "punch",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1003:1:83:212",
+     "raw": "punches with right hand",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1004:0:0:124",
+     "raw": "punch",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:101:1:71:242",
+     "raw": "punch",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:108:0:0:613",
+     "raw": "punch",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "walk": {
+   "fail": [
+    {
+     "sid": "val:244:2:75:135",
+     "raw": "walk",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:273:0:0:62",
+     "raw": "walk forward",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:562:2:195:300",
+     "raw": "walk",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:597:2:466:521",
+     "raw": "walk",
+     "kind": "显式 fail（人工判定）"
+    },
+    {
+     "sid": "val:604:2:281:328",
+     "raw": "walk forward",
+     "kind": "显式 fail（人工判定）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1002:1:680:849",
+     "raw": "walk forward",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1006:0:0:83",
+     "raw": "walk",
+     "kind": "收录（good set）"
+    }
+   ]
+  },
+  "wave_arms": {
+   "fail": [
+    {
+     "sid": "val:1016:2:175:265",
+     "raw": "wave both arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1020:1:84:161",
+     "raw": "wave arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1038:0:0:300",
+     "raw": "wave arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1057:0:0:464",
+     "raw": "wave arms",
+     "kind": "未收录（未通过提名/审核）"
+    },
+    {
+     "sid": "val:1106:1:74:235",
+     "raw": "wave_arms",
+     "kind": "未收录（未通过提名/审核）"
+    }
+   ],
+   "pass": [
+    {
+     "sid": "val:1001:1:46:253",
+     "raw": "wave arms",
+     "kind": "收录（good set）"
+    },
+    {
+     "sid": "val:1009:1:220:381",
+     "raw": "wave arms",
+     "kind": "收录（good set）"
+    }
+   ]
+  }
+ }
+}

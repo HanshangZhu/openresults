@@ -1,0 +1,614 @@
+{
+ "generated_by": "scripts/build_curation_walkthrough_line2.py",
+ "selection_rule": "逐动作字典序前 5 rejected + 前 2 accepted；判定与比值原样取自 v3_build_report",
+ "selection": {
+  "clap": {
+   "fail": [
+    {
+     "clip": "00008_clap_val_1109_1_56_379",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 4.8,
+     "a_ratio": 5.33,
+     "v_rms_ratio": 1.47,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00020_clap_val_1290_1_230_455",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 7.31,
+     "a_ratio": 9.06,
+     "v_rms_ratio": 2.24,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00029_clap_val_1333_1_100_135",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 2.28,
+     "a_ratio": 2.66,
+     "v_rms_ratio": 1.21,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00038_clap_val_1449_2_220_373",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.88,
+     "a_ratio": 2.14,
+     "v_rms_ratio": 1.13,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00040_clap_val_1069_2_479_549",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.77,
+     "a_ratio": 1.75,
+     "v_rms_ratio": 1.0,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00006_clap_val_1071_2_103_203",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.06,
+     "a_ratio": 1.35,
+     "v_rms_ratio": 0.94,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00009_clap_val_1132_0_0_139",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.83,
+     "a_ratio": 0.97,
+     "v_rms_ratio": 0.88,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  },
+  "cross_arms": {
+   "fail": [
+    {
+     "clip": "00030_cross_arms_val_140_1_323_435",
+     "verdict": "rejected",
+     "reason": "jerk",
+     "j_ratio": 1.56,
+     "a_ratio": 1.43,
+     "v_rms_ratio": 1.05,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00034_cross_arms_val_1376_1_206_269",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.5,
+     "a_ratio": 1.59,
+     "v_rms_ratio": 1.04,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00037_cross_arms_val_1424_2_163_288",
+     "verdict": "rejected",
+     "reason": "jerk",
+     "j_ratio": 1.57,
+     "a_ratio": 1.49,
+     "v_rms_ratio": 1.01,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00069_cross_arms_val_18_1_93_293",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 2.64,
+     "a_ratio": 2.8,
+     "v_rms_ratio": 1.17,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00073_cross_arms_val_279_2_136_391",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 4.49,
+     "a_ratio": 4.83,
+     "v_rms_ratio": 1.45,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00000_cross_arms_val_1018_1_31_83",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.05,
+     "a_ratio": 1.29,
+     "v_rms_ratio": 1.05,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00002_cross_arms_val_1039_2_292_504",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.32,
+     "a_ratio": 1.33,
+     "v_rms_ratio": 0.99,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  },
+  "crouch": {
+   "fail": [
+    {
+     "clip": "00008_crouch_val_100_0_0_236",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 5.73,
+     "a_ratio": 4.8,
+     "v_rms_ratio": 1.96,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00009_crouch_val_1114_0_0_46",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 1.86,
+     "a_ratio": 2.1,
+     "v_rms_ratio": 1.31,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00018_crouch_val_102_1_45_91",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.69,
+     "a_ratio": 1.62,
+     "v_rms_ratio": 0.99,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00026_crouch_val_1043_1_55_101",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.74,
+     "a_ratio": 1.99,
+     "v_rms_ratio": 1.1,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00037_crouch_val_1445_0_0_68",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 2.22,
+     "a_ratio": 2.37,
+     "v_rms_ratio": 1.41,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00002_crouch_val_1001_2_253_309",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.11,
+     "a_ratio": 1.11,
+     "v_rms_ratio": 0.92,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00019_crouch_val_1031_0_0_604",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.04,
+     "a_ratio": 1.33,
+     "v_rms_ratio": 1.02,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  },
+  "handshake": {
+   "fail": [
+    {
+     "clip": "00016_handshake_val_1021_1_91_144",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.62,
+     "a_ratio": 1.89,
+     "v_rms_ratio": 1.06,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00022_handshake_val_1035_0_0_74",
+     "verdict": "rejected",
+     "reason": "accel,motion_preservation",
+     "j_ratio": 1.26,
+     "a_ratio": 1.55,
+     "v_rms_ratio": 1.23,
+     "lag_ms": 40.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00023_handshake_val_1250_0_0_261",
+     "verdict": "rejected",
+     "reason": "accel",
+     "j_ratio": 1.41,
+     "a_ratio": 1.6,
+     "v_rms_ratio": 1.06,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00052_handshake_val_1577_2_1032_1263",
+     "verdict": "rejected",
+     "reason": "accel",
+     "j_ratio": 1.49,
+     "a_ratio": 1.7,
+     "v_rms_ratio": 1.08,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00063_handshake_val_1692_2_223_333",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.8,
+     "a_ratio": 1.84,
+     "v_rms_ratio": 1.12,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00000_handshake_val_1000_2_345_673",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.87,
+     "a_ratio": 1.13,
+     "v_rms_ratio": 1.06,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00001_handshake_val_1034_2_294_773",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.7,
+     "a_ratio": 0.91,
+     "v_rms_ratio": 0.98,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  },
+  "kick": {
+   "fail": [
+    {
+     "clip": "00004_kick_val_1007_0_0_47",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 1.67,
+     "a_ratio": 1.71,
+     "v_rms_ratio": 1.15,
+     "lag_ms": 40.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00004_kick_val_1056_1_109_166",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation,phase_lag",
+     "j_ratio": 1.75,
+     "a_ratio": 1.92,
+     "v_rms_ratio": 1.2,
+     "lag_ms": 100.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00006_kick_val_1129_0_0_110",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.75,
+     "a_ratio": 1.58,
+     "v_rms_ratio": 1.08,
+     "lag_ms": 0.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00014_kick_val_1017_0_0_47",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 2.0,
+     "a_ratio": 2.0,
+     "v_rms_ratio": 1.22,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00015_kick_val_1164_1_150_199",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation,phase_lag",
+     "j_ratio": 2.59,
+     "a_ratio": 2.47,
+     "v_rms_ratio": 1.44,
+     "lag_ms": 100.0,
+     "executor": "SONIC"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00005_kick_val_1007_2_84_145",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.97,
+     "a_ratio": 1.07,
+     "v_rms_ratio": 0.95,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00011_kick_val_1011_1_457_503",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.91,
+     "a_ratio": 1.01,
+     "v_rms_ratio": 0.94,
+     "lag_ms": 40.0,
+     "executor": "SONIC"
+    }
+   ]
+  },
+  "punch": {
+   "fail": [
+    {
+     "clip": "00031_punch_val_140_2_435_724",
+     "verdict": "rejected",
+     "reason": "motion_preservation",
+     "j_ratio": 0.79,
+     "a_ratio": 0.9,
+     "v_rms_ratio": 0.76,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00038_punch_val_142_1_82_358",
+     "verdict": "rejected",
+     "reason": "motion_preservation",
+     "j_ratio": 0.93,
+     "a_ratio": 1.09,
+     "v_rms_ratio": 0.84,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00039_punch_val_145_0_0_140",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.71,
+     "a_ratio": 1.92,
+     "v_rms_ratio": 0.92,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00049_punch_val_1566_1_49_106",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 7.71,
+     "a_ratio": 6.73,
+     "v_rms_ratio": 2.03,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00054_punch_val_170_0_0_142",
+     "verdict": "rejected",
+     "reason": "accel",
+     "j_ratio": 1.28,
+     "a_ratio": 1.5,
+     "v_rms_ratio": 0.88,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00015_punch_val_101_1_71_242",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.68,
+     "a_ratio": 0.87,
+     "v_rms_ratio": 0.95,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00044_punch_val_1521_1_96_121",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.92,
+     "a_ratio": 0.99,
+     "v_rms_ratio": 0.91,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  },
+  "walk": {
+   "fail": [
+    {
+     "clip": "00010_walk_val_1010_1_72_107",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.53,
+     "a_ratio": 1.54,
+     "v_rms_ratio": 1.08,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00016_walk_val_1245_2_219_485",
+     "verdict": "rejected",
+     "reason": "jerk",
+     "j_ratio": 1.51,
+     "a_ratio": 1.35,
+     "v_rms_ratio": 0.98,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00059_walk_val_1762_0_0_191",
+     "verdict": "rejected",
+     "reason": "phase_lag",
+     "j_ratio": 1.48,
+     "a_ratio": 1.41,
+     "v_rms_ratio": 1.06,
+     "lag_ms": 60.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00060_walk_val_1108_0_0_128",
+     "verdict": "rejected",
+     "reason": "jerk",
+     "j_ratio": 1.55,
+     "a_ratio": 1.41,
+     "v_rms_ratio": 1.08,
+     "lag_ms": 40.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00146_walk_val_1252_2_104_224",
+     "verdict": "rejected",
+     "reason": "jerk",
+     "j_ratio": 1.56,
+     "a_ratio": 1.36,
+     "v_rms_ratio": 1.03,
+     "lag_ms": 40.0,
+     "executor": "SONIC"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00000_walk_val_1002_1_680_849",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.99,
+     "a_ratio": 1.08,
+     "v_rms_ratio": 1.01,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    },
+    {
+     "clip": "00003_walk_val_1006_0_0_83",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 1.24,
+     "a_ratio": 1.2,
+     "v_rms_ratio": 1.07,
+     "lag_ms": 20.0,
+     "executor": "SONIC"
+    }
+   ]
+  },
+  "wave_arms": {
+   "fail": [
+    {
+     "clip": "00009_wave_arms_val_100_1_236_326",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 11.4,
+     "a_ratio": 11.51,
+     "v_rms_ratio": 3.31,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00019_wave_arms_val_1290_0_0_230",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 6.71,
+     "a_ratio": 6.18,
+     "v_rms_ratio": 2.1,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00028_wave_arms_val_12_1_37_234",
+     "verdict": "rejected",
+     "reason": "jerk,accel,motion_preservation",
+     "j_ratio": 3.11,
+     "a_ratio": 3.16,
+     "v_rms_ratio": 1.19,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00051_wave_arms_val_1577_0_0_930",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 2.6,
+     "a_ratio": 2.51,
+     "v_rms_ratio": 1.15,
+     "lag_ms": 20.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00084_wave_arms_val_37_1_37_71",
+     "verdict": "rejected",
+     "reason": "jerk,accel",
+     "j_ratio": 1.55,
+     "a_ratio": 1.64,
+     "v_rms_ratio": 1.08,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ],
+   "pass": [
+    {
+     "clip": "00001_wave_arms_val_1001_1_46_253",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.78,
+     "a_ratio": 0.95,
+     "v_rms_ratio": 0.98,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    },
+    {
+     "clip": "00001_wave_arms_val_1039_1_217_292",
+     "verdict": "accepted",
+     "reason": "",
+     "j_ratio": 0.74,
+     "a_ratio": 0.99,
+     "v_rms_ratio": 1.03,
+     "lag_ms": 0.0,
+     "executor": "D6_GTrXL"
+    }
+   ]
+  }
+ }
+}

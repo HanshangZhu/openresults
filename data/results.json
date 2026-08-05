@@ -1,6 +1,76 @@
 {
   "results": [
     {
+      "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
+      "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
+      "date": "2026-08-05",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "GUIDE",
+      "summary": "Onboarding walkthrough of the first filtering stage: 1993 long recordings are segmented by frame annotations, 85 raw action labels are merged into 9 parent classes, and each candidate segment is human-reviewed (pass/fail/edit/trim) for action purity, boundaries, and label semantics, keeping 1446 segments. Per action: 5 deleted examples (explicit fails vs never-admitted, labeled) side by side with 2 kept examples, rendered from the raw 20 fps release motion.",
+      "path": "results/data-curation-line1-vadcompose-to-cleaned-v2/",
+      "thumbnail": "results/data-curation-line1-vadcompose-to-cleaned-v2/assets/thumbnail.png",
+      "thumbnailAlt": "Raw release segment replay frame from a human-rejected candidate",
+      "tags": [
+        "VADCompose",
+        "Data curation",
+        "Human review",
+        "G1",
+        "Onboarding",
+        "Guide"
+      ],
+      "metrics": [
+        {
+          "value": "3317 → 1446",
+          "label": "candidate segments kept across 8 classes"
+        },
+        {
+          "value": "85 → 9",
+          "label": "raw labels merged into parent classes"
+        },
+        {
+          "value": "5 vs 2",
+          "label": "deleted vs kept examples per action"
+        }
+      ]
+    },
+    {
+      "slug": "data-curation-line2-cleaned-v2-to-tracked-v3",
+      "title": "Data curation walkthrough 2/2: Cleaned V2 to Tracked V3 rev4 (physical execution + gate)",
+      "date": "2026-08-05",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "GUIDE",
+      "summary": "Onboarding walkthrough of the second filtering stage: reference motions are executed by per-action physical trackers (SONIC for walk/kick, D6 GTrXL for six upper-body actions) and gated by four automatic criteria (jerk ratio, acceleration ratio, two-sided motion preservation, phase lag), keeping 1063 of 1392 executed clips. Per action: 5 gate-rejected executions with their actual gate readings and rejection reasons, side by side with 2 accepted ones (white robot = execution, blue ghost = reference). Ends with the gate's three known blind spots.",
+      "path": "results/data-curation-line2-cleaned-v2-to-tracked-v3/",
+      "thumbnail": "results/data-curation-line2-cleaned-v2-to-tracked-v3/assets/thumbnail.png",
+      "thumbnailAlt": "Rejected kick execution: blue reference ghost mid high-kick while the executed robot barely lifts its leg",
+      "tags": [
+        "VADCompose",
+        "Data curation",
+        "Tracker gate",
+        "SONIC",
+        "D6 GTrXL",
+        "G1",
+        "Onboarding",
+        "Guide"
+      ],
+      "metrics": [
+        {
+          "value": "1063/1392",
+          "label": "executed clips passing the four-part gate (76.4%)"
+        },
+        {
+          "value": "4",
+          "label": "gate criteria (jerk, accel, motion, phase)"
+        },
+        {
+          "value": "5 vs 2",
+          "label": "rejected vs accepted examples per action"
+        }
+      ]
+    },
+    {
       "slug": "babel-g1-8class-reference-pool-human-audit",
       "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
       "date": "2026-08-01",
