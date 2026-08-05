@@ -21,8 +21,8 @@
       ],
       "metrics": [
         {
-          "value": "3317 → 1446",
-          "label": "candidate segments kept across 8 classes"
+          "value": "3317 → 1392",
+          "label": "8-class candidate segments kept (1446 total incl. bow)"
         },
         {
           "value": "85 → 9",
