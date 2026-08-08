@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clap 执行闭合交叉验证：参考｜D6｜SONIC 同步三联（n=10）</title>
+<style>
+:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;--cyan:#62b6ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.62 Inter,system-ui,"Noto Sans CJK SC",sans-serif}
+main{max-width:1180px;margin:auto;padding:34px 20px 70px}
+h1{font-size:24px;margin:4px 0 10px}h2{font-size:18px;color:var(--cyan);margin:30px 0 8px}
+p,li{color:var(--soft)}a{color:#8bc8ff}
+.note{background:var(--panel);border-left:4px solid var(--cyan);padding:12px 16px;margin:18px 0;color:var(--soft)}
+table.sum{border-collapse:collapse;margin:12px 0}table.sum td,table.sum th{border:1px solid var(--line);padding:6px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.card video{width:100%;display:block}
+.card .body{padding:10px 14px}
+.card .clip{font-family:monospace;font-size:12px;color:#8fa2b8;margin-bottom:6px}
+.card table{width:100%;border-collapse:collapse;font-size:13px}
+.card td{padding:2px 4px;border-bottom:1px solid var(--line)}.card .k{color:#8fa2b8}.card .v{text-align:right}
+img.gridimg{max-width:100%;border:1px solid var(--line);border-radius:8px}
+.source{font-size:12px;color:#8fa2b8;margin-top:30px}
+</style></head><body><main>
+<p><a href="../">← 返回 clap 形态与执行闭合审计报告</a></p>
+<h1>clap 执行闭合交叉验证：参考｜D6｜SONIC 同步三联（n=10）</h1>
+<div class="note"><strong>只读展示。</strong>每条视频三格共用同一时间轴：同一条 V2 参考动作、
+D6 GTrXL 执行、SONIC（全身策略控制，无手臂直通）执行。SONIC 的帧偏移由其包内参考与池参考
+逐帧比对确定（对齐误差 ~1e-12）；全部最小腕距在三方共同覆盖的<strong>段内</strong>区间上取，
+wrist_yaw_link、同一 MuJoCo 场景 FK。测量值如实陈列，不附判读。</div>
+<h2>汇总（n=10）</h2>
+<table class="sum">
+<tr><th></th><th>最小腕距中位</th><th>gap 中位（相对参考）</th><th>2cm 容差内跟合</th></tr>
+<tr><td>参考</td><td>7.2 cm</td><td>—</td><td>—</td></tr>
+<tr><td>D6 GTrXL</td><td>15.0 cm</td><td>+7.0 cm</td><td>2/10</td></tr>
+<tr><td>SONIC（全身策略）</td><td>7.3 cm</td><td>+0.0 cm</td><td>10/10</td></tr>
+</table>
+<p>逐条事实注记：<code>00449</code> 的参考自身最小腕距为 14.6 cm；<code>00632</code> 为
+D6 gap +1.4 cm 的样本。样本为 crosstracker stress 实验（2026-07-29 Run Spec）选片集合中
+全部可运行的 clap（10/13 条，3 条因中间参考文件缺失未跑）。</p>
+<h2>最紧一帧对比（全部段内取帧）</h2>
+<img class="gridimg" src="assets/tightest_moment_grid_common_range.png" alt="每行一条 clip：参考/D6/SONIC 各自段内最小腕距帧">
+<h2>同步三联视频</h2>
+<div class="grid"><div class="card"><video src="assets/00010_clap_val_1114_1_46_110.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00010_clap_val_1114_1_46_110</div><table><tr><td class="k">参考最小腕距</td><td class="v">6.8 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">13.4 cm（gap +6.6）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">6.5 cm（gap -0.3）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">158</td></tr></table></div></div><div class="card"><video src="assets/00020_clap_val_1290_1_230_455.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00020_clap_val_1290_1_230_455</div><table><tr><td class="k">参考最小腕距</td><td class="v">6.2 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">15.1 cm（gap +8.9）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">6.0 cm（gap -0.1）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">200</td></tr></table></div></div><div class="card"><video src="assets/00025_clap_val_1322_2_407_489.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00025_clap_val_1322_2_407_489</div><table><tr><td class="k">参考最小腕距</td><td class="v">7.4 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">14.9 cm（gap +7.5）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">7.8 cm（gap +0.5）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">203</td></tr></table></div></div><div class="card"><video src="assets/00054_clap_val_1095_2_589_735.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00054_clap_val_1095_2_589_735</div><table><tr><td class="k">参考最小腕距</td><td class="v">7.0 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">15.4 cm（gap +8.4）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">6.8 cm（gap -0.2）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">200</td></tr></table></div></div><div class="card"><video src="assets/00068_clap_val_1847_2_309_392.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00068_clap_val_1847_2_309_392</div><table><tr><td class="k">参考最小腕距</td><td class="v">7.5 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">14.8 cm（gap +7.3）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">7.5 cm（gap +0.1）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">200</td></tr></table></div></div><div class="card"><video src="assets/00092_clap_val_403_1_641_726.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00092_clap_val_403_1_641_726</div><table><tr><td class="k">参考最小腕距</td><td class="v">14.0 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">17.3 cm（gap +3.2）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">13.8 cm（gap -0.3）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">211</td></tr></table></div></div><div class="card"><video src="assets/00303_clap_val_1525_2_245_297.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00303_clap_val_1525_2_245_297</div><table><tr><td class="k">参考最小腕距</td><td class="v">9.1 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">12.8 cm（gap +3.7）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">9.6 cm（gap +0.5）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">128</td></tr></table></div></div><div class="card"><video src="assets/00449_clap_val_1789_2_280_341.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00449_clap_val_1789_2_280_341</div><table><tr><td class="k">参考最小腕距</td><td class="v">14.6 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">15.2 cm（gap +0.6）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">15.8 cm（gap +1.2）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 是 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">151</td></tr></table></div></div><div class="card"><video src="assets/00632_clap_val_295_0_0_145.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00632_clap_val_295_0_0_145</div><table><tr><td class="k">参考最小腕距</td><td class="v">6.5 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">7.9 cm（gap +1.4）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">7.1 cm（gap +0.6）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 是 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">200</td></tr></table></div></div><div class="card"><video src="assets/00946_clap_val_701_2_262_403.mp4" controls loop muted playsinline preload="metadata"></video><div class="body"><div class="clip">00946_clap_val_701_2_262_403</div><table><tr><td class="k">参考最小腕距</td><td class="v">7.1 cm</td></tr><tr><td class="k">D6 最小腕距</td><td class="v">15.6 cm（gap +8.5）</td></tr><tr><td class="k">SONIC 最小腕距</td><td class="v">7.0 cm（gap -0.0）</td></tr><tr><td class="k">2cm 容差内跟合</td><td class="v">D6 否 ／ SONIC 是</td></tr><tr><td class="k">共同段内帧数</td><td class="v">200</td></tr></table></div></div></div>
+<p class="source">source: VAD_Alignment outputs/task067_prep/clap_d6_sonic_common_range.json ·
+scripts/probe_task067_clap_d6_sonic_common_range.py · scripts/render_task067_clap_synced_triplet.py · 2026-08-08</p>
+</main></body></html>
