@@ -43,11 +43,12 @@ Verdict: <code>PASS</code></p>
   （Results 主表）；测量位置在 50Hz 参考上，处于 tracking 与 filter <strong>之前</strong>。</li>
 <li>来源判定：50Hz 参考是 release val.pkl 段的纯重采样 + retarget（历史账 S1 行：无删除、
   纯变换，无任何可"引入贴合"的环节）——贴合形态在源数据中已存在。</li>
-<li>执行闭合不保持：参考最小腕距中位 0.071 m，执行 0.142 m，落差中位 +6.1 cm；2 cm 容差
-  内跟合率仅 14.3%，保留集（11.5%）比被删集（22.9%）更低——闭合丢失发生在执行阶段，
-  与现行 gate 的删留无关，量化方向与人工目击（观察记录 Obs-1）一致。</li>
+<li>执行闭合不保持，且为 <strong>D6 专属</strong>：D6 落差中位 +6.1 cm、跟合率 12.8%；同一批参考
+  全池换全身策略版 SONIC 交叉验证后跟合率 <strong>99.0%</strong>、零摔倒（Results 表 2）。参考侧
+  存在真实合掌（腕距 &lt;10 cm）的 165 段中，SONIC 164 段在 2 cm 容差内跟合（唯一超差
+  0.6 mm）——闭合丢失不是机器人本体或 retarget 的通用限制。</li>
 <li>未证明：逐段形态标签未经人工定稿（阈值全局固定、未标定）；腕距是掌距的保守下界
-  （Obs-1：掌间距比腕距反映更直接），掌心距离量化待掌部偏移标定。</li>
+  （Obs-1：掌间距比腕距反映更直接）；交叉验证限于本池仿真评测，不自动外推真机。</li>
 </ul>
 <h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
 <p>研究问题：V2 clap 池按动作形态的构成是什么；"双手贴合保持"的段是否源数据自带；参考里的
@@ -98,7 +99,7 @@ Verdict: <code>PASS</code></p>
 </tr>
 <tr>
 <td>closure_gap</td>
-<td>执行最小腕距 − 参考最小腕距（m）；两者取自同一 rollout 内同源 KP14 双腕、逐帧对齐</td>
+<td>执行最小腕距 − 参考最小腕距（m），同一帧轴、同一 FK</td>
 <td>正值 = 执行没合到参考的程度；腕距为掌距的保守下界</td>
 </tr>
 <tr>
@@ -110,6 +111,16 @@ Verdict: <code>PASS</code></p>
 <td>D6 GTrXL</td>
 <td>V3 建库中执行 clap 的 tracker（执行器）</td>
 <td>本报告不区分其内部原因，只测输出</td>
+</tr>
+<tr>
+<td>SONIC（全身策略版）</td>
+<td>冻结 GEAR-SONIC ONNX + MuJoCo 闭环仿真，29 关节全由策略控制（<code>scripts/crosstracker/run_sonic.py</code> 协议）</td>
+<td>勿与 V3 生产管线的手臂直通版 SONIC 混淆——后者手臂开环回放参考角度，"合掌"不反映跟踪能力</td>
+</tr>
+<tr>
+<td>谷底口径</td>
+<td>gap_at_valley = 执行腕距(t*) − 参考腕距(t*)，t* = 参考腕距最小的时刻</td>
+<td>时间对齐、比 min-vs-min 更严格；两种口径均落盘</td>
 </tr>
 </tbody>
 </table>
@@ -124,7 +135,7 @@ Verdict: <code>PASS</code></p>
 <tbody>
 <tr>
 <td>Task/data</td>
-<td>V2 clap 全量 197 段的 50Hz 参考 npz；执行侧 196 段 D6 rollout</td>
+<td>V2 clap 全量 197 段的 50Hz 参考 npz；执行侧 D6 rollout 196 段 + SONIC 全池仿真 197 段</td>
 </tr>
 <tr>
 <td>Signal（形态）</td>
@@ -132,7 +143,11 @@ Verdict: <code>PASS</code></p>
 </tr>
 <tr>
 <td>Signal（闭合）</td>
-<td>rollout 内同源 KP14 双腕（idx 10/13）：执行 vs 逐帧对齐参考的最小间距</td>
+<td>三方同一帧轴、同一 scene FK 的 wrist_yaw 双腕最小间距（整段区间）</td>
+</tr>
+<tr>
+<td>SONIC 交叉验证</td>
+<td>全身策略版整段仿真（帧 0 对齐、无垫片），每条约 1.7 s，197 条共 5.5 分钟，CPU</td>
 </tr>
 <tr>
 <td>Evaluation</td>
@@ -167,10 +182,22 @@ Verdict: <code>PASS</code></p>
 <td>PASS</td>
 </tr>
 <tr>
-<td>执行端保持参考的拍合闭合</td>
+<td>D6 保持参考的拍合闭合</td>
 <td style="text-align: right;">跟合率（closure_gap ≤ 2 cm）</td>
-<td style="text-align: right;">28/196（14.3%）</td>
+<td style="text-align: right;">25/196（12.8%）</td>
 <td>FAIL</td>
+</tr>
+<tr>
+<td>SONIC 保持参考的拍合闭合（交叉验证）</td>
+<td style="text-align: right;">同上</td>
+<td style="text-align: right;">195/197（99.0%）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>参考真实合掌段（腕距 &lt;10 cm）SONIC 跟合</td>
+<td style="text-align: right;">同上</td>
+<td style="text-align: right;">164/165（唯一超差 +0.6 mm）</td>
+<td>PASS</td>
 </tr>
 <tr>
 <td>逐段形态标签经人工定稿</td>
@@ -275,51 +302,68 @@ Observed setup 以探针生成时声明的 spec 为准，原文嵌于
 <p>全程贴合——双手全段贴合，无接触事件：</p>
 <video controls src="assets/clap_rej_00174_clap_val_1309_0_0_152.mp4"></video>
 
-<p>执行侧闭合（196 段有 rollout，单位 m）：</p>
+<p>执行侧闭合（全池三方同口径：wrist_yaw、同一 FK、整段区间；D6 196 段、SONIC 197 段）：</p>
 <table>
 <thead>
 <tr>
 <th>指标</th>
-<th style="text-align: right;">数值</th>
+<th style="text-align: right;">参考</th>
+<th style="text-align: right;">D6 GTrXL</th>
+<th style="text-align: right;">SONIC（全身策略版）</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>参考最小腕距 中位 ↓</td>
-<td style="text-align: right;">0.0713</td>
-</tr>
-<tr>
-<td>执行最小腕距 中位 ↓</td>
-<td style="text-align: right;">0.1423</td>
+<td>最小腕距 中位 ↓</td>
+<td style="text-align: right;">7.1 cm</td>
+<td style="text-align: right;">14.2 cm</td>
+<td style="text-align: right;">7.1 cm</td>
 </tr>
 <tr>
 <td>closure_gap 中位 ↓</td>
-<td style="text-align: right;">+0.0611</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">+6.1 cm</td>
+<td style="text-align: right;">+0.04 cm</td>
 </tr>
 <tr>
 <td>跟合率（≤2 cm）↑</td>
-<td style="text-align: right;">14.3%（28/196）</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">12.8%（25/196）</td>
+<td style="text-align: right;"><strong>99.0%（195/197）</strong></td>
 </tr>
 <tr>
-<td>执行合得比参考更紧的段</td>
-<td style="text-align: right;">1.5%</td>
+<td>摔倒</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">（不在本口径）</td>
+<td style="text-align: right;">0/197</td>
 </tr>
 </tbody>
 </table>
-<p>保留集内闭合落差最大的展品段（hold 形，gate 保留；参考合到 0.087 m，执行只到
-0.217 m，落差 13 cm——右侧执行可见双手始终没有合拢）：</p>
-<video controls src="assets/clap_kept_00535_clap_val_197_1_30_118.mp4"></video>
+<ul>
+<li>参考真实合掌（腕距 &lt;10 cm）的 165 段：SONIC 跟合 164/165（唯一超差 +0.6 mm），
+  最严格的谷底口径下最差 +2.4 cm。</li>
+<li>例外方向也查过：D6 比 SONIC 更贴参考的仅 8/196 段，全部是参考自身不闭合
+  （腕距 ≥13.9 cm）的单次拍，优势中位 0.5 cm——与 SONIC 在其余段的优势中位 7.4 cm
+  不在一个量级（明细见 Appendix）。</li>
+</ul>
+<p>展品段（hold 形，gate 保留；参考合到 8.7 cm，D6 只到约 21 cm，SONIC 贴合参考——
+三格同一时间轴）：</p>
+<video controls src="assets/00535_clap_val_197_1_30_118.mp4"></video>
 
+<p>全池 196 条三联视频与按筛选榜单分组的审查前端见 Appendix；发布版画廊（10 条同步三联 +
+最紧帧网格）在 openresults 的 <code>d6-vs-sonic-triplets</code> 子页。</p>
 <h2 id="5-analysisdraft">5. Analysis（draft，待数据负责人定稿）</h2>
 <ul>
 <li><strong>Finding（形态）</strong>：池内 clap 只有两种形态——单次拍与 hold 形，重复拍为 0（Results
   主表）；单次拍的轨迹呈一次完整往返（Results 图左板）。hold 形贴合即腕距行程小，与此前
   测得的现行 gate 小幅度隐式偏删相符（hold 形删除率约为单次拍 2 倍，未做单因素隔离）。</li>
-<li><strong>Finding（闭合）</strong>：执行普遍未跟上参考的拍合深度（闭合表），保留集跟合率反而低于
-  被删集——现行 gate 从未测过闭合，闭合语义丢失整体留在了 V3 保留集内；该测量即执行
-  阶段口径（执行 vs 逐帧对齐参考），与人工目击（Obs-1）方向一致。</li>
+<li><strong>Finding（闭合归因）</strong>：D6 普遍未跟上参考拍合深度（跟合 12.8%，保留集 11.5% 低于
+  被删集 16.7%——现行 gate 从未测过闭合）；同一批参考换 SONIC 后 99.0% 跟合、零摔倒
+  ——闭合丢失是 <strong>D6 策略专属</strong>，不是机器人本体、retarget 或动作类的通用限制。
+  由此成立的陈述："参考有合掌的段，SONIC 都能合到参考深度 +2.1 cm 以内"（165 段
+  无实质例外；边界条件 = 腕距口径 + 全身策略版 + 本池仿真域）。</li>
 <li><strong>Unknown</strong>：0.20 m / close_frac 0.5 / 跟合容差 2 cm 三个阈值未经人工标定；腕距为掌距
-  保守下界，掌心距离量化待掌部偏移标定（待验证）。</li>
+  保守下界，掌心距离量化待掌部偏移标定（待验证）；真机与其他动作池未测。</li>
 <li><strong>Next</strong>：数据负责人在前端 8772 按形态分组全量过目、定稿逐段标签并目检闭合（同时覆盖
   任务书 Step 5 的拍手全量审查）。</li>
 </ul>
@@ -327,63 +371,76 @@ Observed setup 以探针生成时声明的 spec 为准，原文嵌于
 <details>
 <summary>Terms, calculations, evidence, and reproduction</summary>
 <h3 id="worked-examples">Worked examples</h3>
-<pre><code class="language-text">hold 形占比        = 107 / 197 = 54.3%
-hold 形 gate 删除率 = 34 / 107 = 31.8%
-单次拍 gate 删除率  = 15 / 90  = 16.7%
-closure_gap 中位   = 0.1423 − 0.0713 ≈ +0.0611 m（逐段 gap 取中位，非中位差）
-跟合率            = 28 / 196 = 14.3%
+<pre><code class="language-text">hold 形占比          = 107 / 197 = 54.3%
+hold 形 gate 删除率   = 34 / 107 = 31.8%
+单次拍 gate 删除率    = 15 / 90  = 16.7%
+D6 跟合率            = 25 / 196 = 12.8%
+SONIC 跟合率         = 195 / 197 = 99.0%
+参考合掌段 SONIC 跟合 = 164 / 165 = 99.4%（唯一超差 0.0206 − 0.02 = 0.6 mm）
 </code></pre>
-<h3 id="m">执行闭合分组明细（单位 m）</h3>
+<h3 id="gap">执行闭合分组明细（全池三方口径，gap 中位 / 跟合率）</h3>
 <table>
 <thead>
 <tr>
 <th>分组</th>
 <th style="text-align: right;">n</th>
-<th style="text-align: right;">closure_gap 中位</th>
-<th style="text-align: right;">跟合率</th>
+<th>D6</th>
+<th>SONIC</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>hold 形</td>
-<td style="text-align: right;">106</td>
-<td style="text-align: right;">+0.0698</td>
-<td style="text-align: right;">8.5%</td>
+<td style="text-align: right;">106/107</td>
+<td>+7.0 cm / 5.7%</td>
+<td>−0.1 cm / 99.1%</td>
 </tr>
 <tr>
 <td>单次拍</td>
 <td style="text-align: right;">90</td>
-<td style="text-align: right;">+0.0484</td>
-<td style="text-align: right;">21.1%</td>
+<td>+4.8 cm / 21.1%</td>
+<td>+0.5 cm / 98.9%</td>
 </tr>
 <tr>
 <td>gate 保留</td>
 <td style="text-align: right;">148</td>
-<td style="text-align: right;">+0.0618</td>
-<td style="text-align: right;">11.5%</td>
+<td>+6.2 cm / 11.5%</td>
+<td>+0.03 cm / 99.3%</td>
 </tr>
 <tr>
 <td>gate 删除</td>
-<td style="text-align: right;">48</td>
-<td style="text-align: right;">+0.0478</td>
-<td style="text-align: right;">22.9%</td>
+<td style="text-align: right;">48/49</td>
+<td>+4.8 cm / 16.7%</td>
+<td>+0.06 cm / 98.0%</td>
 </tr>
 </tbody>
 </table>
+<h3 id="d6-sonic-8196">D6 优于 SONIC 的例外（8/196，谷底口径）</h3>
+<p>全部为参考自身不闭合的单次拍（ref_min 13.9–15.3 cm）：00585、00363、00064、00963、
+00881、00171、00222、00101；D6 优势中位 0.5 cm、最大 2.8 cm。</p>
+<h3 id="_1">口径备注（两把闭合尺的差异）</h3>
+<p>首版闭合数字（14.3% = 28/196）取自 D6 rollout 内记录的 KP14 腕位置（<code>clap_forms_probe
+.json</code> 的 <code>exec_closure</code> 节）；全池交叉验证改用三方统一的 qpos→FK wrist_yaw 口径
+（12.8% = 25/196）。两把尺相差 1.5 个百分点，方向与结论不受影响；正文统一采用后者。</p>
 <h3 id="evidence-and-commands">Evidence and commands</h3>
 <ul>
-<li>Evidence：<code>outputs/task067_prep/clap_forms_probe.json</code>（逐段 events / close_frac /
-  形态 / gate 判定全量在册；spec 内嵌）</li>
-<li>图 provenance：<code>outputs/task067_prep/clap_forms_traces.json</code></li>
-<li>视频池 provenance：<code>outputs/task067_prep/clap_wave_review_manifest.json</code>
-  （196 条 pair 视频的生成记录）</li>
-<li>前端：端口 8772，manifest <code>outputs/task067_prep/clap_forms_review_manifest.json</code>，
-  判定库 <code>outputs/task067_prep/review_clap_forms.sqlite3</code></li>
-<li>Command：<code>uv run python scripts/probe_task067_clap_forms.py</code></li>
-<li>Source code：<code>scripts/probe_task067_clap_forms.py</code>；
-  历史账（S1 纯变换记录）<code>outputs/task067_prep/step1_history_ledger.md</code></li>
+<li>形态 evidence：<code>outputs/task067_prep/clap_forms_probe.json</code>（逐段 events / close_frac /
+  形态 / gate 判定全量在册；spec 内嵌；含首版 KP14 口径的 <code>exec_closure</code> 节）</li>
+<li>全池闭合 evidence：<code>outputs/task067_prep/clap_fullpool_closure.json</code>（三方 FK 口径）；
+  极端样本排名 <code>outputs/task067_prep/clap_closure_extremes.json</code>（含谷底口径）</li>
+<li>SONIC 全池 rollout：<code>outputs/task067_prep/sonic_clap_fullpool/</code>（197 npz +
+  run_log.json，仿真 spec 内嵌）</li>
+<li>图 provenance：<code>outputs/task067_prep/clap_forms_traces.json</code>；视频池 provenance：
+  <code>clap_wave_review_manifest.json</code>（pair）与 <code>clap_fullpool_triplet_videos/provenance.json</code>（三联）</li>
+<li>前端：8772 = 形态分组（判定库 <code>review_clap_forms.sqlite3</code>）；8773 = 全池三联 +
+  筛选榜单分组（判定库 <code>clap_fullpool_triplet_videos/review.sqlite3</code>）</li>
+<li>Commands：<code>uv run python scripts/probe_task067_clap_forms.py</code>；
+  <code>SONIC_DEPLOY=… uv run python scripts/run_sonic_clap_fullpool.py</code>；
+  <code>uv run python scripts/probe_task067_clap_fullpool_closure.py</code>；
+  <code>uv run python scripts/rank_task067_clap_closure_extremes.py</code></li>
+<li>历史账（S1 纯变换记录）：<code>outputs/task067_prep/step1_history_ledger.md</code></li>
 </ul>
-<h3 id="_1">代表段元数据</h3>
+<h3 id="_2">代表段元数据</h3>
 <table>
 <thead>
 <tr>
