@@ -319,6 +319,40 @@
           "label": "walk/kick jerk medians"
         }
       ]
+    },
+    {
+      "slug": "task067-clap-form-and-exec-closure-audit",
+      "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
+      "date": "2026-08-08",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
+      "path": "results/task067-clap-form-and-exec-closure-audit/",
+      "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
+      "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
+      "tags": [
+        "TASK-067",
+        "Clap",
+        "VADCompose",
+        "Tracker execution",
+        "Semantic audit",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "54.3%",
+          "label": "hold-form share of V2 clap references (107/197)"
+        },
+        {
+          "value": "+6.1 cm",
+          "label": "median closure gap: executed vs reference min wrist distance"
+        },
+        {
+          "value": "14.3%",
+          "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
+        }
+      ]
     }
   ]
 }

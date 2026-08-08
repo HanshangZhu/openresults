@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>TASK-067 · V2 clap 池形态构成与 tracker 执行闭合审计</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body><!-- source: VAD_Alignment/docs/report/2026-08-08-task067-clap-form-composition-audit.md (Markdown 真源) -->
+<main>
+<p class="source">Generated from Markdown source: <code>docs/report/2026-08-08-task067-clap-form-composition-audit.md</code></p>
+<h1 id="task-067-v2-clap-tracker">TASK-067 · V2 clap 池形态构成与 tracker 执行闭合审计</h1>
+<blockquote>
+<p>Date/scale: <code>2026-08-08 / V2 clap 全量 197 段（无抽样；执行侧 196 段有 rollout）</code>
+Output profile: <code>markdown-project-report</code>
+Results profile: <code>dataset-verifier</code>
+Verdict: <code>PASS</code></p>
+</blockquote>
+<p>TASK-067 将拍手定为 periodic 切分，但池内存在大量"双手贴合并保持"的段（下称 hold 形），
+且人工审查目击 tracker 执行会拉大手掌间距。本报告量化两件事：参考侧的形态构成与来源、
+执行侧对参考拍合闭合的保持程度。</p>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS——hold 形为源数据自带的判定成立；执行侧闭合不保持的目击得到量化证实。</strong></p>
+<ul>
+<li>形态构成：197 段 clap 中 hold 形 107 段（54.3%）、单次拍 90 段（45.7%）、重复拍 0 段
+  （Results 主表）；测量位置在 50Hz 参考上，处于 tracking 与 filter <strong>之前</strong>。</li>
+<li>来源判定：50Hz 参考是 release val.pkl 段的纯重采样 + retarget（历史账 S1 行：无删除、
+  纯变换，无任何可"引入贴合"的环节）——贴合形态在源数据中已存在。</li>
+<li>执行闭合不保持：参考最小腕距中位 0.071 m，执行 0.142 m，落差中位 +6.1 cm；2 cm 容差
+  内跟合率仅 14.3%，保留集（11.5%）比被删集（22.9%）更低——闭合丢失发生在执行阶段，
+  与现行 gate 的删留无关，量化方向与人工目击（观察记录 Obs-1）一致。</li>
+<li>未证明：逐段形态标签未经人工定稿（阈值全局固定、未标定）；腕距是掌距的保守下界
+  （Obs-1：掌间距比腕距反映更直接），掌心距离量化待掌部偏移标定。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>研究问题：V2 clap 池按动作形态的构成是什么；"双手贴合保持"的段是否源数据自带；参考里的
+拍合闭合经 tracker 执行后是否保持？</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V2 clap 池</td>
+<td>VADCompose_Released_Cleaned_V2 中 action_parent=clap 的全部 197 段</td>
+<td>不含 gate 后的 V3 子集；含 1 段无执行 rollout 的段</td>
+</tr>
+<tr>
+<td>50Hz 参考</td>
+<td>release val.pkl 段经纯重采样 + retarget 得到的运动学轨迹（filter 前）</td>
+<td>非执行 rollout；形态属性由源数据继承</td>
+</tr>
+<tr>
+<td>接触事件</td>
+<td>双腕（wrist_yaw）间距的局部谷，突出度 &gt;3 cm 且谷值 &lt;0.20 m</td>
+<td>计数器，未经人工标定</td>
+</tr>
+<tr>
+<td>close_frac</td>
+<td>双腕间距 &lt;0.20 m 的帧占比（0–1）</td>
+<td>段级占比，非时长秒数</td>
+</tr>
+<tr>
+<td>hold 形</td>
+<td>close_frac ≥ 0.5 的段；细分为拍合后保持（≥1 次接触事件）与全程贴合（0 次）</td>
+<td>判定只看参考侧，与执行质量无关</td>
+</tr>
+<tr>
+<td>单次拍</td>
+<td>接触事件 =1 且 close_frac &lt;0.5；轨迹呈 分开→拍合→分开 一次完整往返</td>
+<td>periodic 口径下即单周期单元</td>
+</tr>
+<tr>
+<td>现行 gate</td>
+<td>V3 建库用的执行/参考比值门（jerk/accel/运动量/相位滞后）</td>
+<td>本报告仅作交叉信号，不作判据</td>
+</tr>
+<tr>
+<td>closure_gap</td>
+<td>执行最小腕距 − 参考最小腕距（m）；两者取自同一 rollout 内同源 KP14 双腕、逐帧对齐</td>
+<td>正值 = 执行没合到参考的程度；腕距为掌距的保守下界</td>
+</tr>
+<tr>
+<td>跟合</td>
+<td>closure_gap ≤ 0.02 m（执行在 2 cm 容差内达到参考闭合深度）</td>
+<td>阈值为本次测量声明，非预注册</td>
+</tr>
+<tr>
+<td>D6 GTrXL</td>
+<td>V3 建库中执行 clap 的 tracker（执行器）</td>
+<td>本报告不区分其内部原因，只测输出</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-method">3. Method</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task/data</td>
+<td>V2 clap 全量 197 段的 50Hz 参考 npz；执行侧 196 段 D6 rollout</td>
+</tr>
+<tr>
+<td>Signal（形态）</td>
+<td>参考双腕 wrist_yaw 间距时间序列（body 轴 23/30）</td>
+</tr>
+<tr>
+<td>Signal（闭合）</td>
+<td>rollout 内同源 KP14 双腕（idx 10/13）：执行 vs 逐帧对齐参考的最小间距</td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td>全量逐段，无抽样；阈值全局固定（0.20 m / 3 cm / close_frac 0.5 / 跟合容差 2 cm）</td>
+</tr>
+<tr>
+<td>Evidence profile</td>
+<td>dataset-verifier</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Threshold</th>
+<th style="text-align: right;">Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hold 形存在于参考侧（filter/tracking 之前）</td>
+<td style="text-align: right;">存在性</td>
+<td style="text-align: right;">107/197（54.3%）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>处理链在参考之前无形态引入环节</td>
+<td style="text-align: right;">S1 记录为纯变换</td>
+<td style="text-align: right;">历史账 S1 行核对通过</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>执行端保持参考的拍合闭合</td>
+<td style="text-align: right;">跟合率（closure_gap ≤ 2 cm）</td>
+<td style="text-align: right;">28/196（14.3%）</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td>逐段形态标签经人工定稿</td>
+<td style="text-align: right;">全量过目</td>
+<td style="text-align: right;">前端 8772 已备，待过目</td>
+<td>PENDING</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Differences and Run Spec</summary>
+<h3 id="differences-from-prior-setup">Differences from prior setup</h3>
+<ul>
+<li>本报告为 TASK-067 Step 1 期间的数据审计，无先行同类报告。</li>
+</ul>
+<h3 id="run-spec">Run Spec</h3>
+<p>NOT PREREGISTERED — no confirmed Run Spec found after searching: <code>docs/plans/</code>、
+<code>outputs/task067_prep/</code>（TASK-067 状态为 proposed，尚无确认版执行 spec）。
+Observed setup 以探针生成时声明的 spec 为准，原文嵌于
+<code>outputs/task067_prep/clap_forms_probe.json</code> 的 <code>spec</code> 字段。</p>
+</details>
+<h2 id="4-results">4. Results</h2>
+<table>
+<thead>
+<tr>
+<th>形态</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">占比 ↑</th>
+<th style="text-align: right;">gate 保留</th>
+<th style="text-align: right;">gate 删除</th>
+<th style="text-align: right;">close_frac 中位</th>
+<th style="text-align: right;">接触事件中位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hold 形（合计）</td>
+<td style="text-align: right;">107</td>
+<td style="text-align: right;">54.3%</td>
+<td style="text-align: right;">73</td>
+<td style="text-align: right;">34</td>
+<td style="text-align: right;">0.945</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>— 拍合后保持</td>
+<td style="text-align: right;">83</td>
+<td style="text-align: right;">42.1%</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">≥1</td>
+</tr>
+<tr>
+<td>— 全程贴合</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">12.2%</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>单次拍</td>
+<td style="text-align: right;">90</td>
+<td style="text-align: right;">45.7%</td>
+<td style="text-align: right;">75</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">0.306</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>重复拍</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>无接触</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>采样口径：全量 197 段，段级计数，无聚合层级。gate 两列合计 197：其中 1 段无执行 rollout，
+在建库判定中按数据错误类计入删除。</p>
+<p><img alt="三种形态的参考侧双腕间距" src="assets/clap_forms_traces.png"></p>
+<p>代表段视频（左 = 参考 filter 前，右 = 执行 filter 后；逐段元数据见 Appendix）：</p>
+<p>单次拍——完整的 分开→拍合→分开 往返：</p>
+<video controls src="assets/clap_kept_00083_clap_val_377_2_245_295.mp4"></video>
+
+<p>拍合后保持——开场拍合后双手贴合至段尾：</p>
+<video controls src="assets/clap_kept_00165_clap_val_1295_1_534_634.mp4"></video>
+
+<p>全程贴合——双手全段贴合，无接触事件：</p>
+<video controls src="assets/clap_rej_00174_clap_val_1309_0_0_152.mp4"></video>
+
+<p>执行侧闭合（196 段有 rollout，单位 m）：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">数值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>参考最小腕距 中位 ↓</td>
+<td style="text-align: right;">0.0713</td>
+</tr>
+<tr>
+<td>执行最小腕距 中位 ↓</td>
+<td style="text-align: right;">0.1423</td>
+</tr>
+<tr>
+<td>closure_gap 中位 ↓</td>
+<td style="text-align: right;">+0.0611</td>
+</tr>
+<tr>
+<td>跟合率（≤2 cm）↑</td>
+<td style="text-align: right;">14.3%（28/196）</td>
+</tr>
+<tr>
+<td>执行合得比参考更紧的段</td>
+<td style="text-align: right;">1.5%</td>
+</tr>
+</tbody>
+</table>
+<p>保留集内闭合落差最大的展品段（hold 形，gate 保留；参考合到 0.087 m，执行只到
+0.217 m，落差 13 cm——右侧执行可见双手始终没有合拢）：</p>
+<video controls src="assets/clap_kept_00535_clap_val_197_1_30_118.mp4"></video>
+
+<h2 id="5-analysisdraft">5. Analysis（draft，待数据负责人定稿）</h2>
+<ul>
+<li><strong>Finding（形态）</strong>：池内 clap 只有两种形态——单次拍与 hold 形，重复拍为 0（Results
+  主表）；单次拍的轨迹呈一次完整往返（Results 图左板）。hold 形贴合即腕距行程小，与此前
+  测得的现行 gate 小幅度隐式偏删相符（hold 形删除率约为单次拍 2 倍，未做单因素隔离）。</li>
+<li><strong>Finding（闭合）</strong>：执行普遍未跟上参考的拍合深度（闭合表），保留集跟合率反而低于
+  被删集——现行 gate 从未测过闭合，闭合语义丢失整体留在了 V3 保留集内；该测量即执行
+  阶段口径（执行 vs 逐帧对齐参考），与人工目击（Obs-1）方向一致。</li>
+<li><strong>Unknown</strong>：0.20 m / close_frac 0.5 / 跟合容差 2 cm 三个阈值未经人工标定；腕距为掌距
+  保守下界，掌心距离量化待掌部偏移标定（待验证）。</li>
+<li><strong>Next</strong>：数据负责人在前端 8772 按形态分组全量过目、定稿逐段标签并目检闭合（同时覆盖
+  任务书 Step 5 的拍手全量审查）。</li>
+</ul>
+<h2 id="6-appendix">6. Appendix</h2>
+<details>
+<summary>Terms, calculations, evidence, and reproduction</summary>
+<h3 id="worked-examples">Worked examples</h3>
+<pre><code class="language-text">hold 形占比        = 107 / 197 = 54.3%
+hold 形 gate 删除率 = 34 / 107 = 31.8%
+单次拍 gate 删除率  = 15 / 90  = 16.7%
+closure_gap 中位   = 0.1423 − 0.0713 ≈ +0.0611 m（逐段 gap 取中位，非中位差）
+跟合率            = 28 / 196 = 14.3%
+</code></pre>
+<h3 id="m">执行闭合分组明细（单位 m）</h3>
+<table>
+<thead>
+<tr>
+<th>分组</th>
+<th style="text-align: right;">n</th>
+<th style="text-align: right;">closure_gap 中位</th>
+<th style="text-align: right;">跟合率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hold 形</td>
+<td style="text-align: right;">106</td>
+<td style="text-align: right;">+0.0698</td>
+<td style="text-align: right;">8.5%</td>
+</tr>
+<tr>
+<td>单次拍</td>
+<td style="text-align: right;">90</td>
+<td style="text-align: right;">+0.0484</td>
+<td style="text-align: right;">21.1%</td>
+</tr>
+<tr>
+<td>gate 保留</td>
+<td style="text-align: right;">148</td>
+<td style="text-align: right;">+0.0618</td>
+<td style="text-align: right;">11.5%</td>
+</tr>
+<tr>
+<td>gate 删除</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">+0.0478</td>
+<td style="text-align: right;">22.9%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="evidence-and-commands">Evidence and commands</h3>
+<ul>
+<li>Evidence：<code>outputs/task067_prep/clap_forms_probe.json</code>（逐段 events / close_frac /
+  形态 / gate 判定全量在册；spec 内嵌）</li>
+<li>图 provenance：<code>outputs/task067_prep/clap_forms_traces.json</code></li>
+<li>视频池 provenance：<code>outputs/task067_prep/clap_wave_review_manifest.json</code>
+  （196 条 pair 视频的生成记录）</li>
+<li>前端：端口 8772，manifest <code>outputs/task067_prep/clap_forms_review_manifest.json</code>，
+  判定库 <code>outputs/task067_prep/review_clap_forms.sqlite3</code></li>
+<li>Command：<code>uv run python scripts/probe_task067_clap_forms.py</code></li>
+<li>Source code：<code>scripts/probe_task067_clap_forms.py</code>；
+  历史账（S1 纯变换记录）<code>outputs/task067_prep/step1_history_ledger.md</code></li>
+</ul>
+<h3 id="_1">代表段元数据</h3>
+<table>
+<thead>
+<tr>
+<th>段</th>
+<th>形态</th>
+<th style="text-align: right;">close_frac</th>
+<th style="text-align: right;">接触事件</th>
+<th>gate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>00083_clap_val_377_2_245_295</td>
+<td>单次拍</td>
+<td style="text-align: right;">0.146</td>
+<td style="text-align: right;">1</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>00165_clap_val_1295_1_534_634</td>
+<td>拍合后保持</td>
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">1</td>
+<td>保留</td>
+</tr>
+<tr>
+<td>00174_clap_val_1309_0_0_152</td>
+<td>全程贴合</td>
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">0</td>
+<td>删除（jerk,accel,motion_preservation）</td>
+</tr>
+<tr>
+<td>00535_clap_val_197_1_30_118</td>
+<td>hold 形（闭合展品）</td>
+<td style="text-align: right;">1.0（参考侧）</td>
+<td style="text-align: right;">—</td>
+<td>保留；ref_min 0.087 / exec_min 0.217</td>
+</tr>
+</tbody>
+</table>
+<h3 id="terms-and-prior-reports">Terms and prior reports</h3>
+<ul>
+<li>小幅度隐式偏删的测量：<code>outputs/task067_prep/amp_bias_probe.json</code> 与
+  <code>outputs/task067_prep/observations.md</code>（Obs-2 / M-3 / M-4）。</li>
+<li>历史筛选合规审计：<code>outputs/task067_prep/step1_report.md</code>。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
