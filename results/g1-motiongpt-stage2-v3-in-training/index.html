@@ -28,14 +28,14 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-11-g1-motiongpt-stage2-v3-in-training.md</code></p>
 <h1 id="g1-motiongpt-stage-2-vadcompose-v3">G1 MotionGPT Stage 2 — 把 VADCompose V3 加入训练数据后的动作命名与污染判别</h1>
 <p>Preliminary。第二阶段（动作-语言模型）先只用 BABEL 训练、再把 VADCompose V3 的干净段加入训练，
-本报告记录两轮的观测、两个测量缺陷的修复，以及目前能与不能证明的结论。</p>
+本报告记录两轮的观测、两个测量缺陷的修复，以及能与不能证明的结论。第二轮训练已跑完 60,000 步。</p>
 <h2 id="conclusion">Conclusion</h2>
-<p><strong>INCONCLUSIVE</strong>（前置条件 PASS，污染判别读数 FAIL；第二轮训练仍在进行，最终数字 PENDING）</p>
+<p><strong>FAIL</strong>（留出集判别 AUC 未达靶子；训练已完成，数字为终值）</p>
 <ul>
-<li>加入 V3 后前置条件成立：模型在 V3 干净段上叫出标称动作的比例 <strong>62.4%</strong>，多数类基线 16.7%（<a href="#results">主表</a>）。只用 BABEL 训练时该能力不可用——BABEL 的 <code>act_cat</code> 词表把握手说成 <code>arm movements</code>、把抱臂说成 <code>touching body part</code>。</li>
-<li>反向信号是决定性的：同一模型在<strong>脏段</strong>上叫出标称动作的比例是 <strong>63.0%</strong>，与干净段无差异，<code>n_extra</code> 判别 AUC <strong>0.497</strong>，靶子是手工特征基线的 0.615。</li>
-<li>本轮不能证明"动作-语言模型对污染无效"：只证明<strong>这两个读数</strong>（有没有叫出标称动作、多叫了几个动作）不携带污染信息。</li>
-<li>当前决定：第二轮训练跑完后按同一口径出最终数字；在此之前不追加训练预算，改为设计不依赖"生成动作名"的读数。</li>
+<li>决定性证据在完全留出的 V3 train split：判别 AUC 为 <strong>0.477</strong>（<code>n_extra</code>）与 <strong>0.526</strong>（<code>nominal_surprisal</code>），均低于手工特征基线 <strong>0.615</strong>（<a href="#results">主表</a>）。同一集合上脏段叫出标称动作的比例 <strong>0.370</strong> 反而高于干净段 <strong>0.324</strong>，方向与假设相反。</li>
+<li>一个容易误读的数：V3 val 上 <code>nominal_surprisal</code> 的 AUC 是 <strong>0.706</strong>，超过靶子——但该集合 1,559 个干净段中有 1,248 个进过训练，这个数由记忆产生，不成立。</li>
+<li>加入 V3 确实带来了目标域的命名能力：留出的 V3 val 干净段上命名率 62.7%，多数类基线 16.7%；只用 BABEL 训练时模型把握手说成 <code>arm movements</code>、把抱臂说成 <code>touching body part</code>。但该能力不跨 split 迁移（0.627 → 0.324），也不携带污染信息。</li>
+<li>不能证明"动作-语言模型对污染无效"：只证明<strong>生成动作名这一类读数</strong>（叫出标称动作、多叫了几个、标称动作的负对数似然）在本设置下不携带污染信息。</li>
 </ul>
 <h2 id="problem-and-terminology">Problem and terminology</h2>
 <p>研究问题：一个在 G1 空间自训的动作-语言模型，能否通过"说出这一段里有哪些动作"来判别 VADCompose 片段是否被污染？</p>
@@ -80,8 +80,8 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td>多数类基线</td>
-<td>永远输出留出集里最高频的那个标称动作（<code>cross_arms</code>）的命中率</td>
-<td>用于判断 62.4% 是否只是先验</td>
+<td>永远输出被评测集合里最高频的那个标称动作的命中率；随集合变化：V3 val 留出 <code>cross_arms</code> 0.167，V3 train 留出 <code>wave_arms</code> 0.082</td>
+<td>用于判断命名率是否只是先验；不是分类器基线</td>
 </tr>
 </tbody>
 </table>
@@ -117,11 +117,11 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td>训练超参</td>
-<td>batch 16，lr 1e-4（OneCycle），bf16，60,000 步；报告时轮 2 在 34,000 步</td>
+<td>batch 16，lr 1e-4（OneCycle），bf16，60,000 步（已跑完，58 min）</td>
 </tr>
 <tr>
 <td>评测采样</td>
-<td>留出 clean 与 dirty 各取前 311 条（全部留出 clean，dirty 等量截取），贪心解码，<code>max_new_tokens=24</code></td>
+<td>最终数字为 V3 两个 split 的<strong>全部</strong>有标签段（train 645 clean + 1,127 dirty，val 1,559 + 1,313）；训练期曲线为 V3 val 留出 clean 311 + dirty 311。贪心解码，<code>max_new_tokens=24</code></td>
 </tr>
 </tbody>
 </table>
@@ -138,20 +138,26 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <tr>
 <td>前置：干净段叫出标称动作</td>
 <td>显著高于多数类基线 16.7%</td>
-<td>62.4%</td>
+<td>62.7%（V3 val 留出）</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>污染判别 <code>n_extra</code> 跨 split AUC</td>
-<td>&gt; 0.615（手工特征基线）</td>
-<td>0.497（V3 val 留出，非跨 split）</td>
+<td>前置能否跨 split 迁移</td>
+<td>与同 split 同量级</td>
+<td>32.4%（V3 train 留出）</td>
 <td>FAIL</td>
 </tr>
 <tr>
-<td>最终跨 split AUC（V3 train 段）</td>
+<td>最终跨 split AUC <code>n_extra</code></td>
+<td>&gt; 0.615（手工特征基线）</td>
+<td>0.477</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td>最终跨 split AUC <code>nominal_surprisal</code></td>
 <td>&gt; 0.615</td>
-<td>PENDING（训练未完成）</td>
-<td>BLOCKED</td>
+<td>0.526</td>
+<td>FAIL</td>
 </tr>
 </tbody>
 </table>
@@ -172,42 +178,52 @@ logs/g1_motiongpt/**/evidence.json。这些设置是对话中逐条裁定后落�
 <code>"Name the single action performed: "</code>。另有两处测量侧修复（见 Analysis），它们改变的是读数不是模型。</p>
 </details>
 <h2 id="results">Results</h2>
-<p>主表：轮 2 checkpoint（step 34,000），修复解码缺陷后测量，V3 val 留出集，clean 与 dirty 各 311 段。</p>
+<p>主表：轮 2 最终 checkpoint（step 60,000），修复解码缺陷后测量。左半为完全留出的 V3 train split，
+右半为 V3 val split（其中 1,248/1,559 干净段进过训练，仅作对照）。</p>
 <table>
 <thead>
 <tr>
 <th>Readout</th>
-<th style="text-align: right;">clean</th>
-<th style="text-align: right;">dirty</th>
-<th style="text-align: right;">判别 AUC ↑</th>
-<th>参照</th>
+<th style="text-align: right;">V3 train 留出 clean (n=645)</th>
+<th style="text-align: right;">V3 train 留出 dirty (n=1,127)</th>
+<th style="text-align: right;">留出判别 AUC ↑</th>
+<th style="text-align: right;">V3 val 判别 AUC（训练污染）</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>named_nominal</code>（叫出标称动作，比例 ↑）</td>
-<td style="text-align: right;"><strong>0.624</strong></td>
-<td style="text-align: right;"><strong>0.630</strong></td>
-<td style="text-align: right;">0.497</td>
-<td>多数类基线 0.167</td>
-</tr>
-<tr>
-<td><code>n_extra</code>（额外动作个数，段均 ↓ 表示更干净）</td>
-<td style="text-align: right;">0.376</td>
+<td style="text-align: right;">0.324</td>
 <td style="text-align: right;">0.370</td>
-<td style="text-align: right;">0.497</td>
-<td>—</td>
+<td style="text-align: right;"><strong>0.477</strong></td>
+<td style="text-align: right;">0.514</td>
 </tr>
 <tr>
-<td>手工特征基线（跨 split，对照）</td>
+<td><code>n_extra</code>（额外动作个数，段均 ↓ 更干净）</td>
+<td style="text-align: right;">0.676</td>
+<td style="text-align: right;">0.630</td>
+<td style="text-align: right;"><strong>0.477</strong></td>
+<td style="text-align: right;">0.514</td>
+</tr>
+<tr>
+<td><code>nominal_surprisal</code>（标称动作负对数似然 ↓ 更干净）</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>0.526</strong></td>
+<td style="text-align: right;">0.706（不成立）</td>
+</tr>
+<tr>
+<td>手工特征基线（同一 val→train 协议）</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;">—</td>
 <td style="text-align: right;"><strong>0.615</strong></td>
-<td><code>extra_trees</code>，同 split 交叉验证 0.747</td>
+<td style="text-align: right;">同 split 交叉验证 0.747</td>
 </tr>
 </tbody>
 </table>
-<p><img alt="左：V3 留出集上模型叫出标称动作的比例，clean 0.624 / dirty 0.630，虚线为多数类基线 0.167；右：以 n_extra 判别脏段的 AUC 0.497，点线为抛硬币 0.500，红色虚线为手工特征基线 0.615。两轴方向均为越高越好。" src="assets/v3-naming-vs-discrimination.png"></p>
+<p>训练后半程无变化：从 step 28,000 到 60,000 共 17 个 checkpoint，V3 val 留出集上命名率在
+0.614–0.630 之间、判别 AUC 在 0.497–0.514 之间，均无趋势（<code>outputs/g1_motiongpt/snapshot_rescore/evidence.json</code>）。</p>
+<p><img alt="左：完全留出的 V3 train split 上模型叫出标称动作的比例，clean 0.324 / dirty 0.370，虚线为多数类基线 0.167；右：判别 AUC 三个点，留出集的 n_extra 0.477 与 nominal_surprisal 0.526 均低于手工特征基线 0.615，橙色的 0.706 来自训练污染的 val 集合不成立。两轴方向均为越高越好。" src="assets/v3-naming-vs-discrimination.png"></p>
 <p>轮 1（只用 BABEL）在同一评测下 <code>named_nominal</code> 干净段 0.203、脏段 0.043，AUC 0.532（val）/ 0.573（train）；
 该轮数字受下述解码缺陷污染，且原 checkpoint 已被轮 2 覆盖，无法用修复后代码复测，仅作定性参照。</p>
 <table>
@@ -234,17 +250,22 @@ logs/g1_motiongpt/**/evidence.json。这些设置是对话中逐条裁定后落�
 </table>
 <h2 id="analysis">Analysis</h2>
 <ul>
-<li>加入 V3 使模型获得了在目标域用目标词表命名动作的能力（<a href="#results">主表</a>：62.4% vs 多数类 16.7%）。工作解释：BABEL 的 <code>act_cat</code> 体系里没有 <code>handshake</code> 类目、<code>cross_arms</code> 对应的是 <code>crossing limbs</code>，模型只用 BABEL 训练时说的是 <code>arm movements</code> 这类不指向动作身份的词。此解释来自轮 1 生成文本的直接观察，非单因素隔离实验。</li>
-<li>命名能力与污染判别脱钩：脏段命名率 63.0% 与干净段 62.4% 无差异。这说明污染段中的第二个动作没有进入生成结果，而不是模型认错了标称动作。为什么没有进入，本轮无法回答（<code>待验证</code>）。</li>
+<li>加入 V3 使模型获得了目标域的命名能力（V3 val 留出 62.7% vs 多数类 16.7%）。工作解释：BABEL 的 <code>act_cat</code> 体系里没有 <code>handshake</code> 类目、<code>cross_arms</code> 对应的是 <code>crossing limbs</code>，模型只用 BABEL 训练时说的是 <code>arm movements</code> 这类不指向动作身份的词。此解释来自轮 1 生成文本的直接观察，非单因素隔离实验。</li>
+<li>该能力不跨 split 迁移：同一 checkpoint 在 V3 val 留出上 62.7%、在 V3 train 留出上 32.4%（<a href="#results">主表</a>）。手工特征基线在同一协议下也从 0.747 掉到 0.615，两条线都在同一处掉，<code>待验证</code> 是分布差异还是两轮审查的标注口径差异。</li>
+<li>命名能力与污染判别脱钩，且留出集上方向相反（脏 0.370 &gt; 干净 0.324）。这说明污染段中的第二个动作没有进入生成结果，不是模型认错了标称动作。为什么没有进入，本轮无法回答（<code>待验证</code>）。</li>
 <li>两个测量缺陷已修复，都曾把正确预测判成错误：解码在序列吐出 EOS 后继续生成，<code>"wave arms"</code> 被写成 <code>"wave armse"</code>，字符串匹配随即失败（同一 checkpoint 命名率 0.148 → 0.602）；BABEL 窗口 F1 的验证生成只有 32 个样本，标准误约 ±0.08，盖住全部观测差异，且仅比"永远输出 walk/stand/transition"的常数基线（F1 0.202）高 0.047。</li>
-<li>下一步不追加训练预算。理由是命名能力已达 62.4% 而判别 AUC 停在 0.497，两者脱钩不是训练量问题。改为设计不依赖"生成动作名"的读数（<code>待验证</code>）。</li>
+<li>下一步不追加训练预算。理由是 28,000 步之后 32,000 步的训练没有改变任何 V3 读数，判别 AUC 全程在 0.497–0.514。改为设计不依赖"生成动作名"的读数（<code>待验证</code>）。</li>
 </ul>
 <details>
 <summary>Appendix — 头条数字代入式</summary>
-<p><strong><code>named_nominal</code> = 0.624</strong>：留出 clean 311 段，逐段判断 m2t 生成文本解析出的动作父类集合是否包含该段 <code>action_parent</code>，命中记 1；194 / 311 = 0.6238。</p>
-<p><strong>多数类基线 = 0.167</strong>：留出 clean 311 段中最高频的 <code>action_parent</code> 是 <code>cross_arms</code>，52 / 311 = 0.1672。永远输出该类的命中率即此值。</p>
-<p><strong>判别 AUC = 0.497</strong>：以 dirty 为正类、clean 为负类，对 <code>n_extra</code> 排秩（平局取平均秩）。
-<code>AUC = (R_pos − n_pos(n_pos+1)/2) / (n_pos · n_neg)</code>，n_pos = n_neg = 311。</p>
+<p><strong><code>named_nominal</code> = 0.324</strong>（V3 train 留出）：645 个 clean 段中，m2t 生成文本解析出的动作父类集合包含该段 <code>action_parent</code> 的有 209 个；209 / 645 = 0.3240。脏段为 417 / 1,127 = 0.3700。</p>
+<p><strong>多数类基线 = 0.082</strong>（V3 train 留出）：645 个 clean 段中最高频的 <code>action_parent</code> 是 <code>wave_arms</code>，53 / 645 = 0.0822。V3 val 留出集上该值为 <code>cross_arms</code> 52 / 311 = 0.1672。</p>
+<p><strong>判别 AUC = 0.526</strong>（<code>nominal_surprisal</code>，V3 train 留出）：以 dirty 为正类、clean 为负类排秩（平局取平均秩），
+<code>AUC = (R_pos − n_pos(n_pos+1)/2) / (n_pos · n_neg)</code>，n_pos = 1,127，n_neg = 645。
+直接两两比较 P(dirty &gt; clean) = 0.5259，与秩公式一致，零平局。</p>
+<p><strong>为什么 surprisal 中位数差 18 倍却几乎不分离</strong>：两组都是双峰。四分之一以上的段 surprisal 恰好为 0
+（模型完全确定），而上四分位几乎重合（clean p75 6.295 / dirty 6.214，p90 8.673 / 8.283）。
+中位数落在分布的陡坡上，clean 在零点多一点质量就足以把中位数从 2.711 拉到 0.152，秩序关系却没变。</p>
 <p><strong>手工特征基线 0.615</strong>：<code>extra_trees</code> 在 V3 val（1,559 clean / 1,313 dirty）上训练，在 V3 train（645 clean / 1,127 dirty）上测。95% 纯度阈值下 <code>extra_trees</code> 无可行操作点，<code>logistic</code> 仅保留 2 段。</p>
 </details>
 <details>
@@ -255,14 +276,17 @@ data/processed/g1_motiongpt_corpus/codes.npz.json    预分词码字统计
 data/processed/VADCompose_Released_Cleaned_V3/       V3 标签层（manifest + README）
 outputs/g1_motiongpt/baseline_v3_labels/evidence.json 手工特征基线
 outputs/g1_motiongpt/eval_v3_smoke/per_segment.json  轮 1 逐段生成文本（受解码缺陷影响）
-outputs/g1_motiongpt/v3_monitor_fixed_decoding.json  主表来源
-logs/g1_motiongpt/motion_lm/history.json             轮 2 训练历史
-logs/g1_motiongpt/motion_lm/snapshots/               轮 2 中间 checkpoint
+outputs/g1_motiongpt/eval_v3_final/                  主表来源（逐段生成 + 汇总）
+outputs/g1_motiongpt/snapshot_rescore/evidence.json  17 个 checkpoint 用修复解码补测的曲线
+outputs/g1_motiongpt/v3_monitor_fixed_decoding.json  step 34,000 的单点复测
+logs/g1_motiongpt/motion_lm/history.json             轮 2 训练历史（V3 三列受解码缺陷影响，作废）
+logs/g1_motiongpt/motion_lm/snapshots/               轮 2 中间 checkpoint（17 份）
 </code></pre>
 <pre><code class="language-bash">uv run python src/G1_Motion_GPT/data/build_corpus.py --workers 12
 uv run python src/G1_Motion_GPT/train_tokenizer.py --steps 150000 --batch 256
 uv run python src/G1_Motion_GPT/pretokenize.py
 uv run python src/G1_Motion_GPT/train_motion_lm.py --steps 60000 --batch 16 --v3-frac 0.35
+uv run python src/G1_Motion_GPT/rescore_snapshots.py
 uv run python src/G1_Motion_GPT/eval_on_v3.py --lm logs/g1_motiongpt/motion_lm/motion_lm.pt
 </code></pre>
 <p>实现源码：<code>src/G1_Motion_GPT/</code>（<code>data/features.py</code>、<code>model/tokenizer.py</code>、<code>model/motion_lm.py</code>、

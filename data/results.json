@@ -2,15 +2,15 @@
   "results": [
     {
       "slug": "g1-motiongpt-stage2-v3-in-training",
-      "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination (preliminary)",
+      "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination",
       "date": "2026-08-11",
       "project": "VAD Alignment",
       "category": "Dataset & Tracker",
-      "status": "PRELIMINARY",
-      "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix lifts nominal-action naming on held-out clean segments to 62.4% against a 16.7% majority-class baseline, but the same model names the nominal action equally well on contaminated segments (63.0%), leaving discrimination AUC at 0.497 versus a 0.615 handcrafted-feature baseline. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
+      "status": "FAIL",
+      "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix teaches the target vocabulary, but on the fully held-out split discrimination AUC is 0.477 (extra actions named) and 0.526 (nominal-action surprisal) against a 0.615 handcrafted-feature baseline, and contaminated segments have their nominal action named slightly more often than clean ones. A 0.706 AUC on the other split is reported and rejected: 1,248 of its 1,559 clean segments were in training. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
       "path": "results/g1-motiongpt-stage2-v3-in-training/",
       "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
-      "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on clean (0.624) and dirty (0.630) held-out segments above a 0.167 majority-class baseline, and a dot showing discrimination AUC 0.497 below the 0.500 chance line and the 0.615 handcrafted baseline.",
+      "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on the held-out split, clean 0.324 and dirty 0.370 above a 0.082 majority-class baseline, and three dots for discrimination AUC where the two held-out readouts 0.477 and 0.526 fall below the 0.615 handcrafted baseline while a training-contaminated 0.706 sits above it.",
       "tags": [
         "motion-language model",
         "VQ-VAE tokenizer",
@@ -21,16 +21,16 @@
       ],
       "metrics": [
         {
-          "value": "62.4%",
-          "label": "Nominal action named, held-out clean (majority baseline 16.7%)"
+          "value": "0.477 / 0.526",
+          "label": "Held-out contamination AUC, generated actions / surprisal (target 0.615)"
         },
         {
-          "value": "0.497",
-          "label": "Contamination AUC from generated action set (target 0.615)"
+          "value": "0.324 vs 0.370",
+          "label": "Nominal action named on held-out clean vs contaminated segments"
         },
         {
-          "value": "512/512",
-          "label": "Motion codebook entries used across the corpus"
+          "value": "0.706",
+          "label": "Same readout on the training-contaminated split — rejected, not a result"
         }
       ]
     },
