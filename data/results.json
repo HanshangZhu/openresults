@@ -1,6 +1,74 @@
 {
   "results": [
     {
+      "slug": "g1-motiongpt-stage2-v3-in-training",
+      "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination (preliminary)",
+      "date": "2026-08-11",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PRELIMINARY",
+      "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix lifts nominal-action naming on held-out clean segments to 62.4% against a 16.7% majority-class baseline, but the same model names the nominal action equally well on contaminated segments (63.0%), leaving discrimination AUC at 0.497 versus a 0.615 handcrafted-feature baseline. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
+      "path": "results/g1-motiongpt-stage2-v3-in-training/",
+      "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
+      "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on clean (0.624) and dirty (0.630) held-out segments above a 0.167 majority-class baseline, and a dot showing discrimination AUC 0.497 below the 0.500 chance line and the 0.615 handcrafted baseline.",
+      "tags": [
+        "motion-language model",
+        "VQ-VAE tokenizer",
+        "dataset cleaning",
+        "BABEL",
+        "G1",
+        "negative result"
+      ],
+      "metrics": [
+        {
+          "value": "62.4%",
+          "label": "Nominal action named, held-out clean (majority baseline 16.7%)"
+        },
+        {
+          "value": "0.497",
+          "label": "Contamination AUC from generated action set (target 0.615)"
+        },
+        {
+          "value": "512/512",
+          "label": "Motion codebook entries used across the corpus"
+        }
+      ]
+    },
+    {
+      "slug": "task067-clap-form-and-exec-closure-audit",
+      "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
+      "date": "2026-08-08",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
+      "path": "results/task067-clap-form-and-exec-closure-audit/",
+      "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
+      "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
+      "tags": [
+        "TASK-067",
+        "Clap",
+        "VADCompose",
+        "Tracker execution",
+        "Semantic audit",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "54.3%",
+          "label": "hold-form share of V2 clap references (107/197)"
+        },
+        {
+          "value": "+6.1 cm",
+          "label": "median closure gap: executed vs reference min wrist distance"
+        },
+        {
+          "value": "14.3%",
+          "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
+        }
+      ]
+    },
+    {
       "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
       "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
       "date": "2026-08-05",
@@ -317,40 +385,6 @@
         {
           "value": "~6×/~4×",
           "label": "walk/kick jerk medians"
-        }
-      ]
-    },
-    {
-      "slug": "task067-clap-form-and-exec-closure-audit",
-      "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
-      "date": "2026-08-08",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "PASS",
-      "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
-      "path": "results/task067-clap-form-and-exec-closure-audit/",
-      "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
-      "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
-      "tags": [
-        "TASK-067",
-        "Clap",
-        "VADCompose",
-        "Tracker execution",
-        "Semantic audit",
-        "G1"
-      ],
-      "metrics": [
-        {
-          "value": "54.3%",
-          "label": "hold-form share of V2 clap references (107/197)"
-        },
-        {
-          "value": "+6.1 cm",
-          "label": "median closure gap: executed vs reference min wrist distance"
-        },
-        {
-          "value": "14.3%",
-          "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
         }
       ]
     }

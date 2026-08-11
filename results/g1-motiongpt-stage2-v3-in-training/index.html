@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 MotionGPT Stage 2 — 把 VADCompose V3 加入训练数据后的动作命名与污染判别</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-11-g1-motiongpt-stage2-v3-in-training.md</code></p>
+<h1 id="g1-motiongpt-stage-2-vadcompose-v3">G1 MotionGPT Stage 2 — 把 VADCompose V3 加入训练数据后的动作命名与污染判别</h1>
+<p>Preliminary。第二阶段（动作-语言模型）先只用 BABEL 训练、再把 VADCompose V3 的干净段加入训练，
+本报告记录两轮的观测、两个测量缺陷的修复，以及目前能与不能证明的结论。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>INCONCLUSIVE</strong>（前置条件 PASS，污染判别读数 FAIL；第二轮训练仍在进行，最终数字 PENDING）</p>
+<ul>
+<li>加入 V3 后前置条件成立：模型在 V3 干净段上叫出标称动作的比例 <strong>62.4%</strong>，多数类基线 16.7%（<a href="#results">主表</a>）。只用 BABEL 训练时该能力不可用——BABEL 的 <code>act_cat</code> 词表把握手说成 <code>arm movements</code>、把抱臂说成 <code>touching body part</code>。</li>
+<li>反向信号是决定性的：同一模型在<strong>脏段</strong>上叫出标称动作的比例是 <strong>63.0%</strong>，与干净段无差异，<code>n_extra</code> 判别 AUC <strong>0.497</strong>，靶子是手工特征基线的 0.615。</li>
+<li>本轮不能证明"动作-语言模型对污染无效"：只证明<strong>这两个读数</strong>（有没有叫出标称动作、多叫了几个动作）不携带污染信息。</li>
+<li>当前决定：第二轮训练跑完后按同一口径出最终数字；在此之前不追加训练预算，改为设计不依赖"生成动作名"的读数。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题：一个在 G1 空间自训的动作-语言模型，能否通过"说出这一段里有哪些动作"来判别 VADCompose 片段是否被污染？</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>动作分词器</td>
+<td>第一阶段训练的 VQ-VAE，把 20 fps × 106 维 G1 特征按 4 帧压成 1 个离散码字，码本 512 词；第二阶段全程冻结</td>
+<td>不是动作分类器；它没有类别概念</td>
+</tr>
+<tr>
+<td>m2t</td>
+<td>motion-to-text：输入动作码字，输出动作名文本。本报告的判别读数全部由它产生</td>
+<td>与 t2m（照文本生成码字）相对，t2m 只作反向约束</td>
+</tr>
+<tr>
+<td><code>named_nominal</code></td>
+<td>m2t 生成文本解析出的动作集合是否包含该段的标称动作，逐段 0/1，按段平均</td>
+<td>不是分类准确率：模型未被告知候选集，可输出任意动作名</td>
+</tr>
+<tr>
+<td><code>n_extra</code></td>
+<td>生成集合中既非标称动作、也不在 neutral 白名单内的动作个数</td>
+<td>neutral 白名单 = <code>transition</code> / <code>stand</code> / <code>unknown</code>，沿用 <code>babel_reference_50hz_label_map_v2_others.json</code></td>
+</tr>
+<tr>
+<td>V3 标签三态</td>
+<td><code>clean</code> = 审查记录判 pass；<code>dirty</code> = 显式判 fail <strong>或</strong>看过但跳过未打标；<code>unreviewed</code> = 两表都无，不可当负例</td>
+<td>只读 <code>reviews</code> 表会丢掉绝大部分负例（val 侧表面 39 个，实为 1,313 个）</td>
+</tr>
+<tr>
+<td>跨 split AUC</td>
+<td>在 V3 val 段上训练/调参，在 V3 train 段上测；两个 split 由不同标注者审查</td>
+<td>与同 split 交叉验证不可比：手工特征基线同 split 0.747、跨 split 0.615</td>
+</tr>
+<tr>
+<td>多数类基线</td>
+<td>永远输出留出集里最高频的那个标称动作（<code>cross_arms</code>）的命中率</td>
+<td>用于判断 62.4% 是否只是先验</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>Results profile：<code>evaluator-offline</code>（纯离线数值评测，无策略执行，不含 rollout）。</p>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>设置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>骨干</td>
+<td>Flan-T5-Base；<code>shared</code>（文本 embedding）与 <code>lm_head</code>（文本输出头）冻结，逐参数核验梯度为 None；可训 199.02 M / 冻结 49.35 M</td>
+</tr>
+<tr>
+<td>动作词表</td>
+<td>512 码字 + <code>&lt;som&gt;</code> + <code>&lt;eom&gt;</code>，并排 embedding + 输出头，从零学</td>
+</tr>
+<tr>
+<td>训练语料（轮 1）</td>
+<td>BABEL 窗口：AMASS→G1 池 13,016 条序列切 3–10 s 窗口，目标文本 = 窗口内所有 BABEL span 按时间顺序列举</td>
+</tr>
+<tr>
+<td>训练语料（轮 2）</td>
+<td>同上 + V3 <strong>val split</strong> 的 clean 段 1,248 条（目标文本 = 标称动作本身），采样占比 <code>v3_frac=0.35</code></td>
+</tr>
+<tr>
+<td>留出</td>
+<td>V3 val clean 311 条 + V3 val dirty 1,313 条用于监控；V3 <strong>train split</strong> 1,772 条完全不进训练，留作最终评测</td>
+</tr>
+<tr>
+<td>训练超参</td>
+<td>batch 16，lr 1e-4（OneCycle），bf16，60,000 步；报告时轮 2 在 34,000 步</td>
+</tr>
+<tr>
+<td>评测采样</td>
+<td>留出 clean 与 dirty 各取前 311 条（全部留出 clean，dirty 等量截取），贪心解码，<code>max_new_tokens=24</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>前置：干净段叫出标称动作</td>
+<td>显著高于多数类基线 16.7%</td>
+<td>62.4%</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>污染判别 <code>n_extra</code> 跨 split AUC</td>
+<td>&gt; 0.615（手工特征基线）</td>
+<td>0.497（V3 val 留出，非跨 split）</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td>最终跨 split AUC（V3 train 段）</td>
+<td>&gt; 0.615</td>
+<td>PENDING（训练未完成）</td>
+<td>BLOCKED</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 状态</summary>
+<p>方向与硬约束有确认版计划文档
+<a href="../../docs/plans/2026-08-11-plan-experiment-g1-motiongpt-contamination.md"><code>docs/plans/2026-08-11-plan-experiment-g1-motiongpt-contamination.md</code></a>，
+其中 §3 记录了 G1 原生表示、文本侧冻结、语料来源与时基门禁。该文档的 §3 正式 spec 标注为
+"待二次确认"，§2 探针 A 已标 SUPERSEDED。</p>
+<p><code>NOT PREREGISTERED — 第二阶段的具体训练设置（v3_frac、步数、batch、lr、留出比例、评测采样）
+没有确认版 Run Spec。已搜索：docs/plans/、report/G1_MotionGPT/、outputs/g1_motiongpt/**/evidence.json、
+logs/g1_motiongpt/**/evidence.json。这些设置是对话中逐条裁定后落到代码里的，
+本报告按 observed setup 记录，不称为预注册判据。</code></p>
+</details>
+<details>
+<summary>与轮 1 的差异</summary>
+<p>唯一有意的差异是训练数据：轮 1 只有 BABEL 窗口，轮 2 增加 V3 val clean 段（<code>v3_frac=0.35</code>）并给它专属提示词
+<code>"Name the single action performed: "</code>。另有两处测量侧修复（见 Analysis），它们改变的是读数不是模型。</p>
+</details>
+<h2 id="results">Results</h2>
+<p>主表：轮 2 checkpoint（step 34,000），修复解码缺陷后测量，V3 val 留出集，clean 与 dirty 各 311 段。</p>
+<table>
+<thead>
+<tr>
+<th>Readout</th>
+<th style="text-align: right;">clean</th>
+<th style="text-align: right;">dirty</th>
+<th style="text-align: right;">判别 AUC ↑</th>
+<th>参照</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>named_nominal</code>（叫出标称动作，比例 ↑）</td>
+<td style="text-align: right;"><strong>0.624</strong></td>
+<td style="text-align: right;"><strong>0.630</strong></td>
+<td style="text-align: right;">0.497</td>
+<td>多数类基线 0.167</td>
+</tr>
+<tr>
+<td><code>n_extra</code>（额外动作个数，段均 ↓ 表示更干净）</td>
+<td style="text-align: right;">0.376</td>
+<td style="text-align: right;">0.370</td>
+<td style="text-align: right;">0.497</td>
+<td>—</td>
+</tr>
+<tr>
+<td>手工特征基线（跨 split，对照）</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>0.615</strong></td>
+<td><code>extra_trees</code>，同 split 交叉验证 0.747</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="左：V3 留出集上模型叫出标称动作的比例，clean 0.624 / dirty 0.630，虚线为多数类基线 0.167；右：以 n_extra 判别脏段的 AUC 0.497，点线为抛硬币 0.500，红色虚线为手工特征基线 0.615。两轴方向均为越高越好。" src="assets/v3-naming-vs-discrimination.png"></p>
+<p>轮 1（只用 BABEL）在同一评测下 <code>named_nominal</code> 干净段 0.203、脏段 0.043，AUC 0.532（val）/ 0.573（train）；
+该轮数字受下述解码缺陷污染，且原 checkpoint 已被轮 2 覆盖，无法用修复后代码复测，仅作定性参照。</p>
+<table>
+<thead>
+<tr>
+<th>上游阶段</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>动作分词器（150,000 步，22.2 min）</td>
+<td>码本使用 497/512，死码字 0；验证重建最低 0.3106 @ 16,000 步，终点 0.3190（+2.7%）</td>
+</tr>
+<tr>
+<td>语料预分词</td>
+<td>13,016 条序列 → 718,315 个 token，<strong>512/512 码字全部被使用</strong></td>
+</tr>
+<tr>
+<td>训练语料</td>
+<td>41,762 个 BABEL span，28.8% 带多个 <code>act_cat</code>；时长对齐门禁 <code>duration_mismatch = 0</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>加入 V3 使模型获得了在目标域用目标词表命名动作的能力（<a href="#results">主表</a>：62.4% vs 多数类 16.7%）。工作解释：BABEL 的 <code>act_cat</code> 体系里没有 <code>handshake</code> 类目、<code>cross_arms</code> 对应的是 <code>crossing limbs</code>，模型只用 BABEL 训练时说的是 <code>arm movements</code> 这类不指向动作身份的词。此解释来自轮 1 生成文本的直接观察，非单因素隔离实验。</li>
+<li>命名能力与污染判别脱钩：脏段命名率 63.0% 与干净段 62.4% 无差异。这说明污染段中的第二个动作没有进入生成结果，而不是模型认错了标称动作。为什么没有进入，本轮无法回答（<code>待验证</code>）。</li>
+<li>两个测量缺陷已修复，都曾把正确预测判成错误：解码在序列吐出 EOS 后继续生成，<code>"wave arms"</code> 被写成 <code>"wave armse"</code>，字符串匹配随即失败（同一 checkpoint 命名率 0.148 → 0.602）；BABEL 窗口 F1 的验证生成只有 32 个样本，标准误约 ±0.08，盖住全部观测差异，且仅比"永远输出 walk/stand/transition"的常数基线（F1 0.202）高 0.047。</li>
+<li>下一步不追加训练预算。理由是命名能力已达 62.4% 而判别 AUC 停在 0.497，两者脱钩不是训练量问题。改为设计不依赖"生成动作名"的读数（<code>待验证</code>）。</li>
+</ul>
+<details>
+<summary>Appendix — 头条数字代入式</summary>
+<p><strong><code>named_nominal</code> = 0.624</strong>：留出 clean 311 段，逐段判断 m2t 生成文本解析出的动作父类集合是否包含该段 <code>action_parent</code>，命中记 1；194 / 311 = 0.6238。</p>
+<p><strong>多数类基线 = 0.167</strong>：留出 clean 311 段中最高频的 <code>action_parent</code> 是 <code>cross_arms</code>，52 / 311 = 0.1672。永远输出该类的命中率即此值。</p>
+<p><strong>判别 AUC = 0.497</strong>：以 dirty 为正类、clean 为负类，对 <code>n_extra</code> 排秩（平局取平均秩）。
+<code>AUC = (R_pos − n_pos(n_pos+1)/2) / (n_pos · n_neg)</code>，n_pos = n_neg = 311。</p>
+<p><strong>手工特征基线 0.615</strong>：<code>extra_trees</code> 在 V3 val（1,559 clean / 1,313 dirty）上训练，在 V3 train（645 clean / 1,127 dirty）上测。95% 纯度阈值下 <code>extra_trees</code> 无可行操作点，<code>logistic</code> 仅保留 2 段。</p>
+</details>
+<details>
+<summary>Appendix — 证据路径与命令</summary>
+<pre><code>logs/g1_motiongpt/tokenizer/evidence.json            分词器 150k 步历史
+data/processed/g1_motiongpt_corpus/PACKAGE.json      语料计数与时基门禁
+data/processed/g1_motiongpt_corpus/codes.npz.json    预分词码字统计
+data/processed/VADCompose_Released_Cleaned_V3/       V3 标签层（manifest + README）
+outputs/g1_motiongpt/baseline_v3_labels/evidence.json 手工特征基线
+outputs/g1_motiongpt/eval_v3_smoke/per_segment.json  轮 1 逐段生成文本（受解码缺陷影响）
+outputs/g1_motiongpt/v3_monitor_fixed_decoding.json  主表来源
+logs/g1_motiongpt/motion_lm/history.json             轮 2 训练历史
+logs/g1_motiongpt/motion_lm/snapshots/               轮 2 中间 checkpoint
+</code></pre>
+<pre><code class="language-bash">uv run python src/G1_Motion_GPT/data/build_corpus.py --workers 12
+uv run python src/G1_Motion_GPT/train_tokenizer.py --steps 150000 --batch 256
+uv run python src/G1_Motion_GPT/pretokenize.py
+uv run python src/G1_Motion_GPT/train_motion_lm.py --steps 60000 --batch 16 --v3-frac 0.35
+uv run python src/G1_Motion_GPT/eval_on_v3.py --lm logs/g1_motiongpt/motion_lm/motion_lm.pt
+</code></pre>
+<p>实现源码：<code>src/G1_Motion_GPT/</code>（<code>data/features.py</code>、<code>model/tokenizer.py</code>、<code>model/motion_lm.py</code>、
+<code>data/dataset_v3.py</code>、<code>eval_on_v3.py</code>）。</p>
+</details>
+<details>
+<summary>Appendix — 轮 1 生成文本样例（受解码缺陷影响，仅示词表错配）</summary>
+<pre><code>标称 handshake   → 'stand, then transition, then arm movements and raising body part, ...'
+标称 cross_arms  → 'stand, then transition, then hand movements and touching body part, ...'
+标称 wave_arms   → 'stretch, then transition t pose t pose t pose ...'
+标称 walk        → 'walk, then turn, then walk, then turn, then walk, then turn jog'
+</code></pre>
+<p>轮 2 同类样例（修复解码后）：<code>wave_arms → 'wave arms'</code>、<code>kick → 'kick'</code>、<code>handshake → 'handshake'</code>、
+<code>crouch → 'crouch'</code>、<code>cross_arms → 'cross arms'</code>。</p>
+</details>
+</main>
+</body>
+</html>
