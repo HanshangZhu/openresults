@@ -1,392 +1,428 @@
 {
-  "results": [
+ "results": [
+  {
+   "slug": "g1-motiongpt-partbert-judge-halfb",
+   "title": "G1 MotionGPT judge line: part-token backbone (partbert) vs the T5 line on half-B",
+   "date": "2026-08-13",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "FAIL",
+   "summary": "Swapping the judge backbone to a from-scratch bidirectional encoder over upper/lower-body part tokens (register tokens, Muon, bf16), with physically-gated BABEL augmentations (speed/mirror/splice/part-mix, SONIC rollout gate incl. an FK-verified mirror), does not beat the T5 discrete-token line on the untouched half-B exam: best arm 0.670@22% recall is the top of a 5-seed band (median 0.612) vs 0.578@32% for the incumbent; the preregistered criterion (purity>0.578 at recall≥30%) fails on all five arms. The one stable gain: synthetic concurrent-window detection at 0.96–0.98. Ruling: back to the discrete-token default line.",
+   "path": "results/g1-motiongpt-partbert-judge-halfb/",
+   "thumbnail": "results/g1-motiongpt-partbert-judge-halfb/assets/thumbnail.png",
+   "thumbnailAlt": "Left: five seed dots for the partbert no-augmentation arm straddling the incumbent 0.578 dashed line, values 0.548 to 0.670. Right: five grey purity-recall curves overlapping the blue incumbent curve, all converging to the 0.363 no-filter base rate.",
+   "tags": [
+    "part tokens",
+    "register tokens",
+    "Muon",
+    "data augmentation",
+    "SONIC gate",
+    "dataset cleaning",
+    "G1",
+    "negative result"
+   ],
+   "metrics": [
     {
-      "slug": "g1-motiongpt-stage2-v3-in-training",
-      "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination",
-      "date": "2026-08-11",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "FAIL",
-      "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix teaches the target vocabulary, but on the fully held-out split discrimination AUC is 0.477 (extra actions named) and 0.526 (nominal-action surprisal) against a 0.615 handcrafted-feature baseline, and contaminated segments have their nominal action named slightly more often than clean ones. A 0.706 AUC on the other split is reported and rejected: 1,248 of its 1,559 clean segments were in training. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
-      "path": "results/g1-motiongpt-stage2-v3-in-training/",
-      "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
-      "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on the held-out split, clean 0.324 and dirty 0.370 above a 0.082 majority-class baseline, and three dots for discrimination AUC where the two held-out readouts 0.477 and 0.526 fall below the 0.615 handcrafted baseline while a training-contaminated 0.706 sits above it.",
-      "tags": [
-        "motion-language model",
-        "VQ-VAE tokenizer",
-        "dataset cleaning",
-        "BABEL",
-        "G1",
-        "negative result"
-      ],
-      "metrics": [
-        {
-          "value": "0.477 / 0.526",
-          "label": "Held-out contamination AUC, generated actions / surprisal (target 0.615)"
-        },
-        {
-          "value": "0.324 vs 0.370",
-          "label": "Nominal action named on held-out clean vs contaminated segments"
-        },
-        {
-          "value": "0.706",
-          "label": "Same readout on the training-contaminated split — rejected, not a result"
-        }
-      ]
+     "value": "0.612 (0.548–0.670)",
+     "label": "Half-B strict-gate purity, 5-seed median (incumbent 0.578@32%)"
     },
     {
-      "slug": "task067-clap-form-and-exec-closure-audit",
-      "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
-      "date": "2026-08-08",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "PASS",
-      "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
-      "path": "results/task067-clap-form-and-exec-closure-audit/",
-      "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
-      "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
-      "tags": [
-        "TASK-067",
-        "Clap",
-        "VADCompose",
-        "Tracker execution",
-        "Semantic audit",
-        "G1"
-      ],
-      "metrics": [
-        {
-          "value": "54.3%",
-          "label": "hold-form share of V2 clap references (107/197)"
-        },
-        {
-          "value": "+6.1 cm",
-          "label": "median closure gap: executed vs reference min wrist distance"
-        },
-        {
-          "value": "14.3%",
-          "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
-        }
-      ]
+     "value": "5/5 arms FAIL",
+     "label": "Preregistered criterion: purity>0.578 at recall≥30%"
     },
     {
-      "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
-      "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
-      "date": "2026-08-05",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "GUIDE",
-      "summary": "Onboarding walkthrough of the first filtering stage: 1993 long recordings are segmented by frame annotations, 85 raw action labels are merged into 9 parent classes, and each candidate segment is human-reviewed (pass/fail/edit/trim) for action purity, boundaries, and label semantics, keeping 1446 segments. Per action: 5 deleted examples (explicit fails vs never-admitted, labeled) side by side with 2 kept examples, rendered from the raw 20 fps release motion.",
-      "path": "results/data-curation-line1-vadcompose-to-cleaned-v2/",
-      "thumbnail": "results/data-curation-line1-vadcompose-to-cleaned-v2/assets/thumbnail.png",
-      "thumbnailAlt": "Raw release segment replay frame from a human-rejected candidate",
-      "tags": [
-        "VADCompose",
-        "Data curation",
-        "Human review",
-        "G1",
-        "Onboarding",
-        "Guide"
-      ],
-      "metrics": [
-        {
-          "value": "3317 → 1392",
-          "label": "8-class candidate segments kept (1446 total incl. bow)"
-        },
-        {
-          "value": "85 → 9",
-          "label": "raw labels merged into parent classes"
-        },
-        {
-          "value": "5 vs 2",
-          "label": "deleted vs kept examples per action"
-        }
-      ]
-    },
-    {
-      "slug": "data-curation-line2-cleaned-v2-to-tracked-v3",
-      "title": "Data curation walkthrough 2/2: Cleaned V2 to Tracked V3 rev4 (physical execution + gate)",
-      "date": "2026-08-05",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "GUIDE",
-      "summary": "Onboarding walkthrough of the second filtering stage: reference motions are executed by per-action physical trackers (SONIC for walk/kick, D6 GTrXL for six upper-body actions) and gated by four automatic criteria (jerk ratio, acceleration ratio, two-sided motion preservation, phase lag), keeping 1063 of 1392 executed clips. Per action: 5 gate-rejected executions with their actual gate readings and rejection reasons, side by side with 2 accepted ones (white robot = execution, blue ghost = reference). Ends with the gate's three known blind spots.",
-      "path": "results/data-curation-line2-cleaned-v2-to-tracked-v3/",
-      "thumbnail": "results/data-curation-line2-cleaned-v2-to-tracked-v3/assets/thumbnail.png",
-      "thumbnailAlt": "Rejected kick execution: blue reference ghost mid high-kick while the executed robot barely lifts its leg",
-      "tags": [
-        "VADCompose",
-        "Data curation",
-        "Tracker gate",
-        "SONIC",
-        "D6 GTrXL",
-        "G1",
-        "Onboarding",
-        "Guide"
-      ],
-      "metrics": [
-        {
-          "value": "1063/1392",
-          "label": "executed clips passing the four-part gate (76.4%)"
-        },
-        {
-          "value": "4",
-          "label": "gate criteria (jerk, accel, motion, phase)"
-        },
-        {
-          "value": "5 vs 2",
-          "label": "rejected vs accepted examples per action"
-        }
-      ]
-    },
-    {
-      "slug": "babel-g1-8class-reference-pool-human-audit",
-      "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
-      "date": "2026-08-01",
-      "project": "VAD Alignment",
-      "category": "Dataset",
-      "status": "DATASET",
-      "summary": "What was done, no interpretation: 13,258 raw AMASS SMPL-X sequences retargeted to Unitree G1 at native 50 Hz (GMR, frame-rate patched), joined with BABEL frame-level labels, segmented into 8 action classes, filtered by automatic gates (concurrent-label policy, IK limit-jam, clap contact loss, window dedup), then reviewed segment-by-segment by a human (7 classes in full plus the first 250 walk segments). 909 segments / 35 minutes kept out of 1759. One PASS vs FAIL playback pair per class, with the reviewer's original rejection notes.",
-      "path": "results/babel-g1-8class-reference-pool-human-audit/",
-      "thumbnail": "results/babel-g1-8class-reference-pool-human-audit/assets/thumbnail.png",
-      "thumbnailAlt": "G1 robot kinematic playback frame from a kept kick reference segment",
-      "tags": [
-        "Humanoid control",
-        "G1",
-        "BABEL",
-        "AMASS",
-        "Retargeting",
-        "Dataset",
-        "Human audit",
-        "Showcase"
-      ],
-      "metrics": [
-        {
-          "value": "909 / 1759",
-          "label": "segments kept after human audit"
-        },
-        {
-          "value": "8",
-          "label": "action classes, PASS vs FAIL example each"
-        },
-        {
-          "value": "35 min",
-          "label": "audited kinematic reference at 50 Hz"
-        }
-      ]
-    },
-    {
-      "slug": "rate20-fast-oscillation-motion-showcase",
-      "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
-      "date": "2026-07-30",
-      "project": "VAD Alignment",
-      "category": "Tracker Evaluation",
-      "status": "PRELIMINARY",
-      "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows from the reviewed VADCompose V2 reference segments (walk/kick excluded, 1.67-2.22 Hz, located by a sliding-window scan of the full release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family / end-effector / arm-joint-angle time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
-      "path": "results/rate20-fast-oscillation-motion-showcase/",
-      "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
-      "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "UniLab",
-        "VADCompose V2",
-        "Fast oscillation",
-        "Preliminary",
-        "Showcase"
-      ],
-      "metrics": [
-        {
-          "value": "20",
-          "label": "clips, fastest in-pool oscillation windows"
-        },
-        {
-          "value": "1.67-2.22 Hz",
-          "label": "wrist oscillation dominant frequency"
-        },
-        {
-          "value": "5",
-          "label": "trackers side by side per clip"
-        }
-      ]
-    },
-    {
-      "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
-      "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
-      "date": "2026-07-29",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "PASS",
-      "summary": "50Hz executed-state humanoid trajectories for planner training. Two controllers with complementary measured failure modes split the work: D6 GTrXL self-generates jitter on locomotion (jerk 6.8x/4.4x reference) while SONIC low-passes motion away and runs its arms 80-100 ms late, so kick and walk go to SONIC and the six upper-body actions to D6. Four criteria on joint kinematics keep 1063 of 1392 clips. Because none of them reads world position, this report measures that separately: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m) but collapses to 0.033-0.128 m once the pelvis is aligned — the failure mode is accumulated root drift, only in locomotion, and relative limb motion holds everywhere.",
-      "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
-      "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
-      "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "50Hz",
-        "Rollouts V3",
-        "Dataset verification",
-        "Data contract",
-        "Drift analysis"
-      ],
-      "metrics": [
-        {
-          "value": "1063/1392",
-          "label": "clips passing the four criteria (76.4%, 10111 s)"
-        },
-        {
-          "value": "92% vs 0.5%",
-          "label": "walk gate pass rate, SONIC vs D6 under the same criteria"
-        },
-        {
-          "value": "0.033-0.128 m",
-          "label": "pelvis-aligned limb deviation, all 8 actions"
-        }
-      ]
-    },
-    {
-      "slug": "vad-cleaned-50hz-rollouts-v3-composite-gate",
-      "title": "VAD_Cleaned_50Hz_Rollouts_V3: three-part gate and per-action executor assignment",
-      "date": "2026-07-26",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "PASS",
-      "summary": "V3 assigns executors per action (SONIC for walk/kick, D6 GTrXL for the six upper-body/crouch actions) and gates rollouts on jitter, two-sided motion preservation, and phase lag; 1063/1392 clips (76.4%) pass. A pre-registered timing probe finds deceleration overshoot separates human-accepted kicks at 91% (permutation p=0.015) where 40 whole-clip metrics all fail.",
-      "path": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/",
-      "thumbnail": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/assets/thumbnail.png",
-      "thumbnailAlt": "Preview frame from an accepted walk rollout executed by SONIC with reference ghost overlay",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "UniLab",
-        "50Hz",
-        "Rollouts V3",
-        "SONIC",
-        "Smoothness gate"
-      ],
-      "metrics": [
-        {
-          "value": "1063/1392",
-          "label": "clips passing the three-part gate"
-        },
-        {
-          "value": "92%",
-          "label": "walk gate pass rate (SONIC executor)"
-        },
-        {
-          "value": "p=0.015",
-          "label": "kick timing metric vs human review"
-        }
-      ]
-    },
-    {
-      "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
-      "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
-      "date": "2026-07-24",
-      "project": "VAD Alignment",
-      "category": "Tracker Training",
-      "status": "FAIL",
-      "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04→2.41, kick 6.20→3.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
-      "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
-      "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
-      "thumbnailAlt": "3×2 comparison frame: walk/kick × SONIC / D6 / Expert Spec_legvel",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "UniLab",
-        "SONIC",
-        "D6 GTrXL",
-        "Jitter",
-        "Preliminary"
-      ],
-      "metrics": [
-        {
-          "value": "1.0",
-          "label": "walk/kick val BM SR"
-        },
-        {
-          "value": "2.41",
-          "label": "walk hf_v (↓ vs 8.04)"
-        },
-        {
-          "value": "3.61",
-          "label": "kick hf_v (↓ vs 6.20)"
-        }
-      ]
-    },
-    {
-      "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
-      "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
-      "date": "2026-07-23",
-      "project": "VAD Alignment",
-      "category": "Dataset & Tracker",
-      "status": "PASS",
-      "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6× / ~4×), while upper-body clips stay comparatively smooth.",
-      "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
-      "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
-      "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "UniLab",
-        "50Hz",
-        "Rollouts V2",
-        "Jitter"
-      ],
-      "metrics": [
-        {
-          "value": "0.993",
-          "label": "D6 GTrXL test BM SR"
-        },
-        {
-          "value": "~6.4×",
-          "label": "walk jerk ratio median"
-        },
-        {
-          "value": "~4.0×",
-          "label": "kick jerk ratio median"
-        }
-      ]
-    },
-    {
-      "slug": "moe-unilab-specialist-distill-d6",
-      "title": "MOE UniLab PPO specialist distill (D6) + locomotion jitter note",
-      "date": "2026-07-23",
-      "project": "VAD Alignment",
-      "category": "Tracker Training",
-      "status": "PASS",
-      "summary": "PPO specialist→DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6’s accepted walk/kick physical rollouts jitter vs reference (medians ~6× / ~4× jerk).",
-      "path": "results/moe-unilab-specialist-distill-d6/",
-      "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
-      "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
-      "tags": [
-        "Humanoid control",
-        "Motion tracking",
-        "G1",
-        "UniLab",
-        "MoE",
-        "DAgger",
-        "Jitter"
-      ],
-      "metrics": [
-        {
-          "value": "0.993",
-          "label": "D6 test BM SR"
-        },
-        {
-          "value": "0.994",
-          "label": "locked Spec val SR"
-        },
-        {
-          "value": "~6×/~4×",
-          "label": "walk/kick jerk medians"
-        }
-      ]
+     "value": "0.96–0.98",
+     "label": "Synthetic concurrent-window detection, stable across seeds"
     }
-  ]
+   ]
+  },
+  {
+   "slug": "g1-motiongpt-stage2-v3-in-training",
+   "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination",
+   "date": "2026-08-11",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "FAIL",
+   "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix teaches the target vocabulary, but on the fully held-out split discrimination AUC is 0.477 (extra actions named) and 0.526 (nominal-action surprisal) against a 0.615 handcrafted-feature baseline, and contaminated segments have their nominal action named slightly more often than clean ones. A 0.706 AUC on the other split is reported and rejected: 1,248 of its 1,559 clean segments were in training. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
+   "path": "results/g1-motiongpt-stage2-v3-in-training/",
+   "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
+   "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on the held-out split, clean 0.324 and dirty 0.370 above a 0.082 majority-class baseline, and three dots for discrimination AUC where the two held-out readouts 0.477 and 0.526 fall below the 0.615 handcrafted baseline while a training-contaminated 0.706 sits above it.",
+   "tags": [
+    "motion-language model",
+    "VQ-VAE tokenizer",
+    "dataset cleaning",
+    "BABEL",
+    "G1",
+    "negative result"
+   ],
+   "metrics": [
+    {
+     "value": "0.477 / 0.526",
+     "label": "Held-out contamination AUC, generated actions / surprisal (target 0.615)"
+    },
+    {
+     "value": "0.324 vs 0.370",
+     "label": "Nominal action named on held-out clean vs contaminated segments"
+    },
+    {
+     "value": "0.706",
+     "label": "Same readout on the training-contaminated split — rejected, not a result"
+    }
+   ]
+  },
+  {
+   "slug": "task067-clap-form-and-exec-closure-audit",
+   "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
+   "date": "2026-08-08",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "PASS",
+   "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
+   "path": "results/task067-clap-form-and-exec-closure-audit/",
+   "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
+   "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
+   "tags": [
+    "TASK-067",
+    "Clap",
+    "VADCompose",
+    "Tracker execution",
+    "Semantic audit",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "54.3%",
+     "label": "hold-form share of V2 clap references (107/197)"
+    },
+    {
+     "value": "+6.1 cm",
+     "label": "median closure gap: executed vs reference min wrist distance"
+    },
+    {
+     "value": "14.3%",
+     "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
+    }
+   ]
+  },
+  {
+   "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
+   "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
+   "date": "2026-08-05",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "GUIDE",
+   "summary": "Onboarding walkthrough of the first filtering stage: 1993 long recordings are segmented by frame annotations, 85 raw action labels are merged into 9 parent classes, and each candidate segment is human-reviewed (pass/fail/edit/trim) for action purity, boundaries, and label semantics, keeping 1446 segments. Per action: 5 deleted examples (explicit fails vs never-admitted, labeled) side by side with 2 kept examples, rendered from the raw 20 fps release motion.",
+   "path": "results/data-curation-line1-vadcompose-to-cleaned-v2/",
+   "thumbnail": "results/data-curation-line1-vadcompose-to-cleaned-v2/assets/thumbnail.png",
+   "thumbnailAlt": "Raw release segment replay frame from a human-rejected candidate",
+   "tags": [
+    "VADCompose",
+    "Data curation",
+    "Human review",
+    "G1",
+    "Onboarding",
+    "Guide"
+   ],
+   "metrics": [
+    {
+     "value": "3317 → 1392",
+     "label": "8-class candidate segments kept (1446 total incl. bow)"
+    },
+    {
+     "value": "85 → 9",
+     "label": "raw labels merged into parent classes"
+    },
+    {
+     "value": "5 vs 2",
+     "label": "deleted vs kept examples per action"
+    }
+   ]
+  },
+  {
+   "slug": "data-curation-line2-cleaned-v2-to-tracked-v3",
+   "title": "Data curation walkthrough 2/2: Cleaned V2 to Tracked V3 rev4 (physical execution + gate)",
+   "date": "2026-08-05",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "GUIDE",
+   "summary": "Onboarding walkthrough of the second filtering stage: reference motions are executed by per-action physical trackers (SONIC for walk/kick, D6 GTrXL for six upper-body actions) and gated by four automatic criteria (jerk ratio, acceleration ratio, two-sided motion preservation, phase lag), keeping 1063 of 1392 executed clips. Per action: 5 gate-rejected executions with their actual gate readings and rejection reasons, side by side with 2 accepted ones (white robot = execution, blue ghost = reference). Ends with the gate's three known blind spots.",
+   "path": "results/data-curation-line2-cleaned-v2-to-tracked-v3/",
+   "thumbnail": "results/data-curation-line2-cleaned-v2-to-tracked-v3/assets/thumbnail.png",
+   "thumbnailAlt": "Rejected kick execution: blue reference ghost mid high-kick while the executed robot barely lifts its leg",
+   "tags": [
+    "VADCompose",
+    "Data curation",
+    "Tracker gate",
+    "SONIC",
+    "D6 GTrXL",
+    "G1",
+    "Onboarding",
+    "Guide"
+   ],
+   "metrics": [
+    {
+     "value": "1063/1392",
+     "label": "executed clips passing the four-part gate (76.4%)"
+    },
+    {
+     "value": "4",
+     "label": "gate criteria (jerk, accel, motion, phase)"
+    },
+    {
+     "value": "5 vs 2",
+     "label": "rejected vs accepted examples per action"
+    }
+   ]
+  },
+  {
+   "slug": "babel-g1-8class-reference-pool-human-audit",
+   "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
+   "date": "2026-08-01",
+   "project": "VAD Alignment",
+   "category": "Dataset",
+   "status": "DATASET",
+   "summary": "What was done, no interpretation: 13,258 raw AMASS SMPL-X sequences retargeted to Unitree G1 at native 50 Hz (GMR, frame-rate patched), joined with BABEL frame-level labels, segmented into 8 action classes, filtered by automatic gates (concurrent-label policy, IK limit-jam, clap contact loss, window dedup), then reviewed segment-by-segment by a human (7 classes in full plus the first 250 walk segments). 909 segments / 35 minutes kept out of 1759. One PASS vs FAIL playback pair per class, with the reviewer's original rejection notes.",
+   "path": "results/babel-g1-8class-reference-pool-human-audit/",
+   "thumbnail": "results/babel-g1-8class-reference-pool-human-audit/assets/thumbnail.png",
+   "thumbnailAlt": "G1 robot kinematic playback frame from a kept kick reference segment",
+   "tags": [
+    "Humanoid control",
+    "G1",
+    "BABEL",
+    "AMASS",
+    "Retargeting",
+    "Dataset",
+    "Human audit",
+    "Showcase"
+   ],
+   "metrics": [
+    {
+     "value": "909 / 1759",
+     "label": "segments kept after human audit"
+    },
+    {
+     "value": "8",
+     "label": "action classes, PASS vs FAIL example each"
+    },
+    {
+     "value": "35 min",
+     "label": "audited kinematic reference at 50 Hz"
+    }
+   ]
+  },
+  {
+   "slug": "rate20-fast-oscillation-motion-showcase",
+   "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
+   "date": "2026-07-30",
+   "project": "VAD Alignment",
+   "category": "Tracker Evaluation",
+   "status": "PRELIMINARY",
+   "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows from the reviewed VADCompose V2 reference segments (walk/kick excluded, 1.67-2.22 Hz, located by a sliding-window scan of the full release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family / end-effector / arm-joint-angle time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
+   "path": "results/rate20-fast-oscillation-motion-showcase/",
+   "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
+   "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "UniLab",
+    "VADCompose V2",
+    "Fast oscillation",
+    "Preliminary",
+    "Showcase"
+   ],
+   "metrics": [
+    {
+     "value": "20",
+     "label": "clips, fastest in-pool oscillation windows"
+    },
+    {
+     "value": "1.67-2.22 Hz",
+     "label": "wrist oscillation dominant frequency"
+    },
+    {
+     "value": "5",
+     "label": "trackers side by side per clip"
+    }
+   ]
+  },
+  {
+   "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
+   "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
+   "date": "2026-07-29",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "PASS",
+   "summary": "50Hz executed-state humanoid trajectories for planner training. Two controllers with complementary measured failure modes split the work: D6 GTrXL self-generates jitter on locomotion (jerk 6.8x/4.4x reference) while SONIC low-passes motion away and runs its arms 80-100 ms late, so kick and walk go to SONIC and the six upper-body actions to D6. Four criteria on joint kinematics keep 1063 of 1392 clips. Because none of them reads world position, this report measures that separately: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m) but collapses to 0.033-0.128 m once the pelvis is aligned — the failure mode is accumulated root drift, only in locomotion, and relative limb motion holds everywhere.",
+   "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
+   "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
+   "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "50Hz",
+    "Rollouts V3",
+    "Dataset verification",
+    "Data contract",
+    "Drift analysis"
+   ],
+   "metrics": [
+    {
+     "value": "1063/1392",
+     "label": "clips passing the four criteria (76.4%, 10111 s)"
+    },
+    {
+     "value": "92% vs 0.5%",
+     "label": "walk gate pass rate, SONIC vs D6 under the same criteria"
+    },
+    {
+     "value": "0.033-0.128 m",
+     "label": "pelvis-aligned limb deviation, all 8 actions"
+    }
+   ]
+  },
+  {
+   "slug": "vad-cleaned-50hz-rollouts-v3-composite-gate",
+   "title": "VAD_Cleaned_50Hz_Rollouts_V3: three-part gate and per-action executor assignment",
+   "date": "2026-07-26",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "PASS",
+   "summary": "V3 assigns executors per action (SONIC for walk/kick, D6 GTrXL for the six upper-body/crouch actions) and gates rollouts on jitter, two-sided motion preservation, and phase lag; 1063/1392 clips (76.4%) pass. A pre-registered timing probe finds deceleration overshoot separates human-accepted kicks at 91% (permutation p=0.015) where 40 whole-clip metrics all fail.",
+   "path": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/",
+   "thumbnail": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/assets/thumbnail.png",
+   "thumbnailAlt": "Preview frame from an accepted walk rollout executed by SONIC with reference ghost overlay",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "UniLab",
+    "50Hz",
+    "Rollouts V3",
+    "SONIC",
+    "Smoothness gate"
+   ],
+   "metrics": [
+    {
+     "value": "1063/1392",
+     "label": "clips passing the three-part gate"
+    },
+    {
+     "value": "92%",
+     "label": "walk gate pass rate (SONIC executor)"
+    },
+    {
+     "value": "p=0.015",
+     "label": "kick timing metric vs human review"
+    }
+   ]
+  },
+  {
+   "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
+   "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
+   "date": "2026-07-24",
+   "project": "VAD Alignment",
+   "category": "Tracker Training",
+   "status": "FAIL",
+   "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04→2.41, kick 6.20→3.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
+   "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
+   "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
+   "thumbnailAlt": "3×2 comparison frame: walk/kick × SONIC / D6 / Expert Spec_legvel",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "UniLab",
+    "SONIC",
+    "D6 GTrXL",
+    "Jitter",
+    "Preliminary"
+   ],
+   "metrics": [
+    {
+     "value": "1.0",
+     "label": "walk/kick val BM SR"
+    },
+    {
+     "value": "2.41",
+     "label": "walk hf_v (↓ vs 8.04)"
+    },
+    {
+     "value": "3.61",
+     "label": "kick hf_v (↓ vs 6.20)"
+    }
+   ]
+  },
+  {
+   "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
+   "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
+   "date": "2026-07-23",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "PASS",
+   "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6× / ~4×), while upper-body clips stay comparatively smooth.",
+   "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
+   "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
+   "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "UniLab",
+    "50Hz",
+    "Rollouts V2",
+    "Jitter"
+   ],
+   "metrics": [
+    {
+     "value": "0.993",
+     "label": "D6 GTrXL test BM SR"
+    },
+    {
+     "value": "~6.4×",
+     "label": "walk jerk ratio median"
+    },
+    {
+     "value": "~4.0×",
+     "label": "kick jerk ratio median"
+    }
+   ]
+  },
+  {
+   "slug": "moe-unilab-specialist-distill-d6",
+   "title": "MOE UniLab PPO specialist distill (D6) + locomotion jitter note",
+   "date": "2026-07-23",
+   "project": "VAD Alignment",
+   "category": "Tracker Training",
+   "status": "PASS",
+   "summary": "PPO specialist→DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6’s accepted walk/kick physical rollouts jitter vs reference (medians ~6× / ~4× jerk).",
+   "path": "results/moe-unilab-specialist-distill-d6/",
+   "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
+   "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
+   "tags": [
+    "Humanoid control",
+    "Motion tracking",
+    "G1",
+    "UniLab",
+    "MoE",
+    "DAgger",
+    "Jitter"
+   ],
+   "metrics": [
+    {
+     "value": "0.993",
+     "label": "D6 test BM SR"
+    },
+    {
+     "value": "0.994",
+     "label": "locked Spec val SR"
+    },
+    {
+     "value": "~6×/~4×",
+     "label": "walk/kick jerk medians"
+    }
+   ]
+  }
+ ]
 }

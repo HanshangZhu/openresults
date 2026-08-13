@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 MotionGPT 判定线 — 部位分解主干(partbert)与增广的 half-B 评测</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-13-partbert-part-token-judge-halfb-eval.md</code></p>
+<h1 id="g1-motiongpt-partbert-half-b">G1 MotionGPT 判定线 — 部位分解主干(partbert)与增广的 half-B 评测</h1>
+<p>Preliminary。把判定主干从"预训练 Flan-T5 + 全身码字"换成"从零双向 encoder + 上/下肢双流
+部位码字",连同四类 BABEL 增广一起,在 885 段零接触 half-B 考卷上与旧线头对头;全链一晚完成
+(①部位分词器 → 增广物理体检 → ②掩码预训练 ×3 增广臂 → ③判定微调 ×5 臂 + 5 seed 复验)。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>FAIL</strong>(预注册主判据;user 裁定回默认线)</p>
+<ul>
+<li>预注册主判据"half-B 召回 ≥30% 处纯度 &gt; 0.578(旧线 SFT+100% 最好操作点)"——<strong>五条判定臂全部未达</strong>,最好为 noaug 臂 0.549@39.9%(<a href="#results">主表</a>)。</li>
+<li>noaug 臂高纯度端首抽 0.670@22.1% 是 5 seed 里最好的一抽;5-seed 分布 min 0.548 / 中位 0.612 / max 0.670,与旧线 0.578@32.4% 在单 seed 方差内不分胜负,召回还更低。</li>
+<li>稳定的增量只有一项:<strong>合成并发窗口检出率 0.96–0.98</strong>(5 seed 全部稳定)——token 层部位混搭的假动作能被可靠识破,但该能力未转化为真实考卷的纯度。</li>
+<li>②预训练里加增广(变速/镜像)反而拉低下游判定(0.600/0.585 vs 无增广 0.670,单 seed);增广物理体检本身四类全过门。user 据此裁定:<strong>回到 MotionGPT + 离散全身码字默认线,架构轴暂停,等 160 段细粒度标注摊开病理再动</strong>。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:把动作表示按上/下肢拆成双流部位码字、主干换成从零 BERT 式双向 encoder,能否让
+"给定标签 → pass/fail"的判定在 half-B 考卷上超过旧线?</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本文 operational definition</th>
+<th>勿混淆</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>部位分词器</td>
+<td>两个 VQ-VAE:下肢流 60 维(root+腿腰 DOF+速度+躯干下连杆+足接触)、上肢流 46 维(手臂 DOF+速度+肩肘腕连杆),各 512 码本、0.2 s/码字</td>
+<td>全身分词器(106 维单流)是旧线部件</td>
+</tr>
+<tr>
+<td>partbert</td>
+<td>从零训练的双向 encoder,12L×512×8h(38.9 M)+ 4 register token;判定时加声称类别嵌入 token,register 位池化出 2 类</td>
+<td>无任何语言预训练;判定不经过文本</td>
+</tr>
+<tr>
+<td>判定模型(旧线)</td>
+<td>Flan-T5-Base + 全身码字,SFT+100% 配方(val 2,872 + half-A 887 段级标签涂窗)</td>
+<td>本文对照基线,0.578@32.4%</td>
+</tr>
+<tr>
+<td>half-B 考卷</td>
+<td>train split 按 entry 组级对半(seed 20260812)的 885 段,任何训练/阈值搜索零接触</td>
+<td>half-A(887)在监督池内</td>
+</tr>
+<tr>
+<td>纯度门槛 / 实际纯度</td>
+<td>阈值只在 val 上按纯度要求搜索并冻结;half-B 上"留下的段里真干净比例"为实际纯度</td>
+<td>实际纯度不是在 half-B 上调出来的</td>
+</tr>
+<tr>
+<td>合成并发负例</td>
+<td>训练时现场合成:干净窗 A 下肢流 + 异类干净窗 B 上肢流(20%)/前 A 后 B 拼接(10%),标 fail;材料仅监督池 clean 段</td>
+<td>检出率评测用 val 材料现场新合成 500 窗</td>
+</tr>
+<tr>
+<td>增广物理体检</td>
+<td>增广参考过 SONIC rollout,判据=各指标中位数 ∈ 未增广 <a href="预注册">p5,p95</a></td>
+<td>运动学检查不算体检;见 Method</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>Results profile:<code>dataset-verifier</code>(判定评测纯离线;增广体检含 SONIC 物理 rollout,代表性视频见 Results)。</p>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>设置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①部位分词器</td>
+<td>train_tokenizer 配方逐项沿用 + bf16;各 150k 步(~19 min/个)</td>
+</tr>
+<tr>
+<td>增广体检</td>
+<td>20 条 train-split 基准 clip × 6 组(orig/0.4×/0.7×变速/拼接/部位混搭/镜像)过 SONIC;镜像实现为构造式(关节名配对+随机姿态 FK 符号精修),整轨 FK 自检 1.0e-5 m ≤ 1e-4 契约</td>
+</tr>
+<tr>
+<td>②掩码预训练</td>
+<td>span 完形填空(80/10/10,25%)+ 跨部位半窗掩码(30%);Muon(blocks 2D)+AdamW;muon-lr 0.02 发散后降 0.008;40k 步/臂,best-ckpt 按 val 掩码准确率</td>
+</tr>
+<tr>
+<td>③判定微调</td>
+<td>监督池/窗口协议/阈值纪律与旧线逐字一致;3,000 步;归因臂=跳过②/去合成负例;noaug 臂加 4 个复验 seed</td>
+</tr>
+<tr>
+<td>预注册判据</td>
+<td>主:half-B 召回≥30% 处纯度 &gt; 0.578;副:合成并发窗口检出率</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 状态与对抗预检</summary>
+<p>spec 于 2026-08-13/14 在对话中逐项确认(含 user 修正案:增广必须过 SONIC 物理体检),原文
+嵌入各 <code>evidence.json</code>(<code>logs/g1_motiongpt/partbert_*/</code>、<code>outputs/probe_partbert_aug_validity/</code>)。
+训练前 sonnet workflow 对抗预检 7 agents:确认 1 条(evidence 字段错位,已修)、驳回 2 条但采纳
+其建议(短流丢弃改 PAD 保留、half-B 覆盖断言);预检期间另修 3 条真 bug(基线曲线键序反转、
+smoke 覆盖正式产物、亚 0.2 s 降权死代码)。</p>
+</details>
+<h2 id="results">Results</h2>
+<p>主表(half-B,阈值 val 冻结;对照=旧线 SFT+100%):</p>
+<table>
+<thead>
+<tr>
+<th>臂</th>
+<th>高纯度端</th>
+<th>召回≥30% 处</th>
+<th>合成并发检出率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>noaug(②无增广)</td>
+<td><strong>0.670 @22.1%</strong>(n=106)</td>
+<td>0.549 @39.9%</td>
+<td>0.974</td>
+</tr>
+<tr>
+<td>speed</td>
+<td>0.600 @21.5%</td>
+<td>0.508 @41.7%</td>
+<td>0.982</td>
+</tr>
+<tr>
+<td>mirror</td>
+<td>0.585 @19.3%</td>
+<td>0.507 @35.2%</td>
+<td>0.980</td>
+</tr>
+<tr>
+<td>nopre(跳过②)</td>
+<td>0.596 @18.4%</td>
+<td>0.518 @35.2%</td>
+<td>0.970</td>
+</tr>
+<tr>
+<td>speed_nosyn(去合成负例)</td>
+<td>0.508 @31.2%</td>
+<td>0.449 @64.2%</td>
+<td><strong>0.344</strong></td>
+</tr>
+<tr>
+<td>旧线 SFT+100%(对照)</td>
+<td>0.578 @32.4%</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p>noaug 高纯度端 5-seed 复验:0.670 / 0.548 / 0.612 / 0.580 / 0.669(中位 0.612)。</p>
+<p><img alt="左:noaug 臂高纯度端操作点 5 seed 散点,横跨旧线 0.578 虚线两侧;右:5 条 seed 纯度-召回曲线(灰)与旧线曲线(蓝)几乎重叠,不过滤底率 0.363 点线。" src="assets/partbert-halfb-vs-t5.png"></p>
+<p>增广物理体检(20 基准 clip/组,预注册判据全过;对照带宽与带内偏移如实记录):</p>
+<table>
+<thead>
+<tr>
+<th>组</th>
+<th>摔倒</th>
+<th>踝高频比中位</th>
+<th>判据(中位∈orig [p5,p95])</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>orig(对照)</td>
+<td>7/20</td>
+<td>6.22</td>
+<td>—(带宽:hf 踝 p95=49.8)</td>
+</tr>
+<tr>
+<td>speed 0.4×/0.7×</td>
+<td>9/20</td>
+<td>12.1 / 9.9</td>
+<td>PASS(带内偏移方向一致)</td>
+</tr>
+<tr>
+<td>拼接 / 部位混搭</td>
+<td>8/20 / 6/20</td>
+<td>6.0 / 5.8</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>镜像</td>
+<td>5/20</td>
+<td>7.8</td>
+<td>PASS(最接近对照)</td>
+</tr>
+</tbody>
+</table>
+<p>代表性 rollout(左=参考运动学回放,右=SONIC 执行;provenance sidecar 同目录):</p>
+<video src="assets/orig--00_ref_vs_exec.mp4" controls muted loop width="49%"></video>
+<video src="assets/mirror--00_ref_vs_exec.mp4" controls muted loop width="49%"></video>
+
+<p>上游:部位分词器 val 重建 下肢 0.2763 / 上肢 0.2548(全身版 0.3106),码本 508/497 每 512;
+②三臂 best val 掩码准确率全部峰值于 2k 步(span 0.282–0.299)。</p>
+<h2 id="analysis">Analysis</h2>
+<p><code>draft</code>(agent 草稿,待 user 审阅定稿)</p>
+<ul>
+<li>②预训练价值 +7 纯度点@~20% 召回(noaug 0.670 vs nopre 0.596,单 seed,在 seed 带内)<code>待验证</code>。</li>
+<li>增广方向为负:变速/镜像提高完形填空准确率却拉低下游判定;与"预训练目标与判定目标不对齐"一致 <code>待验证</code>。</li>
+<li>合成并发"学得会、不迁移"(0.97 检出 vs half-B 无增益):token 层拼接分布与真实并发脏不同源的解释与后续边界回拨实验相容 <code>待验证</code>。</li>
+<li>两条线在 ~0.6 纯度汇合,与 FP 人工审查的"不可见脏"桶(全 pass 段仍 42–52% 脏)一致——剩余脏对窗口读数不可见,非主干选择所能解。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<p><strong>0.670 = 71/106</strong>:noaug seed 20260813,val 冻结阈值(全窗 pass)下 half-B 留 106 段,人工
+标注真干净 71 段;召回 71/321=22.1%(half-B 真干净共 321 段,底率 321/885=0.363)。</p>
+<p><strong>检出率 0.974 = 487/500</strong>:val clean 材料现场合成 500 个部位混搭窗,判 fail 487 个。</p>
+<p><strong>5-seed 中位 0.612</strong>:{0.548, 0.580, 0.612, 0.669, 0.670} 的中位数。</p>
+<p>evidence:<code>logs/g1_motiongpt/partbert_pretrain_{speed,mirror,none}/</code>、
+<code>logs/g1_motiongpt/partbert_judge*/</code>(5+4 目录)、<code>outputs/probe_partbert_aug_validity/evidence_full.json</code>、
+镜像自检 <code>src/G1_Motion_GPT/mirror_g1.py</code>(<code>uv run python src/G1_Motion_GPT/mirror_g1.py</code> 复验)。
+渲染:<code>outputs/probe_partbert_aug_validity/render/</code> + sidecar。</p>
+<p>复现命令:<code>uv run python src/G1_Motion_GPT/train_part_tokenizers.py</code> →
+<code>scripts/probe_partbert_augmentation_validity.py</code> → <code>src/G1_Motion_GPT/encode_part_tokens.py</code> →
+<code>train_partbert_pretrain.py --aug {none,speed,mirror}</code> → <code>train_partbert_judge.py [--no-pretrain|--no-synthetic|--seed N]</code>。</p>
+</details>
+</main>
+</body>
+</html>
