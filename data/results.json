@@ -1,6 +1,40 @@
 {
  "results": [
   {
+   "slug": "g1-motiongpt-zhead-design-and-training",
+   "title": "G1 MotionGPT judge line: z-head architecture, data augmentation and training recipe",
+   "date": "2026-08-14",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "FAIL",
+   "summary": "Design document plus current measurements for the z-head judge: a frozen domain-adapted continuous conv-AE encoder (0.2 s / 512-d vectors, no vector quantization) feeding a trainable 6-layer bidirectional transformer (10.9 M params) with a per-step dirt head and a segment-level head. Rationale: a linear probe reads AUC 0.80 from continuous features but only 0.55-0.67 from VQ codes, and the T5 line never trains on pass/fail, which capped the MotionGPT semantic-alignment route near 0.6 accuracy. Augmentation shifts segment boundaries inside the same recording (no cross-recording splicing) plus cross-class impostors and arm-column pastes. Verdict: dirt recall 87-100% on all three eval sets, but clean recall 9-38% - the model cannot yet be deployed to clean the 28k train pool; a test-then-train rolling loop over the unreviewed pool is running (round-1 walk: acc 0.842, 19 segments).",
+   "path": "results/g1-motiongpt-zhead-design-and-training/",
+   "thumbnail": "results/g1-motiongpt-zhead-design-and-training/assets/thumbnail.png",
+   "thumbnailAlt": "Architecture data-flow diagram: G1 motion segment to per-frame kinematic features to frozen domain-adapted conv-AE encoder to a 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step dirt head and a segment-level head with the 0.5 reject rule.",
+   "tags": [
+    "architecture",
+    "continuous encoder",
+    "data augmentation",
+    "dataset cleaning",
+    "test-then-train",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.80 vs 0.55-0.67",
+     "label": "Linear-probe AUC: continuous features vs VQ codes (why the encoder is continuous)"
+    },
+    {
+     "value": "87-100% / 9-38%",
+     "label": "Dirt recall / clean recall across the three eval sets (keep side is the failure mode)"
+    },
+    {
+     "value": "0.842 (19 seg)",
+     "label": "Rolling round-1 walk: locked pre-annotation predictions vs fresh hans labels"
+    }
+   ]
+  },
+  {
    "slug": "g1-motiongpt-partbert-judge-halfb",
    "title": "G1 MotionGPT judge line: part-token backbone (partbert) vs the T5 line on half-B",
    "date": "2026-08-13",

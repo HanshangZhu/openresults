@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 MotionGPT 判定线 — z-head 判定器的架构、数据增广与训练细节</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-14-zhead-design-augmentation-training.md</code></p>
+<h1 id="g1-motiongpt-z-head">G1 MotionGPT 判定线 — z-head 判定器的架构、数据增广与训练细节</h1>
+<p>设计文档 + 现状汇总。解释当前判定主干 z-head(代码类名 <code>ZHeadMulti</code>)的架构、两类训练数据的
+构造方式和训练配方,并汇总它在三个评测集上的实测结果;开头先说明为什么放弃 MotionGPT 的
+语义对齐结构。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>FAIL</strong>(按"能否直接上岗清洗 28k train 池"判:当前版本不能——污染抓得住,干净留不住)</p>
+<ul>
+<li>旧结构的瓶颈已定位并绕开:判别信息在连续特征里是活的(线性探针 AUC 0.80),VQ 量化后只剩
+  0.55–0.67(<a href="#problem-and-terminology">背景</a>);z-head 直接消费量化前的连续编码。</li>
+<li>污染召回率在三个评测集上均为 87–100%(<a href="#results">主表</a>),拒的能力不缺。</li>
+<li>主要失败面是干净召回率(9%–38%):模型大面积拒绝真干净段;kick 在 half-B 上 65 段全拒,
+  与训练集里只有 1 段干净 kick 共现。</li>
+<li>当前决定(user 已确认):从 28,081 段无人审查的 train 池随机抽样,按"先测后训"滚动补充
+  user 标注;round-1 walk 已完成,acc 0.842(主表)。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:z-head 的设计、增广与训练是什么;它当前在"给定声称动作类,判这段是否干净"任务上
+测到什么水平,失败集中在哪。</p>
+<p>背景——为什么 MotionGPT 的语义对齐结构一直上不来(约 130 字):判定要用的信息一直都在:
+直接在连续运动特征上训线性分类器分辨干净/污染,AUC 0.80;但 MotionGPT 的入口是 VQ 量化
+码字,同一探针在码字上只剩 0.55–0.67——量化这一步先丢掉大半判别信息。T5 语言模型的训练
+目标又只有动作命名/文本对齐,pass/fail 判定从未进入它的损失。两层损耗叠加,判定准确率长期
+停在 0.6 附近,换提示词、扩码本(512→2048)、上强化学习都没突破。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本文 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>z-head</td>
+<td>判定模型代号(代码类 <code>ZHeadMulti</code>):冻结连续编码器 + 可训练 6 层双向 Transformer(d=384,6 头,10.9 M 参数),输出逐 0.2 s 污染概率和整段污染概率;"z"指编码器输出的连续向量</td>
+<td>不输出动作名;判定相对输入的"声称动作类"进行</td>
+</tr>
+<tr>
+<td>域适应 conv-AE</td>
+<td>卷积自编码器:逐帧特征 → 每 0.2 s 一个 512 维连续向量(时间 ×4 下采样,不做向量量化);先在 BABEL 训练,再用 50% BABEL + 50% VADCompose 混合窗口继续训 30k 步;判定训练与推理全程冻结</td>
+<td>VQ 分词器(离散码字)是 MotionGPT 线部件,不在本线</td>
+</tr>
+<tr>
+<td>步级头 / 段级头</td>
+<td>两个线性输出层:步级头对每个 0.2 s 向量给污染概率,由标注时间区间逐步监督;段级头读 CLS 位给整段污染概率,只有段级 0/1 监督</td>
+<td>判定规则:任一步 ≥0.5 <strong>或</strong> 段级 ≥0.5 → 拒</td>
+</tr>
+<tr>
+<td>synth 模型</td>
+<td>ckpt <code>logs/g1_motiongpt/zhead_multi_synth</code>:训练数据全部为合成样本(材料 = V3 审查判净的段),不含任何真实污染段</td>
+<td>本文对照方</td>
+</tr>
+<tr>
+<td>hans-only 模型</td>
+<td>ckpt <code>logs/g1_motiongpt/zhead_hansonly</code>:训练数据只有 user 在 8769 队列标注的 57 段(44 污染含手画时间区间 + 13 干净)加由这 13 段生成的 29 条合成样本,共 86 条</td>
+<td>与 hans-57 交叉验证同配方,但用全部 57 段训练</td>
+</tr>
+<tr>
+<td>hans-57 交叉验证</td>
+<td>上述 57 段做 5 折交叉验证:每折用其余 4 折训练,预测留出折;标签与训练同出 user 一人</td>
+<td>该评测集与训练数据同队列、同标注人,数字不能外推到其他分布</td>
+</tr>
+<tr>
+<td>half-B</td>
+<td>train split 按录音条目分组对半后留作评测的一半(seed 20260812,885 段),本文取其中 walk/kick/wave_arms 232 段;两个模型的训练都没碰过它;标签来自 V3 审查(nolan 为主,"看过但没打标"折算为 fail)</td>
+<td>half-A 在监督池内、可用于训练</td>
+</tr>
+<tr>
+<td>全拒基线</td>
+<td>把所有段都判污染的常数判定器,准确率 = 评测集污染占比;模型准确率超出它的部分才是判别贡献</td>
+<td>不是模型</td>
+</tr>
+<tr>
+<td>先测后训 round-1</td>
+<td>从 28,081 段无人审查的 train 池随机抽 20 段/类(seed 20260815);模型对这批的判定在标注前已算好存盘,user 标完后判定对错即当轮评测,标注再并入训练集</td>
+<td>标注期间前端可见 z-head 面板,round-1 起评测不是严格盲测</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>准确率 = 判对比例↑;污染召回率 = 真污染中被拒比例↑;干净召回率 = 真干净中被保留比例↑;保留侧精确率 = 保留段中真干净比例↑</td>
+<td>四个一起看;单看准确率会被污染占比抬高</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p><img alt="z-head 数据流:动作段经逐帧特征、冻结的域适应 conv-AE 编码成每 0.2 s 一个 512 维向量(最长 12 s),前拼 CLS 位与类别嵌入进入 6 层双向 Transformer,步级头输出逐步污染概率、段级头输出整段污染概率,任一过 0.5 即拒;上方虚线框为训练数据的两种来源。" src="assets/zhead-architecture.svg"></p>
+<p>训练数据构造(增广全部基于真实录音,不做跨录音拼接——很多动作之间有真实过渡,拼接会造出
+数据里不存在的跳变):</p>
+<table>
+<thead>
+<tr>
+<th>合成形式</th>
+<th>构造</th>
+<th>标签</th>
+<th>用于</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>起点前移</td>
+<td>干净段起点在同一条录音里向前移 δ∈{0.1…0.7} s(每段抽 2 个 δ);多出的帧是真实前文</td>
+<td>前移帧=污染,原段帧=干净</td>
+<td>两个模型</td>
+</tr>
+<tr>
+<td>跨类冒充</td>
+<td>用别的动作类的干净段冒充声称类</td>
+<td>整段污染</td>
+<td>两个模型</td>
+</tr>
+<tr>
+<td>终点后移</td>
+<td>同起点前移,方向在段尾</td>
+<td>后移帧=污染</td>
+<td>仅 synth</td>
+</tr>
+<tr>
+<td>手臂列替换</td>
+<td>把另一段的手臂关节列(DOF 15:29)粘进干净段中段,模拟下肢在走、上肢在做别的</td>
+<td>替换区间=污染</td>
+<td>仅 synth</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>训练配方</th>
+<th>synth 模型</th>
+<th>hans-only 模型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据</td>
+<td>每类数百条合成样本,类平衡采样</td>
+<td>57 真实段 + 29 合成 = 86 条</td>
+</tr>
+<tr>
+<td>步数</td>
+<td>3000,10% 留出早停(无早停实测过拟合)</td>
+<td>600 固定(seed 20260814)</td>
+</tr>
+<tr>
+<td>batch / lr</td>
+<td>64 / 3e-4</td>
+<td>32 / 3e-4</td>
+</tr>
+<tr>
+<td>共同项</td>
+<td>AdamW(wd 0.01)、bf16、梯度裁剪 1.0、损失 = 步级 BCE + 0.5×段级 BCE、编码器冻结</td>
+<td>同左</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可上岗清洗:污染召回且干净召回同时可用</td>
+<td>两者均 ≥0.9(user 目标)</td>
+<td>污染召回 87–100%;干净召回 9–38%</td>
+<td>FAIL</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 与来源声明</summary>
+<p><code>NOT PREREGISTERED — z-head 设计线没有单一确认版 Run Spec</code>。已搜索:<code>docs/plans/</code>、
+<code>outputs/g1_motiongpt/*/evidence.json</code>、<code>report/G1_MotionGPT/</code>。逐次测量的探针级 spec
+内嵌于对应 evidence 文件(路径见 Appendix);各训练/评测均由 user 在会话中逐项确认后执行
+("可以的,都做了,速速开训"2026-08-14、"只用我的数据训练模型,再只用我的数据引导模型"
+2026-08-14、随机抽样滚动方案 2026-08-14)。</p>
+</details>
+<h2 id="results">Results</h2>
+<p>评测=全量(各评测集全部段),段级聚合,阈值固定 0.5,无逐集调参。</p>
+<table>
+<thead>
+<tr>
+<th>评测集(n,污染占比)</th>
+<th>模型</th>
+<th>准确率↑</th>
+<th>污染召回↑</th>
+<th>干净召回↑</th>
+<th>保留侧精确率↑</th>
+<th>全拒基线</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hans-57 交叉验证(57,77%)</td>
+<td>hans-only</td>
+<td><strong>0.807</strong></td>
+<td>93%</td>
+<td>38%</td>
+<td>0.625</td>
+<td>0.772</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>synth</td>
+<td>0.632</td>
+<td>75%</td>
+<td>23%</td>
+<td>0.214</td>
+<td>0.772</td>
+</tr>
+<tr>
+<td>half-B 三类(232,71%)</td>
+<td>synth</td>
+<td><strong>0.759</strong></td>
+<td>89%</td>
+<td>43%</td>
+<td>0.617</td>
+<td>0.711</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>hans-only</td>
+<td>0.681</td>
+<td>92%</td>
+<td>9%</td>
+<td>0.316</td>
+<td>0.711</td>
+</tr>
+<tr>
+<td>round-1 walk(19,79%)</td>
+<td>hans-only</td>
+<td>0.842</td>
+<td>100%</td>
+<td>25%</td>
+<td>1/1</td>
+<td>0.789</td>
+</tr>
+</tbody>
+</table>
+<p>定位质量(模型不只给段级判定,还要指出脏在哪):</p>
+<ul>
+<li>44 个含时间区间的污染段里,模型最高分位置落进标注区间 26/39;但"永远指段首 0.1 s"的
+  固定策略也命中 27/39——大部分污染本来就在段首,这个读数分不出真定位和位置习惯。</li>
+<li>因果检验(把段首污染剪掉后重判):walk 4 段中 3 段警报消失,说明 walk 的段首警报跟内容走;
+  wave_arms 7 段中 5 段照样整段拒,说明该类的拒绝与标注位置无关。</li>
+<li>段级头单独误拒 1 例(round-1 walk <code>train:6823</code>:步级全程 &lt;0.02,段级 0.99);规则消融
+  显示去掉段级头在 round-1 walk 多留对 1 段、在 half-B walk 少抓 4 段污染,是一换一的取舍。</li>
+</ul>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:hans-57 上 0.807 只比全拒基线多判对 2 段,且评测与训练同队列、同标注人;换到
+  half-B(nolan 标签)后 0.681 低于全拒基线,只保留 nolan 明确点击判定的 163 段子集差距
+  不变(0.613 对 synth 0.706)——57 段训练目前不泛化(user 会话共识)。</li>
+<li>测量:kick 在 half-B 上 65 段全拒,与训练集只有 1 段干净 kick 共现;因果归属<code>待验证</code>,
+  round-1 kick 标注(预期含约 7 段干净)并入重训后即可检验。</li>
+<li>测量:wave_arms 的拒绝与标注位置无关(上节因果检验),该类当前不具备定位能力。</li>
+<li>next:round-1 kick/wave_arms 标注完成 → 60 段并入重训 → round-2 重抽;段级头去留在
+  重训后按规则消融重测再议。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>hans-57 交叉验证 0.807 = (41 拒对 + 5 留对)/57;<code>outputs/g1_motiongpt/hans_only_cv.json</code></li>
+<li>half-B synth 0.759 = (147+29)/232,hans-only 0.681 = (152+6)/232;
+  <code>outputs/g1_motiongpt/hans_only_vs_synth_halfb.json</code></li>
+<li>round-1 walk 0.842 = (15+1)/19;<code>outputs/g1_motiongpt/rolling/round1_walk_scoreboard.json</code>
+  (19/20 段已标,<code>train:2720</code> 未标;判定列曾被前端默认值污染,修正记录见该文件 spec 字段)</li>
+<li>线性探针 AUC:连续特征 0.800 / 旧 VQ-512 码字 0.554 / 判别正则 VQ-512 0.623±0.067 /
+  VQ-2048 0.674±0.095;<code>outputs/probe_tokenizer_disc_acceptance/evidence.json</code>、
+  <code>outputs/probe_tokenizer_disc_cb2048_acceptance/evidence.json</code>(部分连续编码变体的探针
+  为会话内联测量,未落盘,本文不引用其数字)</li>
+<li>定位与因果:<code>outputs/g1_motiongpt/hans_only_cv_curves.json</code>(逐步曲线)、
+  <code>outputs/g1_motiongpt/head_crop_probe.json</code>(剪段首重判)、
+  <code>outputs/g1_motiongpt/zhead_rule_decomposition.json</code>(规则消融)</li>
+<li>half-B 标签构成:walk 100 段污染 = 45 明确 fail + 55"看过未打标"折算(其中 38 条"看过"
+  记录来自 user 本人浏览);<code>outputs/g1_motiongpt/halfb_label_provenance.json</code></li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>输入截断:编码序列最长 60 步 = 12 s,超长段后段不参与判定(实测案例:kick <code>val:1840</code>
+  标注污染在 13.0–13.4 s,模型不可见)。</li>
+<li>round-1 起,标注前端(8769)带 z-head 面板(user 2026-08-14 指定,用于失败模式分析),
+  评测不再是严格盲测;各轮判定仍在标注前锁盘。</li>
+<li>V3 标签含"看过但没打标 = fail"的折算规则,与明确点击的 fail 可信度不同(路径见上)。</li>
+</ul>
+</details>
+<details>
+<summary>复现命令</summary>
+<pre><code class="language-bash"># synth 模型(合成样本,类平衡,早停)
+uv run python src/G1_Motion_GPT/train_zhead_multi.py --balanced --paste arms \
+    --cae logs/g1_motiongpt/continuous_vae_vadc/continuous_vae.pt --tag synth
+# hans-only 模型:57 段标注 + 29 条合成,600 步(会话内联脚本,配方见本文训练表;
+# ckpt = logs/g1_motiongpt/zhead_hansonly/zhead.pt)
+# 前端判定面板(点开哪段现算哪段,缓存带 ckpt 版本):
+PYTHONPATH=src MUJOCO_GL=egl uv run --with flask python -m VAD_evaluator.review_app.server \
+    --motiongpt --only-ids outputs/g1_motiongpt/fine_annotation_train_ids.txt \
+    --allow-review-notes --db outputs/vadcompose_motiongpt_view/fine_annotation_train.sqlite3 \
+    --host 0.0.0.0 --port 8769
+</code></pre>
+</details>
+</main>
+</body>
+</html>
