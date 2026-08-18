@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 z-head:架构、数据增广与实测效果</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-18-zhead-classifier-architecture-and-augmentation.md</code></p>
+<h1 id="g1-z-head">G1 动作段判定器 z-head:架构、数据增广与实测效果</h1>
+<p>Preliminary。这一页讲清三件事:判定器长什么样(逐层结构与公式)、训练数据怎么造出来的
+(四种合成增广及其标签规则)、它现在到底判得怎么样(三个评测集 + 逐段实况)。目标任务是
+从 28,081 段无人审查的机器人动作段里挑出真正干净的那部分。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>FAIL</strong>(按"能否直接上岗清洗数据池"判)</p>
+<ul>
+<li>抓污染这一半已经成立:三个评测集上污染召回 87%–100%,其中一个是部署池随机抽样、判定在
+  人工标注前锁盘(<a href="#the-model-in-action">实况图</a>)。</li>
+<li>留干净这一半没成立:干净召回 9%–38%,真干净的段大批被拒。以现在的操作点清洗数据池,
+  留下的量和纯度都不可用。</li>
+<li>判别信息本身不是瓶颈:同一个线性探针在连续运动特征上 AUC 0.80,在离散码字上只有
+  0.55–0.67(<a href="#why-the-encoder-does-not-quantize">阶梯图</a>)——这是判定器不接语言模型、
+  直接消费连续编码的原因。</li>
+<li>当前做法:从数据池随机抽样,先让模型判、人再标,标完并入训练滚下一轮
+  (<a href="#rolling-loop">滚动流程</a>)。round-1 的 walk 已跑完一轮。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:给定一段动作和它声称的动作类别(如"这是 walk"),判定这一段是否只包含该动作、
+不含前后动作的残留或其他污染,并指出污染在哪一段时间。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本页 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>段(segment)</td>
+<td>一条原始录音里被切出的一小段动作,记作录音编号 + 起止帧;20 fps</td>
+<td>不是整条录音</td>
+</tr>
+<tr>
+<td>声称动作类</td>
+<td>数据集自带的动作标注(walk/kick/…),作为条件输入给模型;推理时总是已知</td>
+<td>模型不预测动作名</td>
+</tr>
+<tr>
+<td>污染(dirty)</td>
+<td>该段里出现了标称动作以外的内容:前后动作的残留、同时进行的其他动作、或执行本身失败(打滑、抖腿)</td>
+<td>与"动作做得美不美"无关</td>
+</tr>
+<tr>
+<td>z-head</td>
+<td>本页的判定器:冻结的连续编码器 + 可训练 6 层双向 Transformer(10.9 M 参数),输出逐 0.2 s 污染概率与整段污染概率</td>
+<td>代码类名 <code>ZHeadMulti</code>;不含任何语言模型</td>
+</tr>
+<tr>
+<td>步级头 / 段级头</td>
+<td>两个线性输出层。步级头逐 0.2 s 出分,由人标的时间区间密集监督;段级头读 CLS 位出整段分,只有段级 0/1 监督</td>
+<td>判定规则见 <a href="#decision-rule">公式 (5)</a></td>
+</tr>
+<tr>
+<td>细标 57 段</td>
+<td>带手画时间区间的标注集(walk 20 + kick 24 + wave_arms 22 减去弃用段);walk 由本项目作者标注,kick/wave_arms 由协作标注者标注</td>
+<td>ckpt 名 <code>zhead_hansonly</code> 是历史命名,并非"全部出自一人"</td>
+</tr>
+<tr>
+<td>half-B</td>
+<td>训练 split 按录音分组对半后留作评测的一半(885 段,本页取三类共 232 段);标签来自更早的 V3 审查流程,含"看过但没打标 = 判脏"的折算</td>
+<td>与细标 57 段是两批不同标注,判定尺度不完全一致</td>
+</tr>
+<tr>
+<td>round-1</td>
+<td>从 28,081 段无人审查的段里随机抽 20 段/类;模型判定在人工标注前写盘锁定,标完即当轮成绩单</td>
+<td>目前只有 walk 标完(19/20)</td>
+</tr>
+<tr>
+<td>污染召回 / 干净召回</td>
+<td>污染召回 = 真污染中被拒的比例↑;干净召回 = 真干净中被保留的比例↑</td>
+<td>两者必须一起看;只看准确率会被评测集的污染比例抬高</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method-classifier-architecture">Method: classifier architecture</h2>
+<p><img alt="z-head 数据流:动作段经 106 维逐帧特征、冻结的域适应卷积自编码器编码成每 0.2 秒一个 512 维向量(最长 12 秒),前面拼上 CLS 位与类别嵌入进入 6 层双向 Transformer,分出步级头与段级头,任一过 0.5 即判拒;上方虚线框是训练数据的两种来源。" src="assets/zhead-architecture.svg"></p>
+<p><strong>第一步:逐帧特征。</strong> 每帧取 106 维运动学量,全部是可直接从关节角算出的物理量:</p>
+<table>
+<thead>
+<tr>
+<th>分块</th>
+<th>维数</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>root_yaw_vel / root_lin_vel_xy / root_height</td>
+<td>1 / 2 / 1</td>
+<td>转身角速度、水平速度、重心高度</td>
+</tr>
+<tr>
+<td>dof / dof_vel</td>
+<td>29 / 29</td>
+<td>29 个关节角与角速度</td>
+</tr>
+<tr>
+<td>link_pos</td>
+<td>42</td>
+<td>14 个连杆的三维位置(正运动学现算)</td>
+</tr>
+<tr>
+<td>foot_contact</td>
+<td>2</td>
+<td>左右脚触地</td>
+</tr>
+</tbody>
+</table>
+<p><strong>第二步:连续编码,不做量化。</strong> 一维卷积自编码器的编码器把 N 帧压成 T = ⌊N/4⌋ 个向量
+(20 fps ÷ 4 = 每 0.2 秒一个),每个 512 维:</p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(1)　x̂<sub>n</sub> = (x<sub>n</sub> − μ) ⊘ σ　,　z<sub>1:T</sub> = E<sub>φ</sub>(x̂<sub>1:N</sub>) ∈ ℝ<sup>T×512</sup>　,　T = ⌊N/4⌋ ≤ 60
+</div>
+
+<p>结构是 1 层 3×1 卷积升到 512 通道,2 层步长 2 的卷积各降一半时间分辨率,2 个残差块,最后
+1×1 卷积出 512 维。φ 在判定训练和推理中<strong>全程冻结</strong>;它先在 BABEL 动作库上训练,再用
+50% BABEL + 50% 本数据池的窗口继续训 30k 步做域适应。T ≤ 60 是硬截断,超过 12 秒的段
+后半部分不参与判定(已知限制)。</p>
+<p><strong>第三步:双向 Transformer 读整段。</strong> 序列前面拼两个特殊位——一个整段判定位、一个声称
+动作类的嵌入向量:</p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(2)　h<sup>(0)</sup> = [ c<sub>CLS</sub> ; e(a) ; W z<sub>1</sub> + p<sub>1</sub> , … , W z<sub>T</sub> + p<sub>T</sub> ] ∈ ℝ<sup>(T+2)×384</sup><br>
+(3)　h = TransformerEncoder<sub>6 层, 6 头, pre-norm</sub>(h<sup>(0)</sup>)
+</div>
+
+<p>其中 a 是声称动作类,e(·) 是类别嵌入,W 把 512 维投到模型宽度 384,p<sub>t</sub> 是可学的
+位置编码。双向的意思是每一步都能看到整段的前后文——判断"这 0.2 秒是不是残留",本来就需要
+知道它前后在发生什么。</p>
+<p><strong>第四步:两个输出头。</strong></p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(4)　p<sub>t</sub> = σ(w<sub>step</sub><sup>⊤</sup> h<sub>t+2</sub>)　(t = 1…T,逐 0.2 s 污染概率)<br>
+　　　g = σ(w<sub>seg</sub><sup>⊤</sup> h<sub>1</sub>)　(整段污染概率,读 CLS 位)
+</div>
+
+<p><a id="decision-rule"></a>判定规则(阈值 τ = 0.5,未做逐评测集调参):</p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(5)　判拒 ⟺ ( max<sub>t</sub> p<sub>t</sub> ≥ τ ) 或 ( g ≥ τ )
+</div>
+
+<p><strong>损失。</strong> 步级用逐步二元交叉熵(只在非填充位上算),段级同样,权重 λ = 0.5:</p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(6)　L = (1/|Ω|) Σ<sub>t∈Ω</sub> BCE(p<sub>t</sub>, y<sub>t</sub>) + λ · BCE(g, Y)　,　λ = 0.5<br>
+　　　BCE(p, y) = −[ y log p + (1−y) log(1−p) ]
+</div>
+
+<p>y<sub>t</sub> ∈ {0,1} 是第 t 个 0.2 秒是否落在人标的污染区间内,Y 是段级标签。</p>
+<p><a id="why-the-encoder-does-not-quantize"></a></p>
+<h3 id="_1">为什么编码器不量化</h3>
+<p>原来的路线是 MotionGPT 式的:动作先量化成离散码字,再喂给语言模型,判定从生成的文本里读。
+把同一个线性探针分别架在不同表示上,判别力差距如下:</p>
+<p><img alt="横向条形图:线性探针 AUC,连续运动特征 0.80,离散码字 2048 0.67±0.09,离散码字 512 0.62±0.07,原分词器码字 0.55;竖线标出 0.50 抛硬币水平。" src="assets/zhead-representation-ladder.png"></p>
+<p>量化这一步就丢掉大半判别信息;扩码本(512 → 2048)只挽回一点。此外语言模型的训练目标里
+从来没有"判干净还是脏"这一项。两者叠加,那条路线的判定准确率长期停在 0.6 附近。z-head
+的做法是直接消费公式 (1) 的连续 z,绕开量化和文本。</p>
+<h2 id="method-data-augmentation">Method: data augmentation</h2>
+<p>人工标注只有一百多段,不足以训练。合成增广提供大部分训练样本,<strong>四种形式全部在同一条原始
+录音内部取材,不跨录音拼接</strong>:</p>
+<p><img alt="四种增广的时间轴示意:起点前移、终点后移、跨类冒充、手臂列替换,各自标出哪些帧被标为污染。" src="assets/zhead-augmentation.svg"></p>
+<p>设一条录音 M 里有一个审定干净的段 [s, e),20 fps。四种构造与标签:</p>
+<table>
+<thead>
+<tr>
+<th>形式</th>
+<th>构造</th>
+<th>逐步标签 y</th>
+<th>段级 Y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 起点前移</td>
+<td>取 M[s−⌈20δ⌉ : e),δ ~ U{0.1,…,0.7} 秒,每段抽 2 个 δ</td>
+<td>前 ⌈δ/0.2⌉ 步为 1,其余 0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>② 终点后移</td>
+<td>取 M[s : e+⌈20δ⌉)</td>
+<td>末 ⌈δ/0.2⌉ 步为 1,其余 0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>③ 跨类冒充</td>
+<td>取另一类的干净段,类别嵌入填成本类</td>
+<td>全 1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>④ 手臂列替换</td>
+<td>x[t, 15:29] ← x<sub>B</sub>[t, 15:29],t ∈ [t₀, t₁)</td>
+<td>区间内 1,区间外 0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(7)　起点前移的标签:y<sub>t</sub> = 1 若 t ≤ ⌈δ/0.2⌉,否则 0;δ ~ U{0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.7}
+</div>
+
+<p><strong>为什么不跨录音拼接。</strong> 两个动作之间有真实的过渡帧;直接把 A 的尾巴接到 B 的头上会造出
+数据里根本不存在的姿态跳变。模型能学会找那个跳变,但那不是它要判的东西——部署时遇到的是
+真实录制的连续动作。前移/后移取到的多余帧就是这条录音里真实的前后动作,连过渡一起带进来。</p>
+<p><strong>第 ④ 种的部位选择按类分工</strong>:走路类贴手臂列(模拟下肢在走、上肢在做别的);
+挥手这类上肢主导的动作反过来贴下肢列。这个分工是 A/B 对比选出来的,不是先验设定。</p>
+<p><a id="the-model-in-action"></a></p>
+<h2 id="results-the-model-in-action">Results: the model in action</h2>
+<p>下面四段来自 round-1:从 28,081 段无人审查的段里随机抽出,模型的判定和逐步曲线在人工
+标注之前就已写盘锁定。横轴是段内时间,蓝柱是模型逐 0.2 秒的污染分,橙色区间是人后来标的。</p>
+<p><img alt="四张曲线图。train:5868 人标 1.6–2.2 秒打滑,模型 1.4–2.2 秒过线;train:8446 人标 4.4–4.8 秒,模型峰值在 4.2–4.4 秒;train:2052 人判干净,模型全程 0.00 正确保留;train:6823 人判干净,模型步级全程低于 0.02 但段级头 0.99 导致误拒。" src="assets/zhead-round1-demo.png"></p>
+<ul>
+<li>左上是最有说服力的一例:人写的备注是"打滑,1.6–2.2 秒",模型的过线区间 1.4–2.2 秒。
+  打滑发生在段落中间,不能用"总是怀疑开头"来解释。</li>
+<li>右上判对了段但位置偏早一格(峰值 4.2–4.4 秒,人标 4.4–4.8 秒)。</li>
+<li>右下是当前最典型的失败:步级曲线全程低于 0.02,段级头单独给了 0.99 把段拒掉。按公式 (5),
+  两个头任一过线即拒,所以这段被误杀。</li>
+</ul>
+<p><a id="rolling-loop"></a></p>
+<h3 id="_2">三个评测集上的成绩</h3>
+<p><img alt="分组条形图:细标 57 段交叉验证污染召回 93%、干净召回 38%;half-B 三类 92% / 9%;round-1 walk 100% / 25%;虚线标出 0.90 目标线。" src="assets/zhead-eval-recalls.png"></p>
+<table>
+<thead>
+<tr>
+<th>评测集</th>
+<th>n</th>
+<th>污染占比</th>
+<th>准确率↑</th>
+<th>污染召回↑</th>
+<th>干净召回↑</th>
+<th>全拒基线</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>细标 57 段(5 折交叉验证)</td>
+<td>57</td>
+<td>77%</td>
+<td>0.807</td>
+<td>93%</td>
+<td>38%</td>
+<td>0.772</td>
+</tr>
+<tr>
+<td>half-B 三类(V3 审查标签)</td>
+<td>232</td>
+<td>71%</td>
+<td>0.681</td>
+<td>92%</td>
+<td>9%</td>
+<td>0.711</td>
+</tr>
+<tr>
+<td>round-1 walk(部署池随机抽)</td>
+<td>19</td>
+<td>79%</td>
+<td>0.842</td>
+<td>100%</td>
+<td>25%</td>
+<td>0.789</td>
+</tr>
+</tbody>
+</table>
+<p>三个数都要对着"全拒基线"读:一个把所有段都判脏的常数判定器,在这些评测集上准确率就有
+0.71–0.79,因为这些集合本身脏占多数。模型超出基线的部分很薄,half-B 上甚至低于基线。</p>
+<h3 id="_3">为什么"留下的都是干净的"这么难</h3>
+<p>设某类共有 N<sub>净</sub> 段干净、N<sub>脏</sub> 段污染,干净召回 R<sub>净</sub>、
+污染召回 R<sub>脏</sub>,则被留下那一堆里真干净的比例是:</p>
+<div style="background:#0e1b2b;border-left:3px solid #62b6ff;padding:11px 15px;margin:12px 0;font-family:SFMono-Regular,Consolas,monospace;font-size:14px;color:#d6e9ff;overflow-x:auto">
+(8)　纯度 = R<sub>净</sub> N<sub>净</sub> ⁄ ( R<sub>净</sub> N<sub>净</sub> + (1 − R<sub>脏</sub>) N<sub>脏</sub> )
+</div>
+
+<p>代入 half-B 的 walk(15 段干净、100 段污染)看看目标有多远:要在保住 90% 干净段
+(R<sub>净</sub> = 0.9)的同时让留下的堆达到 90% 纯度,解 (8) 得 R<sub>脏</sub> = 98.5%。
+底子越脏,对污染召回的要求越苛刻——这也是把"判脏"做到 100% 仍不够用的原因。</p>
+<h3 id="_4">滚动补数据的流程</h3>
+<p>现在每一轮做四件事:从无人审查的池子里随机抽 20 段/类 → 模型判定写盘锁定 → 人工标注
+(标注界面直接显示逐步曲线,便于分析失败模式)→ 标注并入训练集重训,再抽下一轮。这样
+每轮的模型判定都是在真实部署分布上、标注之前给出的,不需要另外准备考卷。</p>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:污染召回在三个评测集稳定在 87%–100%,干净召回 9%–38%(主表)。失败集中在留侧,
+  且 half-B 上准确率低于全拒基线,说明当前模型倾向于大面积判脏。</li>
+<li>测量:剪除人标的段首污染后重新判定,walk 4 段中 3 段警报消失,连一个干净段上的误报也随之
+  消失;wave_arms 7 段中 5 段照样整段判脏。前者说明 walk 的警报跟着内容走,后者说明该类
+  的判定与标注位置无关。</li>
+<li>测量:round-1 walk 的 4 例误拒里,1 例是段级头单独开火(实况图右下),其余是步级头自己
+  对夸张但合格的走姿开火。去掉段级头在 round-1 多留对 1 段、在 half-B 少抓 4 段污染,
+  是一换一的取舍,<code>待验证</code>。</li>
+<li>next:round-1 剩余两类标完后并入重训,再抽 round-2;届时重跑同一套评测,看干净召回是否
+  随干净样本增加而抬升。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字的代入式与证据路径</summary>
+<ul>
+<li>纯度公式代入(half-B walk,N<sub>净</sub>=15、N<sub>脏</sub>=100):
+  0.9 = 0.9·15 / (0.9·15 + (1−R<sub>脏</sub>)·100) ⟹ 13.5 = 12.15 + 90(1−R<sub>脏</sub>)
+  ⟹ R<sub>脏</sub> = 0.985。当前操作点 R<sub>净</sub>=1/15、R<sub>脏</sub>=0.87,
+  纯度 = 1/(1+13) = 0.071。</li>
+<li>细标 57 段 0.807 = (41 拒对 + 5 留对)/57;<code>outputs/g1_motiongpt/hans_only_cv.json</code></li>
+<li>half-B 0.681 = (152+6)/232;<code>outputs/g1_motiongpt/hans_only_vs_synth_halfb.json</code></li>
+<li>round-1 walk 0.842 = (15+1)/19;<code>outputs/g1_motiongpt/rolling/round1_walk_scoreboard.json</code>
+  (19/20 段已标;判定列曾被标注界面默认值污染,修正记录见该文件 spec 字段)</li>
+<li>线性探针 AUC:连续特征 0.800 / 原分词器码字 0.554 / 判别正则码字 512 0.623±0.067 /
+  码字 2048 0.674±0.095;<code>outputs/probe_tokenizer_disc_acceptance/evidence.json</code>、
+  <code>outputs/probe_tokenizer_disc_cb2048_acceptance/evidence.json</code></li>
+<li>剪段首因果探针:<code>outputs/g1_motiongpt/head_crop_probe.json</code>;
+  判定规则消融:<code>outputs/g1_motiongpt/zhead_rule_decomposition.json</code></li>
+<li>逐段曲线:<code>outputs/g1_motiongpt/rolling/round1_blind.json</code>(round-1,标注前锁盘)、
+  <code>outputs/g1_motiongpt/hans_only_cv_curves.json</code>(交叉验证)</li>
+</ul>
+</details>
+<details>
+<summary>训练配方</summary>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>合成样本模型</th>
+<th>细标模型(本页主角)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练数据</td>
+<td>每类数百条合成样本,类平衡采样;不含任何真实污染段</td>
+<td>57 段真实标注 + 由其中 13 段判净的段生成的 29 条合成样本 = 86 条</td>
+</tr>
+<tr>
+<td>步数</td>
+<td>3000,10% 留出早停(不早停实测过拟合)</td>
+<td>600 固定</td>
+</tr>
+<tr>
+<td>batch / 学习率</td>
+<td>64 / 3e-4</td>
+<td>32 / 3e-4</td>
+</tr>
+<tr>
+<td>共同项</td>
+<td>AdamW(权重衰减 0.01)、bf16、梯度裁剪 1.0、损失见公式 (6)、编码器冻结、随机种子 20260814</td>
+<td>同左</td>
+</tr>
+</tbody>
+</table>
+<p>编码器域适应:50% BABEL + 50% 本数据池窗口,学习率 5e-5,30k 步;
+产物 <code>logs/g1_motiongpt/continuous_vae_vadc/continuous_vae.pt</code>。</p>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>输入截断:公式 (1) 的 T ≤ 60,即只判前 12 秒。已遇到实例:某段人标的污染在 13.0–13.4 秒,
+  模型看不到。</li>
+<li>覆盖范围:目前只训了 walk / kick / wave_arms 三类;其余类别调用会返回"不覆盖"。</li>
+<li>评测集之间标注尺度不同:细标 57 段与 round-1 是带时间区间的细粒度标注,half-B 用的是更早
+  的 V3 审查标签(含"看过但没打标 = 判脏"的折算),两者判定尺度不完全一致。</li>
+<li>round-1 起,标注界面会显示模型的逐步曲线(为分析失败模式而加),因此人工标注不再是完全
+  独立的;各轮模型判定仍在标注前写盘锁定。</li>
+</ul>
+</details>
+<details>
+<summary>Run Spec 与复现</summary>
+<p><code>NOT PREREGISTERED — 本设计线没有单一确认版 Run Spec</code>。已搜索:<code>docs/plans/</code>、
+<code>outputs/g1_motiongpt/*/evidence.json</code>、<code>report/G1_MotionGPT/</code>。逐次测量的探针级 spec
+内嵌在上述各 evidence 文件中;各次训练与评测均在会话中逐项确认后执行。</p>
+<pre><code class="language-bash"># 合成样本模型
+uv run python src/G1_Motion_GPT/train_zhead_multi.py --balanced --paste arms \
+    --cae logs/g1_motiongpt/continuous_vae_vadc/continuous_vae.pt --tag synth
+# 本页三张图
+uv run --with matplotlib python report/G1_MotionGPT/assets/make_zhead_figures.py
+</code></pre>
+<p>细标模型(<code>logs/g1_motiongpt/zhead_hansonly/zhead.pt</code>)由会话内联脚本训练,配方见上表。</p>
+</details>
+</main>
+</body>
+</html>

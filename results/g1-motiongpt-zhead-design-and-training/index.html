@@ -39,7 +39,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <li>主要失败面是干净召回率(9%–38%):模型大面积拒绝真干净段;kick 在 half-B 上 65 段全拒,
   与训练集里只有 1 段干净 kick 共现。</li>
 <li>当前决定(user 已确认):从 28,081 段无人审查的 train 池随机抽样,按"先测后训"滚动补充
-  user 标注;round-1 walk 已完成,acc 0.842(主表)。</li>
+  细粒度标注;round-1 walk 已完成,acc 0.842(主表)。</li>
 </ul>
 <h2 id="problem-and-terminology">Problem and terminology</h2>
 <p>研究问题:z-head 的设计、增广与训练是什么;它当前在"给定声称动作类,判这段是否干净"任务上
@@ -79,14 +79,14 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <td>本文对照方</td>
 </tr>
 <tr>
-<td>hans-only 模型</td>
-<td>ckpt <code>logs/g1_motiongpt/zhead_hansonly</code>:训练数据只有 user 在 8769 队列标注的 57 段(44 污染含手画时间区间 + 13 干净)加由这 13 段生成的 29 条合成样本,共 86 条</td>
-<td>与 hans-57 交叉验证同配方,但用全部 57 段训练</td>
+<td>细标模型</td>
+<td>ckpt <code>logs/g1_motiongpt/zhead_hansonly</code>(ckpt 名为历史命名):训练数据 = 8769 队列的细粒度标注 57 段(44 污染含手画时间区间 + 13 干净)加由这 13 段生成的 29 条合成样本,共 86 条;其中 walk 由本项目作者标注,kick/wave_arms 由协作标注者标注</td>
+<td>与细标 57 段交叉验证同配方,但用全部 57 段训练</td>
 </tr>
 <tr>
-<td>hans-57 交叉验证</td>
-<td>上述 57 段做 5 折交叉验证:每折用其余 4 折训练,预测留出折;标签与训练同出 user 一人</td>
-<td>该评测集与训练数据同队列、同标注人,数字不能外推到其他分布</td>
+<td>细标 57 段交叉验证</td>
+<td>上述 57 段做 5 折交叉验证:每折用其余 4 折训练,预测留出折;训练标签与考卷标签出自同一批标注</td>
+<td>该评测集与训练数据同队列、同一批标注,数字不能外推到其他分布</td>
 </tr>
 <tr>
 <td>half-B</td>
@@ -155,7 +155,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <tr>
 <th>训练配方</th>
 <th>synth 模型</th>
-<th>hans-only 模型</th>
+<th>细标模型</th>
 </tr>
 </thead>
 <tbody>
@@ -204,8 +204,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <p><code>NOT PREREGISTERED — z-head 设计线没有单一确认版 Run Spec</code>。已搜索:<code>docs/plans/</code>、
 <code>outputs/g1_motiongpt/*/evidence.json</code>、<code>report/G1_MotionGPT/</code>。逐次测量的探针级 spec
 内嵌于对应 evidence 文件(路径见 Appendix);各训练/评测均由 user 在会话中逐项确认后执行
-("可以的,都做了,速速开训"2026-08-14、"只用我的数据训练模型,再只用我的数据引导模型"
-2026-08-14、随机抽样滚动方案 2026-08-14)。</p>
+(细标模型与滚动抽样方案均于 2026-08-14 会话确认)。</p>
 </details>
 <h2 id="results">Results</h2>
 <p>评测=全量(各评测集全部段),段级聚合,阈值固定 0.5,无逐集调参。</p>
@@ -223,8 +222,8 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </thead>
 <tbody>
 <tr>
-<td>hans-57 交叉验证(57,77%)</td>
-<td>hans-only</td>
+<td>细标 57 段交叉验证(57,77%)</td>
+<td>细标模型</td>
 <td><strong>0.807</strong></td>
 <td>93%</td>
 <td>38%</td>
@@ -251,7 +250,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td>同上</td>
-<td>hans-only</td>
+<td>细标模型</td>
 <td>0.681</td>
 <td>92%</td>
 <td>9%</td>
@@ -260,7 +259,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td>round-1 walk(19,79%)</td>
-<td>hans-only</td>
+<td>细标模型</td>
 <td>0.842</td>
 <td>100%</td>
 <td>25%</td>
@@ -280,7 +279,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </ul>
 <h2 id="analysis">Analysis</h2>
 <ul>
-<li>测量:hans-57 上 0.807 只比全拒基线多判对 2 段,且评测与训练同队列、同标注人;换到
+<li>测量:细标 57 段上 0.807 只比全拒基线多判对 2 段,且评测与训练同队列、同一批标注;换到
   half-B(nolan 标签)后 0.681 低于全拒基线,只保留 nolan 明确点击判定的 163 段子集差距
   不变(0.613 对 synth 0.706)——57 段训练目前不泛化(user 会话共识)。</li>
 <li>测量:kick 在 half-B 上 65 段全拒,与训练集只有 1 段干净 kick 共现;因果归属<code>待验证</code>,
@@ -293,8 +292,8 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <details>
 <summary>头条数字代入式与证据路径</summary>
 <ul>
-<li>hans-57 交叉验证 0.807 = (41 拒对 + 5 留对)/57;<code>outputs/g1_motiongpt/hans_only_cv.json</code></li>
-<li>half-B synth 0.759 = (147+29)/232,hans-only 0.681 = (152+6)/232;
+<li>细标 57 段交叉验证 0.807 = (41 拒对 + 5 留对)/57;<code>outputs/g1_motiongpt/hans_only_cv.json</code></li>
+<li>half-B synth 0.759 = (147+29)/232,细标模型 0.681 = (152+6)/232;
   <code>outputs/g1_motiongpt/hans_only_vs_synth_halfb.json</code></li>
 <li>round-1 walk 0.842 = (15+1)/19;<code>outputs/g1_motiongpt/rolling/round1_walk_scoreboard.json</code>
   (19/20 段已标,<code>train:2720</code> 未标;判定列曾被前端默认值污染,修正记录见该文件 spec 字段)</li>
@@ -324,7 +323,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <pre><code class="language-bash"># synth 模型(合成样本,类平衡,早停)
 uv run python src/G1_Motion_GPT/train_zhead_multi.py --balanced --paste arms \
     --cae logs/g1_motiongpt/continuous_vae_vadc/continuous_vae.pt --tag synth
-# hans-only 模型:57 段标注 + 29 条合成,600 步(会话内联脚本,配方见本文训练表;
+# 细标模型:57 段标注 + 29 条合成,600 步(会话内联脚本,配方见本文训练表;
 # ckpt = logs/g1_motiongpt/zhead_hansonly/zhead.pt)
 # 前端判定面板(点开哪段现算哪段,缓存带 ckpt 版本):
 PYTHONPATH=src MUJOCO_GL=egl uv run --with flask python -m VAD_evaluator.review_app.server \

@@ -1,6 +1,40 @@
 {
  "results": [
   {
+   "slug": "g1-zhead-classifier-architecture",
+   "title": "z-head: a segment-quality classifier for robot motion data — architecture, augmentation, results",
+   "date": "2026-08-18",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "FAIL",
+   "summary": "An explainer page for the classifier that decides whether a robot motion segment contains only its labelled action: layer-by-layer architecture with equations (frozen 1D conv autoencoder to one 512-d vector per 0.2 s, no quantization; 6-layer bidirectional transformer, 10.9 M params, conditioned on the claimed action class; a per-step head and a segment head, reject if either crosses 0.5), the four synthetic augmentations and their label rules (all sampled inside one original recording, never spliced across recordings), and what it actually measures. Dirt recall is 87-100% across three eval sets including a locked pre-annotation run on random deployment-pool samples; clean recall is 9-38%, so it cannot yet be used to filter the 28k pool. Includes the purity algebra showing why 90% kept-purity on walk demands 98.5% dirt recall.",
+   "path": "results/g1-zhead-classifier-architecture/",
+   "thumbnail": "results/g1-zhead-classifier-architecture/assets/thumbnail.png",
+   "thumbnailAlt": "Architecture data-flow diagram: motion segment to 106-d per-frame kinematic features to a frozen domain-adapted conv autoencoder producing one 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step head and a segment head with the 0.5 reject rule.",
+   "tags": [
+    "architecture",
+    "equations",
+    "data augmentation",
+    "dataset cleaning",
+    "continuous encoder",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "87-100% vs 9-38%",
+     "label": "Dirt recall vs clean recall across three eval sets (the keep side is the failure)"
+    },
+    {
+     "value": "0.80 vs 0.55-0.67",
+     "label": "Linear-probe AUC: continuous features vs discrete codes (why the encoder skips quantization)"
+    },
+    {
+     "value": "98.5%",
+     "label": "Dirt recall the purity algebra demands for 90% kept-purity on walk at 90% clean recall"
+    }
+   ]
+  },
+  {
    "slug": "g1-motiongpt-zhead-design-and-training",
    "title": "G1 MotionGPT judge line: z-head architecture, data augmentation and training recipe",
    "date": "2026-08-14",

@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" font-family="'Noto Sans CJK SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+  <!-- 四种合成增广的时间轴示意;构造与标签规则见 train_zhead_multi.py(2026-08-18) -->
+  <rect width="960" height="500" fill="#fcfcfb"/>
+  <defs>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#52514e"/>
+    </marker>
+  </defs>
+
+  <text x="24" y="30" font-size="14" font-weight="700" fill="#0b0b0b">四种合成增广:全部在同一条原始录音内取,不跨录音拼接</text>
+  <text x="24" y="50" font-size="11.5" fill="#52514e">蓝 = 标为干净的帧　橙 = 标为污染的帧　灰 = 该录音里这一段之外的内容</text>
+
+  <!-- 参照:原始录音 -->
+  <g>
+    <text x="24" y="86" font-size="12" fill="#0b0b0b">原始录音 M(内含多个动作段,段与段之间是真实过渡)</text>
+    <rect x="24" y="94" width="620" height="22" fill="#e1e0d9"/>
+    <rect x="214" y="94" width="240" height="22" fill="#2a78d6"/>
+    <text x="334" y="110" font-size="11" fill="#fff" text-anchor="middle">审定干净的段 [s, e)</text>
+    <text x="119" y="110" font-size="10.5" fill="#52514e" text-anchor="middle">前一个动作</text>
+    <text x="549" y="110" font-size="10.5" fill="#52514e" text-anchor="middle">后一个动作</text>
+  </g>
+
+  <!-- 1 起点前移 -->
+  <g>
+    <text x="24" y="156" font-size="12.5" font-weight="700" fill="#0b0b0b">① 起点前移</text>
+    <text x="130" y="156" font-size="11.5" fill="#52514e">起点向前挪 δ 秒,多出来的帧是真实的前一个动作尾巴 → 标污染</text>
+    <rect x="24" y="164" width="620" height="22" fill="#e1e0d9" opacity="0.45"/>
+    <rect x="154" y="164" width="60" height="22" fill="#eb6834"/>
+    <rect x="214" y="164" width="240" height="22" fill="#2a78d6"/>
+    <line x1="154" y1="196" x2="214" y2="196" stroke="#52514e" stroke-width="1.1" marker-start="url(#a2)" marker-end="url(#a2)"/>
+    <text x="184" y="210" font-size="10.5" fill="#52514e" text-anchor="middle">δ ~ U{0.1…0.7}s</text>
+    <text x="470" y="180" font-size="11" fill="#52514e">标签:前 ⌈δ/0.2⌉ 步为 1,其余为 0;整段位 = 1</text>
+  </g>
+
+  <!-- 2 终点后移 -->
+  <g>
+    <text x="24" y="248" font-size="12.5" font-weight="700" fill="#0b0b0b">② 终点后移</text>
+    <text x="130" y="248" font-size="11.5" fill="#52514e">同理作用在段尾,多出来的是下一个动作的头 → 标污染</text>
+    <rect x="24" y="256" width="620" height="22" fill="#e1e0d9" opacity="0.45"/>
+    <rect x="214" y="256" width="240" height="22" fill="#2a78d6"/>
+    <rect x="454" y="256" width="60" height="22" fill="#eb6834"/>
+    <text x="530" y="272" font-size="11" fill="#52514e">标签:末 ⌈δ/0.2⌉ 步为 1</text>
+  </g>
+
+  <!-- 3 跨类冒充 -->
+  <g>
+    <text x="24" y="322" font-size="12.5" font-weight="700" fill="#0b0b0b">③ 跨类冒充</text>
+    <text x="130" y="322" font-size="11.5" fill="#52514e">拿别的动作类的干净段,但告诉模型"这是 walk" → 整段标污染</text>
+    <rect x="214" y="330" width="240" height="22" fill="#eb6834"/>
+    <text x="334" y="346" font-size="11" fill="#fff" text-anchor="middle">实际是 kick 的干净段</text>
+    <rect x="470" y="330" width="130" height="22" rx="4" fill="#fff" stroke="#52514e"/>
+    <text x="535" y="346" font-size="11" fill="#0b0b0b" text-anchor="middle">类别嵌入 = walk</text>
+    <text x="616" y="346" font-size="11" fill="#52514e">→ 逐步全 1</text>
+  </g>
+
+  <!-- 4 手臂列替换 -->
+  <g>
+    <text x="24" y="396" font-size="12.5" font-weight="700" fill="#0b0b0b">④ 手臂列替换</text>
+    <text x="140" y="396" font-size="11.5" fill="#52514e">把另一段的手臂关节列贴进中段:下肢在走、上肢在做别的事</text>
+    <text x="24" y="424" font-size="10.5" fill="#52514e">上肢 15:29</text>
+    <rect x="94" y="412" width="120" height="18" fill="#2a78d6"/>
+    <rect x="214" y="412" width="110" height="18" fill="#eb6834"/>
+    <rect x="324" y="412" width="130" height="18" fill="#2a78d6"/>
+    <text x="269" y="425" font-size="10" fill="#fff" text-anchor="middle">来自另一段</text>
+    <text x="24" y="450" font-size="10.5" fill="#52514e">下肢 0:15</text>
+    <rect x="94" y="438" width="360" height="18" fill="#2a78d6"/>
+    <text x="274" y="451" font-size="10" fill="#fff" text-anchor="middle">原段不动</text>
+    <text x="470" y="432" font-size="11" fill="#52514e">标签:被替换的时间窗为 1,其余为 0</text>
+    <text x="470" y="450" font-size="11" fill="#52514e">(wave_arms 这类上肢主导的动作改贴下肢列)</text>
+  </g>
+
+  <text x="24" y="486" font-size="11" fill="#898781">为什么不跨录音拼接:两个动作之间有真实过渡帧,直接拼会造出数据里不存在的姿态跳变,模型学到的将是"找拼接缝",不是"找污染"。</text>
+</svg>
