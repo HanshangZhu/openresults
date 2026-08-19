@@ -80,7 +80,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td>细标模型</td>
-<td>ckpt <code>logs/g1_motiongpt/zhead_hansonly</code>(ckpt 名为历史命名):训练数据 = 8769 队列的细粒度标注 57 段(44 污染含手画时间区间 + 13 干净)加由这 13 段生成的 29 条合成样本,共 86 条;其中 walk 由本项目作者标注,kick/wave_arms 由协作标注者标注</td>
+<td>ckpt <code>logs/g1_motiongpt/zhead_finelabel_v1</code>(ckpt 名为历史命名):训练数据 = 8769 队列的细粒度标注 57 段(44 污染含手画时间区间 + 13 干净)加由这 13 段生成的 29 条合成样本,共 86 条;其中 walk 由本项目作者标注,kick/wave_arms 由协作标注者标注</td>
 <td>与细标 57 段交叉验证同配方,但用全部 57 段训练</td>
 </tr>
 <tr>
@@ -324,7 +324,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 uv run python src/G1_Motion_GPT/train_zhead_multi.py --balanced --paste arms \
     --cae logs/g1_motiongpt/continuous_vae_vadc/continuous_vae.pt --tag synth
 # 细标模型:57 段标注 + 29 条合成,600 步(会话内联脚本,配方见本文训练表;
-# ckpt = logs/g1_motiongpt/zhead_hansonly/zhead.pt)
+# ckpt = logs/g1_motiongpt/zhead_finelabel_v1/zhead.pt)
 # 前端判定面板(点开哪段现算哪段,缓存带 ckpt 版本):
 PYTHONPATH=src MUJOCO_GL=egl uv run --with flask python -m VAD_evaluator.review_app.server \
     --motiongpt --only-ids outputs/g1_motiongpt/fine_annotation_train_ids.txt \

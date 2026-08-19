@@ -83,7 +83,7 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <tr>
 <td>细标 57 段</td>
 <td>带手画时间区间的标注集(walk 20 + kick 24 + wave_arms 22 减去弃用段);walk 由本项目作者标注,kick/wave_arms 由协作标注者标注</td>
-<td>ckpt 名 <code>zhead_hansonly</code> 是历史命名,并非"全部出自一人"</td>
+<td>ckpt 名 <code>zhead_finelabel_v1</code> 是历史命名,并非"全部出自一人"</td>
 </tr>
 <tr>
 <td>half-B</td>
@@ -398,7 +398,7 @@ uv run python src/G1_Motion_GPT/train_zhead_multi.py --balanced --paste arms \
 # 本页三张图
 uv run --with matplotlib python report/G1_MotionGPT/assets/make_zhead_figures.py
 </code></pre>
-<p>细标模型(<code>logs/g1_motiongpt/zhead_hansonly/zhead.pt</code>)由会话内联脚本训练,配方见上表。</p>
+<p>细标模型(<code>logs/g1_motiongpt/zhead_finelabel_v1/zhead.pt</code>)由会话内联脚本训练,配方见上表。</p>
 </details>
 </main>
 </body>
