@@ -1,6 +1,39 @@
 {
  "results": [
   {
+   "slug": "g1-per-action-classifiers",
+   "title": "One classifier per action: eight-way evaluation on a frozen motion test set",
+   "date": "2026-08-19",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "MARGINAL",
+   "summary": "Eight separate segment-quality classifiers, one per robot action, each trained purely on synthetic augmentations of reviewed-clean segments and scored on test segments drawn and frozen before annotation. One action (crouch) clears every metric: accuracy 0.950 against a reject-all baseline of 0.700, precision 1.000, recall 0.929, negative recall 1.000. Two more (kick, walk) reach recall 1.000 but keep almost no clean segments (negative recall 0.200 / 0.000), so they cannot be used to filter data. Three (clap, punch, wave_arms) score below the reject-all baseline with precision and recall both low; in exactly those actions the dirty segments are markedly longer than the clean ones, while three of the four augmentations lengthen a segment as they dirty it. Per-action models beat a single eight-way model on five of six comparable actions.",
+   "path": "results/g1-per-action-classifiers/",
+   "thumbnail": "results/g1-per-action-classifiers/assets/thumbnail.png",
+   "thumbnailAlt": "Architecture data-flow diagram of the segment-quality classifier: motion segment to per-frame kinematic features to a frozen continuous conv autoencoder, then a bidirectional transformer with per-step and segment-level output heads.",
+   "tags": [
+    "per-class models",
+    "frozen test set",
+    "dataset cleaning",
+    "evaluation",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.950 / 1.000 / 0.929 / 1.000",
+     "label": "crouch: accuracy / precision / recall / negative recall (baseline 0.700)"
+    },
+    {
+     "value": "1.000 vs 0.200",
+     "label": "kick: recall against negative recall — catches all dirt, keeps almost no clean"
+    },
+    {
+     "value": "3 of 8",
+     "label": "Actions scoring below the reject-all baseline (clap, punch, wave_arms)"
+    }
+   ]
+  },
+  {
    "slug": "g1-zhead-classifier-architecture",
    "title": "z-head: a segment-quality classifier for robot motion data — architecture, augmentation, results",
    "date": "2026-08-18",

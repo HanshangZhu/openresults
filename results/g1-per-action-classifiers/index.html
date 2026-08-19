@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — 每动作一个模型,在冻结测试集上的八类评测</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-19-per-action-classifiers-frozen-testset.md</code></p>
+<h1 id="g1">G1 动作段判定器 — 每动作一个模型,在冻结测试集上的八类评测</h1>
+<p>Preliminary。八个动作各训一个判定模型(同一套合成增广配方,互不共享参数),在一批
+标注前就抽定、从未进入训练的测试段上逐类评测。回答两件事:这条路线现在能覆盖哪些动作,
+以及不能覆盖的那些是怎么坏的。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>MARGINAL</strong>(八类里 1 类可直接用,2 类单侧可用,3 类判反)</p>
+<ul>
+<li><strong>crouch 可直接用</strong>:准确率 0.950(全拒基线 0.700),precision 1.000、recall 0.929、
+  负类 recall 1.000——判脏的 13 段全对,6 段干净一段没冤枉(<a href="#results">主表</a>)。</li>
+<li><strong>kick / walk 单侧可用</strong>:recall 均为 1.000,脏一段不漏;但负类 recall 只有 0.200 / 0.000,
+  干净段几乎全被误拒,拿去清洗数据会把可用数据一起丢掉。</li>
+<li><strong>clap / punch / wave_arms 判反</strong>:准确率低于全拒基线,precision 与 recall 同时低。
+  这三类的脏段时长中位数显著大于干净段(clap 10.6 s 对 3.6 s),而合成增广恰好教了
+  "比原样长 = 脏",两者共现(<a href="#analysis">Analysis</a>);因果归属 <code>待验证</code>。</li>
+<li>每动作一个模型明显优于八类合一:同一批 kick 测试段,单类 recall 1.000、合一 0.600。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:给定一段动作和它声称的动作类别,判定这段是否只含该动作、不含前后动作残留或
+其他污染。本报告问的是:每个动作各训一个模型,在从未参与训练的测试段上分别做到什么水平。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>判定模型</td>
+<td>冻结的连续编码器 + 6 层双向 Transformer(10.9 M 参数),输出逐 0.2 s 污染概率与整段污染概率;任一 ≥ 0.5 即判"拒"</td>
+<td>架构与增广细节见<a href="https://hanshangzhu.github.io/openresults/results/g1-zhead-classifier-architecture/">前一篇的公开页</a></td>
+</tr>
+<tr>
+<td>每动作一个模型</td>
+<td>八个动作各自训练一个模型,参数不共享;每个模型只在自己那一类上使用</td>
+<td>与"八类合一"(一个模型带类别条件覆盖八类)相对</td>
+</tr>
+<tr>
+<td>合成增广</td>
+<td>四种构造,全部在同一条原始录音内部取材:起点前移、终点后移、跨类冒充、部位替换。判净的段既是正样本,又是这四种的原料</td>
+<td>训练数据里没有任何人工细粒度标注,纯合成</td>
+</tr>
+<tr>
+<td>冻结测试集</td>
+<td>2026-08-16 按用户指令抽定的 8 类 × 20 段,抽样池 = V3 清单中 <code>unreviewed</code> 的段;抽定后排除于一切训练材料(脚本启动时断言),标注在独立库进行且界面关闭模型面板</td>
+<td>与训练标注队列是两个库、两个界面</td>
+</tr>
+<tr>
+<td>walk 的考卷</td>
+<td>冻结测试集的 walk 20 段至今未标注,故用 round-1 批次的 19 段替代——同样从 <code>unreviewed</code> 池随机抽、同样零接触训练</td>
+<td>抽样方法与冻结测试集一致,可与其他类横向比较</td>
+</tr>
+<tr>
+<td>准确率 / precision / recall / 负类 recall</td>
+<td>以"脏"为正类:准确率 = 判对比例↑;precision = 判拒的段里真脏的比例↑;recall = 真脏的段被拒的比例↑;负类 recall = 真干净的段被留的比例↑</td>
+<td>四个必须一起看</td>
+</tr>
+<tr>
+<td>全拒基线</td>
+<td>把所有段都判脏的常数判定器的准确率 = 测试段中脏的占比;模型准确率超出它的部分才是判别贡献</td>
+<td>不是模型</td>
+</tr>
+<tr>
+<td>区间命中</td>
+<td>人工标注写明了污染时间区间的脏段中,模型过线区与该区间有重叠的比例</td>
+<td>段级判对不等于位置指对</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<table>
+<thead>
+<tr>
+<th>项</th>
+<th>设置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练数据</td>
+<td>每类 551–1182 条合成样本(判净段本体 + 四种增广);无人工细粒度标注</td>
+</tr>
+<tr>
+<td>判净原料</td>
+<td>V3 清单中标 <code>clean</code> 的段,排除细粒度标注队列、冻结测试集与 half-B</td>
+</tr>
+<tr>
+<td>训练</td>
+<td>3000 步上限,10% 留出早停;batch 64、lr 3e-4、AdamW(权重衰减 0.01)、bf16、梯度裁剪 1.0;编码器全程冻结</td>
+</tr>
+<tr>
+<td>部位替换列</td>
+<td>统一贴手臂关节列(先前 A/B 对比的选择)</td>
+</tr>
+<tr>
+<td>阈值</td>
+<td>0.5,全类统一,未逐类调参</td>
+</tr>
+<tr>
+<td>评测</td>
+<td>冻结测试集全量(截至 2026-08-19 已标 133/160);walk 用 round-1 19 段</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可直接用于清洗:precision、recall、负类 recall 同时可用</td>
+<td>三者均 ≥ 0.9</td>
+<td>crouch 1.000/0.929/1.000;其余七类至少一项 ≤ 0.8</td>
+<td>crouch PASS,其余 FAIL</td>
+</tr>
+<tr>
+<td>优于不加判别的常数策略</td>
+<td>准确率 &gt; 全拒基线</td>
+<td>4 类超出(crouch +0.250、handshake +0.200、kick +0.066、cross_arms +0.052);walk 持平;3 类低于基线</td>
+<td>MARGINAL</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 与来源声明</summary>
+<p><code>NOT PREREGISTERED — 本轮八类单模型评测没有确认版 Run Spec</code>。已搜索:<code>docs/plans/</code>、
+<code>outputs/g1_motiongpt/*/evidence.json</code>、<code>report/G1_MotionGPT/</code>。冻结测试集本身有
+预注册的抽样 spec(<code>outputs/g1_motiongpt/test_sets/testset_v1_spec.json</code>,含用户指令原文、
+抽样池、种子与排除规则),本报告的评测口径沿用它;训练与评测均在会话中逐项确认后执行。</p>
+</details>
+<h2 id="results">Results</h2>
+<p>八个模型,每类一个,阈值 0.5,评测为各类测试段全量。以"脏"为正类。</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>测试段(脏/净)</th>
+<th>准确率↑</th>
+<th>全拒基线</th>
+<th>precision↑</th>
+<th>recall↑</th>
+<th>负类 recall↑</th>
+<th>区间命中↑</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>crouch</strong></td>
+<td>20(14/6)</td>
+<td><strong>0.950</strong></td>
+<td>0.700</td>
+<td><strong>1.000</strong></td>
+<td>0.929</td>
+<td><strong>1.000</strong></td>
+<td>4/8</td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>20(10/10)</td>
+<td>0.700</td>
+<td>0.500</td>
+<td>0.750</td>
+<td>0.600</td>
+<td>0.800</td>
+<td>0/8</td>
+</tr>
+<tr>
+<td>kick</td>
+<td>15(10/5)</td>
+<td>0.733</td>
+<td>0.667</td>
+<td>0.714</td>
+<td><strong>1.000</strong></td>
+<td>0.200</td>
+<td><strong>7/8</strong></td>
+</tr>
+<tr>
+<td>walk</td>
+<td>19(15/4)</td>
+<td>0.789</td>
+<td>0.789</td>
+<td>0.789</td>
+<td><strong>1.000</strong></td>
+<td>0.000</td>
+<td>2/4</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>19(9/10)</td>
+<td>0.526</td>
+<td>0.474</td>
+<td>0.500</td>
+<td>0.778</td>
+<td>0.300</td>
+<td>5/8</td>
+</tr>
+<tr>
+<td>punch</td>
+<td>20(14/6)</td>
+<td>0.550</td>
+<td>0.700</td>
+<td>0.692</td>
+<td>0.643</td>
+<td>0.333</td>
+<td>3/13</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td>20(8/12)</td>
+<td>0.400</td>
+<td>0.400</td>
+<td>0.300</td>
+<td>0.375</td>
+<td>0.417</td>
+<td>0/6</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>19(10/9)</td>
+<td>0.316</td>
+<td>0.526</td>
+<td>0.364</td>
+<td>0.400</td>
+<td>0.222</td>
+<td>0/6</td>
+</tr>
+</tbody>
+</table>
+<p>同一批测试段上,每动作一个模型与八类合一的对照(准确率):</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>每动作一个</th>
+<th>八类合一</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>crouch</td>
+<td><strong>0.950</strong></td>
+<td>0.700</td>
+</tr>
+<tr>
+<td>kick</td>
+<td><strong>0.733</strong></td>
+<td>0.600</td>
+</tr>
+<tr>
+<td>punch</td>
+<td><strong>0.550</strong></td>
+<td>0.200</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td><strong>0.526</strong></td>
+<td>0.421</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>0.316</td>
+<td><strong>0.579</strong></td>
+</tr>
+<tr>
+<td>handshake</td>
+<td><strong>0.700</strong></td>
+<td>0.550</td>
+</tr>
+</tbody>
+</table>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:八类里只有 crouch 三项指标同时达标(主表);kick 与 walk 的 recall 为 1.000 而
+  负类 recall 为 0.200 / 0.000,说明模型把判定线画得过严,不是分不出而是不敢留。</li>
+<li>测量:clap / punch / wave_arms 准确率低于全拒基线,且这三类的脏段时长中位数明显大于
+  干净段(clap 10.6 s 对 3.6 s、wave_arms 11.9 s 对 7.8 s)。合成增广的三种形式
+  (起点前移、终点后移、部位替换)都会让样本变长同时标脏。二者共现,<code>待验证</code>。</li>
+<li>测量:段级判对与位置指对是两回事。handshake 准确率 0.700 但区间命中 0/8;kick 区间
+  命中 7/8 为全类最好。</li>
+<li>next:逐类调阈(recall 已达 1.000 的类,负类 recall 有回收空间);改增广使脏样本与
+  干净样本等长,再看判反的三类是否翻正;补标冻结测试集剩余 27 段与 walk 的 20 段。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>标签更正记录</summary>
+<p>评测前修正了 walk 训练标注中 5 段的判定:标注界面在 2026-08-18 之前没有判定选择框,
+未点选即按 <code>fail</code> 存盘,导致备注写明"clean segment""nice walk"的段被记为脏。
+经用户确认后改为 <code>pass</code>(val:480、train:763、train:1175、val:1647、val:582);
+val:1088 备注为"but it's fine still valid",用户裁定维持 <code>fail</code>。更正后 walk 为 30 脏 / 9 净。</p>
+<p>冻结测试集不受此影响:它的标注全部发生在选择框上线之后,每类均有 pass 与 fail 分布。</p>
+</details>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>crouch 0.950 = (13 判脏对 + 6 判净对)/20;precision = 13/13;recall = 13/14;
+  负类 recall = 6/6</li>
+<li>kick 0.733 = (10+1)/15;precision = 10/14;recall = 10/10;负类 recall = 1/5</li>
+<li>walk 0.789 = (15+0)/19;precision = 15/19;recall = 15/15;负类 recall = 0/4</li>
+<li>逐类四格与指标:<code>outputs/g1_motiongpt/singles_all8_metrics.json</code>、
+  <code>outputs/g1_motiongpt/singles_all8_testset.json</code>、<code>outputs/g1_motiongpt/walk_queue_eval.json</code></li>
+<li>八类合一对照:<code>outputs/g1_motiongpt/testset_v1_full_eval.json</code></li>
+<li>冻结测试集抽样 spec:<code>outputs/g1_motiongpt/test_sets/testset_v1_spec.json</code></li>
+<li>评测脚本:<code>scripts/eval_zhead_testset_full.py</code></li>
+</ul>
+</details>
+<details>
+<summary>诊断量(非正式指标)</summary>
+<p>用一个与阈值无关的排序读数(随机取一脏一净、脏的分数更高的概率)做过两项诊断,仅用于
+判断"判别力不足"还是"阈值站错位置",不作为本报告的判定指标:</p>
+<ul>
+<li>该读数在 crouch 为 1.000、kick 0.900、walk 0.850,而 clap 0.389、punch 0.369、
+  wave_arms 0.292——低于 0.5 表示排序系统性反了。</li>
+<li>同一读数若只用"段长"排序:kick 0.750、clap 0.722、wave_arms 0.655,在 clap、
+  wave_arms、cross_arms、punch 四类上高于模型自身。这是把时长列为混淆变量的依据。</li>
+</ul>
+<p>数据:<code>outputs/g1_motiongpt/zhead_auc_by_class.json</code></p>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>样本量小:每类 15–20 段,单段翻转即改变 0.05–0.07 的准确率;cross_arms 与 clap 的
+  正负两侧各只有 9–10 段。</li>
+<li>冻结测试集尚有 27 段未标注(kick 5、clap 1、cross_arms 1、walk 20)。</li>
+<li>walk 用的是 round-1 的 19 段而非冻结测试集的 20 段;抽样方法一致,但不是同一批段。</li>
+<li>模型只判前 12 秒(编码序列上限 60 步)。本批测试段中人工标注的污染区间没有一段整体
+  落在 12 秒之后,故本轮未受影响。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 560" font-family="'Noto Sans CJK SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif">
+  <!-- 手工绘制的 z-head 数据流架构图;数值来源:train_zhead_multi.py / zhead_eval.py(2026-08-14) -->
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#455a6b"/>
+    </marker>
+  </defs>
+  <rect width="980" height="560" fill="#ffffff"/>
+
+  <!-- 主链 -->
+  <g stroke="#455a6b" stroke-width="1.4" fill="none">
+    <line x1="150" y1="86" x2="150" y2="112" marker-end="url(#ar)"/>
+    <line x1="150" y1="168" x2="150" y2="194" marker-end="url(#ar)"/>
+    <line x1="150" y1="252" x2="150" y2="278" marker-end="url(#ar)"/>
+    <line x1="290" y1="315" x2="360" y2="315" marker-end="url(#ar)"/>
+    <line x1="700" y1="315" x2="762" y2="315" marker-end="url(#ar)"/>
+  </g>
+
+  <g text-anchor="middle" font-size="13" fill="#16232e">
+    <rect x="30" y="40" width="240" height="46" rx="8" fill="#eef4f9" stroke="#9db4c6"/>
+    <text x="150" y="59">G1 动作段(release 原始帧,20 fps)</text>
+    <text x="150" y="76" font-size="11" fill="#5c6f80">segment_id = entry + 起止帧</text>
+
+    <rect x="30" y="112" width="240" height="56" rx="8" fill="#eef4f9" stroke="#9db4c6"/>
+    <text x="150" y="132">逐帧运动学特征 x_t(106 维)</text>
+    <text x="150" y="150" font-size="11" fill="#5c6f80">DOF+root+FK 关键点;(x−μ)/σ 归一化</text>
+
+    <rect x="30" y="194" width="240" height="58" rx="8" fill="#e8f2ea" stroke="#6f9c7f"/>
+    <text x="150" y="213">域适应 conv-AE encoder(冻结)</text>
+    <text x="150" y="231" font-size="11" fill="#4a6b56">连续编码,无量化;时间 ×4 下采样</text>
+    <text x="150" y="246" font-size="11" fill="#4a6b56">50% BABEL + 50% VADCompose 续训 30k 步</text>
+
+    <rect x="30" y="278" width="260" height="74" rx="8" fill="#eef4f9" stroke="#9db4c6"/>
+    <text x="160" y="298">z 序列:每 0.2 s 一个 512 维向量</text>
+    <text x="160" y="316" font-size="11" fill="#5c6f80">最长 60 步 = 12 s(超长段截断,</text>
+    <text x="160" y="331" font-size="11" fill="#5c6f80">后段不参与判定 — 已知视野限制)</text>
+  </g>
+
+  <!-- ZHeadMulti -->
+  <g text-anchor="middle" font-size="13" fill="#16232e">
+    <rect x="360" y="130" width="340" height="370" rx="10" fill="#fdf6ec" stroke="#c9a35e" stroke-width="1.6"/>
+    <text x="530" y="154" font-weight="700">ZHeadMulti(可训练,10.9 M 参数)</text>
+    <text x="530" y="172" font-size="11" fill="#7a6842">6 层双向 Transformer · d=384 · 6 头 · GELU · pre-norm</text>
+
+    <rect x="382" y="190" width="90" height="40" rx="6" fill="#f3e3c3" stroke="#c9a35e"/>
+    <text x="427" y="207" font-size="12">CLS token</text>
+    <text x="427" y="222" font-size="10" fill="#7a6842">段级判定位</text>
+    <rect x="484" y="190" width="90" height="40" rx="6" fill="#f3e3c3" stroke="#c9a35e"/>
+    <text x="529" y="207" font-size="12">类别嵌入</text>
+    <text x="529" y="222" font-size="10" fill="#7a6842">声称动作类</text>
+    <rect x="586" y="190" width="92" height="40" rx="6" fill="#f3e3c3" stroke="#c9a35e"/>
+    <text x="632" y="207" font-size="12">z_1 … z_T</text>
+    <text x="632" y="222" font-size="10" fill="#7a6842">+ 位置编码</text>
+
+    <line x1="530" y1="238" x2="530" y2="262" stroke="#a5854e" stroke-width="1.4" marker-end="url(#ar)"/>
+    <rect x="392" y="262" width="276" height="44" rx="6" fill="#f7ead0" stroke="#c9a35e"/>
+    <text x="530" y="288">双向自注意力 ×6(全序列互相可见)</text>
+
+    <line x1="450" y1="306" x2="430" y2="338" stroke="#a5854e" stroke-width="1.4" marker-end="url(#ar)"/>
+    <line x1="610" y1="306" x2="630" y2="338" stroke="#a5854e" stroke-width="1.4" marker-end="url(#ar)"/>
+
+    <rect x="382" y="338" width="130" height="64" rx="6" fill="#fbe3e5" stroke="#c17a80"/>
+    <text x="447" y="358" font-size="12">步级头(线性)</text>
+    <text x="447" y="376" font-size="11" fill="#8a4a50">每 0.2 s 脏概率 p_t</text>
+    <text x="447" y="392" font-size="11" fill="#8a4a50">密集监督</text>
+
+    <rect x="548" y="338" width="130" height="64" rx="6" fill="#fbe3e5" stroke="#c17a80"/>
+    <text x="613" y="358" font-size="12">段级头(线性,读 CLS 位)</text>
+    <text x="613" y="376" font-size="11" fill="#8a4a50">整段脏概率 g</text>
+    <text x="613" y="392" font-size="11" fill="#8a4a50">段级 0/1 监督</text>
+
+    <text x="530" y="432" font-size="12" fill="#16232e">判定规则(阈值 0.5):</text>
+    <rect x="398" y="444" width="264" height="36" rx="6" fill="#fff" stroke="#c9a35e"/>
+    <text x="530" y="467" font-size="12">拒 ⇔ max_t p_t ≥ 0.5 或 g ≥ 0.5</text>
+  </g>
+
+  <!-- 输出 -->
+  <g text-anchor="middle" font-size="12" fill="#16232e">
+    <rect x="762" y="270" width="188" height="92" rx="8" fill="#eef4f9" stroke="#9db4c6"/>
+    <text x="856" y="292">输出</text>
+    <text x="856" y="311" font-size="11" fill="#5c6f80">段级:拒 / 留</text>
+    <text x="856" y="328" font-size="11" fill="#5c6f80">步级:脏分曲线 + 过线区间</text>
+    <text x="856" y="345" font-size="11" fill="#5c6f80">(8769 前端逐段可视化)</text>
+  </g>
+
+  <!-- 增广工厂 -->
+  <g text-anchor="middle" font-size="12" fill="#16232e">
+    <rect x="360" y="24" width="590" height="84" rx="8" fill="#f0edf7" stroke="#8d7fb5" stroke-dasharray="5 3"/>
+    <text x="655" y="46" font-weight="700" font-size="13">训练数据(两种来源,只在训练期存在)</text>
+    <text x="655" y="66" font-size="11" fill="#5b4f7a">① 真实标注段:人工手画的污染时间区间 → 逐 0.2 s 标签;判净的段全 0</text>
+    <text x="655" y="84" font-size="11" fill="#5b4f7a">② 合成增广:把干净段起点向前移 δ∈[0.1,0.7]s(同一条录音,无拼接),多出的帧标脏;</text>
+    <text x="655" y="100" font-size="11" fill="#5b4f7a">　 用别的动作类的段冒充本类,整段标脏(synth 模型另有终点后移、手臂列替换两种)</text>
+    <line x1="655" y1="108" x2="600" y2="128" stroke="#8d7fb5" stroke-width="1.3" marker-end="url(#ar)"/>
+  </g>
+</svg>
