@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — 真标签入训后的逐类最佳配置,对验收判据的现状</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-20-per-action-best-vs-acceptance-criteria.md</code></p>
+<h1 id="g1">G1 动作段判定器 — 真标签入训后的逐类最佳配置,对验收判据的现状</h1>
+<p>Preliminary。本轮把人工标注正式接进训练(含 113 段判脏备注的逐条人工判读),按类挑出
+当前最佳模型,对照本日设定的验收判据(先 precision &gt; 0.9,再 recall &gt; 0.85)逐类记分。</p>
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>MARGINAL</strong>(验收判据下 1/8 类达标;达标路径已被 kick 验证,但多数类连第一关都未过)</p>
+<ul>
+<li><strong>crouch 达标</strong>:precision / recall / 污染剔除全部 1.000,20 段考卷零错误(<a href="#results">主表</a>)。</li>
+<li><strong>kick 示范了正确的达标次序</strong>:precision 已 1.000,recall 0.400——它的 recall 正是靠
+  20 段真标签从 0.200 提上来的;字典序判据下这是最健康的中间形态。</li>
+<li>其余六类 precision 差 0.23–0.61,walk 的注册臂一段不留;<strong>加真标签是全程唯一稳定有效的
+  干预</strong>(clap +0.21、wave_arms +0.15、kick 从全拒翻正),但每类约 20 段的量只够起步。</li>
+<li>硬性推论:P &gt; 0.9 在 20 段考卷上只有"最多容 1 段脏"的分辨率,<strong>验收必须先扩考卷</strong>
+  (每类 50–100 段);下一步的标签剂量曲线探针已备好待确认。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:把真实人工标注(段级判定 + 时间区间 + 逐条判读语义)接入训练后,八个动作各自的
+最佳判定器离"先 P&gt;0.9 再 R&gt;0.85"的验收线还有多远,差距由什么构成。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>验收判据</td>
+<td>字典序:先 precision(留下段中真干净比例)&gt; 0.9,达成后再要求 recall(真干净段被留存比例)&gt; 0.85;正类 = 干净。user 2026-08-20 设定</td>
+<td>precision 不达标时 recall 无意义</td>
+</tr>
+<tr>
+<td>逐条人工判读</td>
+<td>113 段判脏备注逐条读原文定语义:写明区间 → 区间标脏、区间外逐步标净;"整段无效/后续无动作/方向错" → 全程标脏;"脏但没写哪里" → 只监督整段头;区间外连续剩余 ≥1 s 且语义支持 → 裁出为真实干净样本(共 82 个裁窗)</td>
+<td>与早前的正则批量转换相对;判读结果已写回标注库,库为唯一真源</td>
+</tr>
+<tr>
+<td>臂</td>
+<td>同一类的一种训练配置:纯工厂(只合成增广)/ 正则标签(工厂+正则转换的真标注)/ 全判读(工厂+逐条判读标注)</td>
+<td>逐类取考卷上最优的臂注册进 manifest</td>
+</tr>
+<tr>
+<td>考卷</td>
+<td>冻结测试集(与训练材料零重叠,断言保证);walk 例外:round-1 批次 19 段(user 裁定与冻结测试集同口径等效,同池随机抽、判定先锁盘)</td>
+<td>walk 的 39 段真标注中另 20 段(旧队列)为训练集</td>
+</tr>
+<tr>
+<td>不过滤纯度</td>
+<td>不做任何过滤时考卷中干净段占比;过滤后的 precision 必须高于它才有净收益</td>
+<td>与"全拒基线"(acc 视角)互补</td>
+</tr>
+<tr>
+<td>判定规则</td>
+<td>逐 0.2 s 污染分最大值 ≥ 0.5 或整段污染分 ≥ 0.5 → 拒;阈值未逐类调参</td>
+<td>操作点选择是后续达标手段之一</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>本轮相对上一报告的三个变化:</p>
+<table>
+<thead>
+<tr>
+<th>变化</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>真标签入训</td>
+<td>训练标注库全部段级标注进入训练:判净段全 0;判脏带区间段逐步监督;判脏无区间段只监督整段头</td>
+</tr>
+<tr>
+<td>逐条人工判读</td>
+<td>113 段判脏备注人工定语义(21 段整段无效、3 段位置不明屏蔽、82 个干净裁窗);结果写回标注库结构化字段,训练器直接读库(改库前备份 <code>.bak-2026-08-20-precuration</code>)</td>
+</tr>
+<tr>
+<td>逐类选臂</td>
+<td>每类在冻结测试集上比较三臂,按 acc 取最优(平手按 precision);注册进 manifest</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>验收(user 2026-08-20 预注册)</td>
+<td>先 P &gt; 0.9,再 R &gt; 0.85</td>
+<td>crouch 1.000/1.000;kick 1.000/0.400;其余 P ≤ 0.667</td>
+<td><strong>1/8 PASS</strong></td>
+</tr>
+<tr>
+<td>过滤有净收益</td>
+<td>P &gt; 不过滤纯度</td>
+<td>8 类中 6 类高于(walk 注册臂无留存、punch 0.286 vs 0.300)</td>
+<td>MARGINAL</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 与来源声明</summary>
+<p><code>NOT PREREGISTERED — 本轮训练配置无单一确认版 Run Spec</code>(逐项在会话中确认执行);
+验收判据本身为 user 预注册(2026-08-20,原文见术语表)。冻结测试集有预注册抽样 spec
+(<code>outputs/g1_motiongpt/test_sets/testset_v1_spec.json</code>,含 walk 归属的三次裁定留痕,
+以 2026-08-20 最终裁定为准)。</p>
+</details>
+<h2 id="results">Results</h2>
+<p>逐类当前最佳臂,考卷全量,阈值 0.5。正类 = 干净。</p>
+<p><img alt="散点图:横轴 recall、纵轴 precision,右上角为验收区(P&gt;0.9 且 R&gt;0.85)。crouch 在 (1.0, 1.0) 达标;kick 在 (0.40, 1.00) 过了 P 线;其余六类散在 P 0.67 以下,walk 在原点。" src="assets/acceptance-scatter.png"></p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th>选用臂</th>
+<th>考卷(净/脏)</th>
+<th>precision↑</th>
+<th>recall↑</th>
+<th>污染剔除↑</th>
+<th>acc↑</th>
+<th>不过滤纯度</th>
+<th>验收</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>crouch</td>
+<td>正则标签</td>
+<td>6/14</td>
+<td><strong>1.000</strong></td>
+<td><strong>1.000</strong></td>
+<td>1.000</td>
+<td>1.000</td>
+<td>0.300</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>kick</td>
+<td>全判读</td>
+<td>5/10</td>
+<td><strong>1.000</strong></td>
+<td>0.400</td>
+<td>1.000</td>
+<td>0.800</td>
+<td>0.333</td>
+<td>P 过,R 差 0.45</td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>纯工厂</td>
+<td>10/10</td>
+<td>0.667</td>
+<td>0.800</td>
+<td>0.600</td>
+<td>0.700</td>
+<td>0.500</td>
+<td>P 差 0.23</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td>正则标签</td>
+<td>12/8</td>
+<td>0.667</td>
+<td>0.500</td>
+<td>0.625</td>
+<td>0.550</td>
+<td>0.600</td>
+<td>P 差 0.23</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>正则标签</td>
+<td>9/10</td>
+<td>0.500</td>
+<td>0.667</td>
+<td>0.400</td>
+<td>0.526</td>
+<td>0.474</td>
+<td>P 差 0.40</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>纯工厂</td>
+<td>10/9</td>
+<td>0.600</td>
+<td>0.300</td>
+<td>0.778</td>
+<td>0.526</td>
+<td>0.526</td>
+<td>P 差 0.30</td>
+</tr>
+<tr>
+<td>punch</td>
+<td>纯工厂</td>
+<td>6/14</td>
+<td>0.286</td>
+<td>0.333</td>
+<td>0.643</td>
+<td>0.550</td>
+<td>0.300</td>
+<td>P 差 0.61</td>
+</tr>
+<tr>
+<td>walk</td>
+<td>纯工厂(注册)</td>
+<td>4/15</td>
+<td>一段不留</td>
+<td>0.000</td>
+<td>1.000</td>
+<td>0.789</td>
+<td>0.211</td>
+<td>P 无定义</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>合计(八类 152 段):留 53 段,precision 0.623(不过滤 0.408)、recall 0.532、污染剔除 0.778、acc 0.678。</li>
+<li>walk 有一个未注册的取舍臂(工厂+旧队列 20 段真标注):precision 0.375 / recall 0.750
+  ——第一次让 walk 留住多数干净段,但按"acc 优先"的注册规则落选;验收判据字典序下两臂都不达标。</li>
+<li>真标签的效果(同类同考卷,无真标签 → 有):clap 0.316→0.526、wave_arms 0.400→0.550、
+  kick 全拒→P 1.000、crouch 0.950→1.000;唯一例外 punch(0.550→0.450/0.500,两次变差)。</li>
+</ul>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:全程唯一稳定有效的干预是真标签入训(上节数字);合成增广的两次改造(抖腿细颤版、
+  尖峰版)与阈值扫描均未产生超出单段噪声的稳定收益,尖峰版已回滚。</li>
+<li>测量:kick 展示了字典序判据下的达标路径——操作点先钉死 P(1.000),R 随标签量增长
+  (0.200→0.400,20 段标注)。外推斜率<code>待验证</code>,即已备好的标签剂量曲线探针(25%/50%/100%
+  子集重训,预算约 1 小时,等确认)。</li>
+<li>测量:punch 两次加标签两次变差,是唯一在所有配置下低于全拒基线的类;其失败与标签量无关,
+  需单独归因,继续投标注大概率浪费。</li>
+<li>next:①确认后跑剂量曲线;②扩考卷——认证 P&gt;0.9 需每类 50–100 段(现 20 段只有
+  "容 1 段脏"的分辨率);现成缺口 kick 5 段、walk 21 段在 8443 待标。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>crouch:P = 6/6、R = 6/6、acc = (6+14)/20 = 1.000</li>
+<li>kick:P = 2/2、R = 2/5 = 0.400、acc = (2+10)/15 = 0.800</li>
+<li>合计 precision = 33/53 = 0.623;recall = 33/62 = 0.532;acc = 103/152 = 0.678</li>
+<li>逐类最佳与验收判定:<code>outputs/g1_motiongpt/zhead_best_v2_manifest.json</code>(含各臂 checkpoint 路径)</li>
+<li>三臂对照全表:<code>outputs/g1_motiongpt/full8_testset_eval.json</code></li>
+<li>判读总档(存档,库为真源):<code>outputs/g1_motiongpt/fine_labels/curated_all_v1.json</code>;
+  标注库备份:<code>outputs/vadcompose_motiongpt_view/fine_annotation_train.sqlite3.bak-2026-08-20-precuration</code></li>
+<li>冻结测试集 spec(含 walk 裁定留痕):<code>outputs/g1_motiongpt/test_sets/testset_v1_spec.json</code></li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>考卷规模:每类 15–20 段,单段翻转 = 5–7 个百分点;本表所有跨臂差异中,只有超过 2 段的
+  变动值得当信号读。</li>
+<li>82 个干净裁窗的"干净"由备注语义推断,窗口本身未经人工复看;wave_arms 的大裁窗
+  (10–17 s)已实测把该类推向过度保留,是判读档中最弱一环。</li>
+<li>kick 考卷 15/20、walk 考卷 19/40(其余未标注);handshake 训练标注为 0,其读数纯靠
+  合成工厂。</li>
+<li>模型只判前 12 秒(编码序列上限);本批考卷的人标区间无一整段落在视野外。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

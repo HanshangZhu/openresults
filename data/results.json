@@ -1,6 +1,40 @@
 {
  "results": [
   {
+   "slug": "g1-per-action-vs-acceptance",
+   "title": "Per-action motion classifiers against the acceptance bar: precision first, then recall",
+   "date": "2026-08-20",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "MARGINAL",
+   "summary": "After wiring real human annotations into training - including a comment-by-comment adjudication of all 113 dirty-segment notes (21 whole-invalid, 3 location-unknown masked, 82 real clean crops mined from outside the marked spans) with the annotation database now the single label authority - the best model per action is scored against the newly set acceptance bar: kept-precision > 0.9 first, then clean-recall > 0.85. One of eight actions passes outright (crouch, 1.000/1.000 on a zero-overlap frozen exam). Kick shows the intended path: precision pinned at 1.000 with recall lifted 0.200 to 0.400 by twenty labels. Six actions have not cleared the precision gate; punch alone gets worse with labels and needs separate diagnosis. Certifying precision > 0.9 requires 50-100 test segments per action - the current 15-20 resolve only one dirty segment of slack.",
+   "path": "results/g1-per-action-vs-acceptance/",
+   "thumbnail": "results/g1-per-action-vs-acceptance/assets/thumbnail.png",
+   "thumbnailAlt": "Scatter plot of eight actions by recall (x) and precision (y) with the acceptance region P>0.9 and R>0.85 shaded top-right; crouch sits inside at (1.0, 1.0), kick at (0.40, 1.00) above the precision line, six other actions below 0.67 precision.",
+   "tags": [
+    "acceptance criteria",
+    "human annotation",
+    "label curation",
+    "dataset cleaning",
+    "per-class models",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "1 / 8",
+     "label": "Actions passing the bar (crouch: precision 1.000, recall 1.000)"
+    },
+    {
+     "value": "0.200 → 0.400",
+     "label": "Kick recall growth from twenty real labels at pinned precision 1.000"
+    },
+    {
+     "value": "0.623 vs 0.408",
+     "label": "Aggregate kept-purity with filtering vs without (152 exam segments)"
+    }
+   ]
+  },
+  {
    "slug": "g1-per-action-classifiers",
    "title": "One classifier per action: eight-way evaluation on a frozen motion test set",
    "date": "2026-08-19",
