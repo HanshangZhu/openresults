@@ -1,6 +1,42 @@
 {
  "results": [
   {
+   "slug": "g1-punch-exam-reform-recipe-fix",
+   "title": "Punch turned around: exam reform, an oversampling culprit, and an 8-class recipe retrain",
+   "date": "2026-08-21",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "IN PROGRESS",
+   "summary": "Continuation of the acceptance scoreboard. Punch - previously the only class where labels made things worse - is fully diagnosed by a four-step probe chain: a gold exam built from the hand-labels themselves shows the model always had signal (the old V2 exam's dirty side was diluted); the learning curve was flat only because of a x5 real-label oversampling in the recipe (removing it alone lifts gold-exam ranking 0.754 to 0.816, and the curve un-flattens to +0.067 per doubling); a linear probe proves the frozen encoder separates every dirt mode (AUC 0.82-0.90), and a 64-unit window MLP matches the 10.9M transformer. The acceptance criterion was amended twice: severe dirt (any other-class content, regardless of duration) must stay out of the kept set - under this strict definition punch reads P_severe 0.757 and remains below the bar. Retraining all labeled classes without oversampling flips clap and cross_arms to new registered bests; classes with few or unbalanced labels are unchanged, and one legacy walk arm's perfect exam score is exposed as train-on-test contamination. Synthetic augmentation, retested under the fixed recipe, still fails to expand the precision-recall frontier.",
+   "path": "results/g1-punch-exam-reform-recipe-fix/",
+   "thumbnail": "results/g1-punch-exam-reform-recipe-fix/assets/thumbnail.png",
+   "thumbnailAlt": "Left: punch learning curve, ranking vs number of real labels on log axis; the old recipe (grey) flattens at 59-116 while the fixed recipe (red) keeps rising to 0.816. Right: bar chart of head/recipe ablations with oversampling removal and the window MLP highest.",
+   "tags": [
+    "punch",
+    "gold exam",
+    "oversampling",
+    "learning curve",
+    "linear probe",
+    "recipe ablation",
+    "acceptance criteria",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.754 → 0.816",
+     "label": "Gold-exam ranking from removing x5 label oversampling alone (same data, same head)"
+    },
+    {
+     "value": "+0.067 / doubling",
+     "label": "Learning-curve slope restored under the fixed recipe (was ~0 under the old one)"
+    },
+    {
+     "value": "2 / 6",
+     "label": "Classes flipped to new registered bests by the recipe fix (clap, cross_arms)"
+    }
+   ]
+  },
+  {
    "slug": "g1-per-action-vs-acceptance",
    "title": "Per-action motion classifiers against the acceptance bar: precision first, then recall",
    "date": "2026-08-20",

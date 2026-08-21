@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — punch 考卷改革、过采样归因与 8 类新配方复训</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-21-punch-exam-reform-recipe-fix-8class-retrain.md</code></p>
+<h1 id="g1-punch-8">G1 动作段判定器 — punch 考卷改革、过采样归因与 8 类新配方复训</h1>
+<p>Preliminary,续接 <a href="https://hanshangzhu.github.io/openresults/results/g1-per-action-vs-acceptance/">2026-08-20 验收记分报告</a>。
+上一篇把 punch 列为唯一"加标注反而变差、需单独归因"的类;本篇记录归因的全过程与结果,并把
+修好的配方回灌到全部类别复训。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>punch 归因闭环</strong>:特征无罪(全部脏形态在冻结编码上线性可分,AUC 0.82–0.90)→ 真凶是
+  训练配方里的 <strong>×5 真标注过采样</strong>(仅砍它,金标准卷排序 0.754→0.816)→ 上一篇"punch
+  继续投标注大概率浪费"的判断 <strong>SUPERSEDED</strong>:去过采样后学习曲线复活(59→116 段 =
+  +0.067/翻倍),加标注重新有效。</li>
+<li>punch 当前最佳:z-head 去过采样臂排序 0.816、MLP64 窗级头 0.811(种子方差最小),
+  操作点 P 0.86–0.89 @ R 0.75——首次两个验收数字同时看得见岸,但<strong>尚未达标</strong>。</li>
+<li><strong>验收判据 v2 及其收紧(user 2026-08-21 两次裁定)</strong>:先改为双口径(P_重度 &gt; 0.9 主判据</li>
+<li>P_全口径并列呈报),随即收紧重度定义——<strong>任何非本类动作内容混入不论时长都算重度</strong>,
+  轻度只剩本类执行噪声(抖脚/鬼畜)。punch 金标准卷复算:P_重度(宽定义)0.946 →
+  <strong>P_重度(严格)0.757</strong>,与 P_全口径 0.730 几乎重合——漏放 10 段中 9 段是他类残留,
+  双口径对 punch 无实质豁免,验收实质回到全口径 P &gt; 0.9,<strong>未达标</strong>。</li>
+<li>8 类新配方复训:<strong>修正不是普适红利,谁的真标注有分量谁受益</strong>——clap(acc 0.526→0.632)、
+  cross_arms(0.526→0.596)换新注册;kick/crouch/walk 的真标注太少或净侧为零,修正空转,
+  旧臂维持;walk 旧"训练侧最佳臂"的考卷满分被判定为<strong>污染读数</strong>(训练含后来才划为考卷的
+  段),弃用。合成增广在修好的配方下重测,仍不扩纯度-留存前沿。验收记分:<strong>仍只有 crouch
+  一类 PASS</strong>,kick P 过 R 差;其余六类差距的共同瓶颈是逐类真标注量(punch 路线图待复制)。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:punch 为什么在旧配方下加标注四次四次变差;瓶颈在数据、特征还是判定头;修复后
+还差什么。术语沿用上一篇,新增:</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>金标准考卷</td>
+<td>punch 专用冻结考卷:118 段现行标准逐段标注按录音条目分组切半,取 59 段(净 32/脏 27)永久只考不训;<code>punch_gold_exam_v1.json</code></td>
+<td>与全项目冻结测试集(8443)并存;后者 punch 部分标签口径较旧</td>
+</tr>
+<tr>
+<td>排序</td>
+<td>诊断用 AUC:随机取一脏一净,脏段分数更高的概率;不依赖阈值。0.5 = 抛硬币</td>
+<td>非正式验收指标;正式指标仍为 acc/P/R/负R</td>
+</tr>
+<tr>
+<td>过采样</td>
+<td>旧配方把每条真标注复制 ×5 进训练;本篇证明它诱导 10.9 M 模型背题(分数两极化 0.00/1.00)</td>
+<td>与合成增广无关;工厂样本不复制</td>
+</tr>
+<tr>
+<td>窗级头</td>
+<td>放弃整段 Transformer,直接在冻结编码的每个 0.2 s 向量上做小分类器(逻辑回归 / 单隐层 MLP64),段分 = 窗分最大值</td>
+<td>与 z-head(6L×384 Transformer)对照的"简单头"路线</td>
+</tr>
+<tr>
+<td>P_重度 / P_全口径</td>
+<td>重度脏(严格定义,2026-08-21 收紧)= 任何非本类动作内容混入(不论时长)、整段非本类/变体、摔落失衡;轻度仅剩本类执行噪声(抖脚/鬼畜)。P_重度只把重度算脏,P_全口径任何瑕疵都算</td>
+<td>判据 v2 双口径;宽定义(仅整段/摔落/≥0.8 s)已被收紧取代,两版数字均呈报防口径漂移</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>归因按"最便宜先行"排成四步探针链,每步的死/活决定下一步:</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>探针</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 考卷是否可信</td>
+<td>训练标注对半开(按录音分组 2-fold),两边都是现行标准金标签</td>
+<td>模型有真实信号(排序 0.69),此前 V2 大考卷读数 0.55–0.65 是脏侧标签稀释的伪影</td>
+</tr>
+<tr>
+<td>② 数据量是否到顶</td>
+<td>学习曲线 15/30/59/116 段 ×3 种子,考冻结金标准卷;再用两个重新随机切分复核</td>
+<td>旧配方下 59→116 全平(三切分斜率 +0.02/+0.01/−0.01)——当时误判"120 段平台"</td>
+</tr>
+<tr>
+<td>③ 特征是否有信息</td>
+<td>线性探针:冻结编码 vs 原始特征池化,按脏形态分桶,窗级 AUC(留出按录音分组)</td>
+<td>特征无罪:所有形态 0.82–0.90,编码≈原始(0.850 vs 0.847)</td>
+</tr>
+<tr>
+<td>④ 判定头/配方消融</td>
+<td>同数据同考卷:砍过采样 / 重正则 / 缩架构 / 窗级简单头,各 3 种子</td>
+<td>真凶 = ×5 过采样;重正则反而伤,缩架构无增益;窗级 MLP64 与砍过采样臂打平</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>验收 v2 主判据(严格重度定义)</td>
+<td>P_重度 &gt; 0.9</td>
+<td>punch 金标准卷 <strong>0.757</strong>(28/37)</td>
+<td><strong>未过</strong>(宽定义下为 0.946,已被收紧取代)</td>
+</tr>
+<tr>
+<td>验收 v2 并列呈报</td>
+<td>P_全口径</td>
+<td>0.730(27/37)</td>
+<td>未过 0.9</td>
+</tr>
+<tr>
+<td>净留存</td>
+<td>R &gt; 0.85</td>
+<td>0.771(z-head 新配方)/ 0.75(MLP64)</td>
+<td>未过</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 与来源声明</summary>
+<p><code>NOT PREREGISTERED — 本篇为连续探针链,无单一确认版 Run Spec</code>;每步探针在会话中由 user
+逐项定向("假设我们考卷是135的一半呢" / "要是重新random分配呢" / "可以看一下特征侧" /
+"1 2 都试一下"),执行后 spec 与结果即时落
+<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>(累积式证据档,
+含每步的 user 原文、命令与读数)。判据 v2 变更留痕于
+<code>outputs/g1_motiongpt/zhead_best_v2_manifest.json</code> 的 <code>acceptance_criteria_v2</code> 字段。</p>
+</details>
+<h2 id="results">Results</h2>
+<h3 id="punch">punch:学习曲线与判定头电池</h3>
+<p><img alt="左:punch 学习曲线,横轴训练用真标注段数(对数轴),纵轴冻结金标准卷排序。旧配方(×5 过采样,灰)在 59→116 处走平;新配方(×1,红)同区间从 0.749 涨到 0.816。右:判定头电池柱状图,砍过采样 0.816 与 MLP64 窗级 0.811 最高,重正则与小 Transformer 反而低于砍过采样。" src="assets/punch-scale-curve-and-heads.png"></p>
+<table>
+<thead>
+<tr>
+<th>臂(n=116,考冻结金标准卷)</th>
+<th>排序(3 种子均值)</th>
+<th>acc</th>
+<th>P_全口径</th>
+<th>R</th>
+<th>脏剔除</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>z-head 旧配方(×5 过采样)</td>
+<td>0.754</td>
+<td>0.718</td>
+<td>0.725</td>
+<td>0.771</td>
+<td>0.654</td>
+</tr>
+<tr>
+<td><strong>z-head 砍过采样(×1)</strong></td>
+<td><strong>0.816</strong></td>
+<td>0.734</td>
+<td>0.745</td>
+<td>0.781</td>
+<td>0.679</td>
+</tr>
+<tr>
+<td>砍过采样 + 重正则(drop 0.3/wd 0.1)</td>
+<td>0.774</td>
+<td>0.712</td>
+<td>0.723</td>
+<td>0.781</td>
+<td>0.630</td>
+</tr>
+<tr>
+<td>小 Transformer(2L×128)+ 重正则</td>
+<td>0.769</td>
+<td>0.712</td>
+<td>0.737</td>
+<td>0.729</td>
+<td>0.691</td>
+</tr>
+<tr>
+<td>逻辑回归(窗级)</td>
+<td>0.791</td>
+<td>0.763</td>
+<td>0.846</td>
+<td>0.688</td>
+<td>0.852</td>
+</tr>
+<tr>
+<td><strong>MLP64(窗级)</strong></td>
+<td><strong>0.811</strong></td>
+<td>~0.80</td>
+<td>0.857–0.889*</td>
+<td>0.750</td>
+<td>0.852–0.889*</td>
+</tr>
+</tbody>
+</table>
+<p>* MLP64 的操作点数字在考卷上选阈值(0.93),偏乐观;z-head 各臂阈值为配方自带 0.5,无此偏置。</p>
+<p>双口径纯度(z-head 砍过采样臂,阈值 0.5,3 种子平均分):保留 37 段,真净 27,漏放 10。
+严格重度定义下 9 段属重度(handshake/wave/run/turn/clap 等他类残留 0.09–1.34 s、莫名后退、
+IK 伪影),仅 1 段(0.42 s 抖脚)属轻——<strong>P_全口径 0.730,P_重度(严格)0.757,
+P_重度(宽定义,仅供对照)0.946</strong>。漏放的脏"时长小"但"性质重":全是本分类器立身要抓的
+他类内容混入。</p>
+<h3 id="8-1">8 类新配方复训(×1 过采样,同冻结测试集对表)</h3>
+<p>六个有真标注的类(handshake 训练标注 0 段不在本轮;punch 已在上节)各训两配方 ×3 种子,
+和旧注册臂同卷同标签对表。表内新臂数字为 3 种子均值;换注册时按<strong>中位 acc 种子</strong>登记,
+不挑最高种子,防考卷过拟合。</p>
+<table>
+<thead>
+<tr>
+<th>类(考卷净/脏)</th>
+<th>臂</th>
+<th>acc</th>
+<th>P</th>
+<th>R</th>
+<th>脏剔除</th>
+<th>排序</th>
+<th>注册裁定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clap(9/10)</td>
+<td>旧注册</td>
+<td>0.526</td>
+<td>0.500</td>
+<td>0.667</td>
+<td>0.400</td>
+<td>0.483</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>纯人工 os1</strong></td>
+<td><strong>0.632</strong></td>
+<td>0.589</td>
+<td>0.741</td>
+<td>0.533</td>
+<td>0.607</td>
+<td><strong>换新</strong></td>
+</tr>
+<tr>
+<td>cross_arms(10/9)</td>
+<td>旧注册</td>
+<td>0.526</td>
+<td>0.600</td>
+<td>0.300</td>
+<td>0.778</td>
+<td>0.489</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>纯人工 os1</strong></td>
+<td><strong>0.596</strong></td>
+<td>0.672</td>
+<td>0.533</td>
+<td>0.667</td>
+<td>0.709</td>
+<td><strong>换新</strong></td>
+</tr>
+<tr>
+<td>wave_arms(12/8)</td>
+<td>旧注册</td>
+<td>0.550</td>
+<td>0.667</td>
+<td>0.500</td>
+<td>0.625</td>
+<td>0.615</td>
+<td>维持</td>
+</tr>
+<tr>
+<td></td>
+<td>纯人工 os1</td>
+<td>0.550</td>
+<td>0.833</td>
+<td>0.361</td>
+<td>0.833</td>
+<td>0.601</td>
+<td>(中位种子与旧打平)</td>
+</tr>
+<tr>
+<td>kick(5/10)</td>
+<td>旧注册</td>
+<td><strong>0.800</strong></td>
+<td><strong>1.000</strong></td>
+<td>0.400</td>
+<td>1.000</td>
+<td>0.820</td>
+<td>维持</td>
+</tr>
+<tr>
+<td></td>
+<td>工厂+人工 os1</td>
+<td>0.689</td>
+<td>—</td>
+<td>0.200</td>
+<td>0.933</td>
+<td>0.730</td>
+<td>(训练净标注 0 段,修正空转)</td>
+</tr>
+<tr>
+<td>crouch(6/14)</td>
+<td>旧注册</td>
+<td><strong>1.000</strong></td>
+<td><strong>1.000</strong></td>
+<td><strong>1.000</strong></td>
+<td>1.000</td>
+<td>1.000</td>
+<td>维持</td>
+</tr>
+<tr>
+<td></td>
+<td>工厂+人工 os1</td>
+<td>0.867</td>
+<td>0.849</td>
+<td>0.722</td>
+<td>0.929</td>
+<td>0.980</td>
+<td></td>
+</tr>
+<tr>
+<td>walk(4/15)</td>
+<td>旧注册(纯工厂)</td>
+<td>0.789</td>
+<td>无定义(留 0 段)</td>
+<td>0.000</td>
+<td>1.000</td>
+<td>0.850</td>
+<td>维持</td>
+</tr>
+<tr>
+<td></td>
+<td>纯人工 os1</td>
+<td>0.561</td>
+<td>0.271</td>
+<td>0.583</td>
+<td>0.556</td>
+<td>0.542</td>
+<td>(净标注仅 5 段)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>walk 污染读数警报</strong>:旧 manifest 记的"训练侧最佳臂"(工厂+39 段真标注)在本卷考出全科
+  满分——它的训练标注包含 round-1 批,而该批<strong>后来</strong>才被裁定为考卷,属训练见过考题,读数
+  作废;walk 的诚实现状是纯工厂臂排序 0.850 但阈值全拒。</li>
+<li>punch 合成增广重测(修好配方后):整套工厂增广进 z-head → 排序 0.668(基线 0.816),
+  净留存被压到 0.302;定向段首合成窗进 MLP64 → 旧漏放 10 段抓回 9 段,但净段分数同步
+  抬高,同留存下纯度与基线打平(R≈0.53 处均 ≈0.90)——<strong>前沿不动,错误换位</strong>。</li>
+<li>MLP64 基线的阈值扫描顺带给出一个现成的高纯度操作点:<strong>P 0.930 @ R 0.417</strong>(阈值 0.7,
+  在考卷上选取,认证前仅供参考)——"宁缺毋滥"式捞高置信干净段今天就可用。</li>
+</ul>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:punch 的"加标注变差"由 ×5 过采样与净多脏少的标注配比共同造成——复制真标注放大
+  了"多留"偏置并诱导背题(分数两极化);砍掉后同一批标注在同一考卷上从拖累变成主要信号源。</li>
+<li>测量:三张独立考卷(冻结金标准卷 + 两个重切分)确证旧配方 59→116 无斜率、新配方
+  +0.067/翻倍;按此斜率,排序 0.9 预计还需 1–2 个翻倍(约 250–500 段),<code>外推待验证</code>。</li>
+<li>测量:punch 漏放的脏在<strong>时长</strong>上塌向小(7/10 为 ≤0.4 s 残留),但在<strong>性质</strong>上 9/10 是
+  他类内容混入——严格重度定义下双口径对 punch 无豁免。"漏的都是小瑕疵"作为可用性论据
+  不成立;轻重分级仍靠备注关键词推断,转真标签口径前均为近似读。</li>
+<li>测量:配方修正的收益与"真标注的量与平衡度"强相关——受益的 clap(9净/11脏)、
+  cross_arms(10/10)恰是标签平衡的两类;kick(0净)、crouch(3净)、walk(5净)的真标注
+  瘦或偏,修正空转。这与 punch 学习曲线的结论互为印证:<strong>下一步全项目的主要投入就是把
+  punch 的标注-曲线路线图复制到 clap/wave_arms/cross_arms/walk/handshake</strong>,其中
+  handshake 从零起步、kick 只缺净侧标注。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>punch P_重度(严格) = 28/37 = 0.757;P_全口径 = 27/37 = 0.730;P_重度(宽定义,对照)= 35/37 = 0.946</li>
+<li>新配方斜率 = 0.816 − 0.749 = +0.067(59→116,恰一个翻倍)</li>
+<li>砍过采样增益 = 0.816 − 0.754 = +0.062(同数据同考卷同架构,唯一改动 ×5→×1)</li>
+<li>累积证据档(每步探针的 user 原文 / 命令 / 读数):
+  <code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code></li>
+<li>punch 金标准考卷:<code>outputs/g1_motiongpt/test_sets/punch_gold_exam_v1.json</code>(59 段,
+  净 32/脏 27;训练池 v2 = <code>punch_train_pool_v2_ids.txt</code>,116 段)</li>
+<li>判据 v2 留痕:<code>outputs/g1_motiongpt/zhead_best_v2_manifest.json#acceptance_criteria_v2</code></li>
+<li>特征/窗级头探针证据:<code>logs/g1_motiongpt/zhead_multi_punch_real60/probes/</code>(feature_probe /
+  linear_vs_zhead / mlp_head / resplit_curves / lc_curve_v2)</li>
+<li>标注库备份链:<code>.bak-2026-08-21-pre-scaleup80</code>、<code>.bak-2026-08-21-pre-b2adj</code></li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>punch 金标准卷 n=59:P 的置信区间约 ±0.08;换考卷波动实测 ±0.05(重切分探针)。
+  任何达标判定都需阈值预固定 + 未见过批次盲测后才算认证。</li>
+<li>MLP64 操作点阈值在考卷上选取,数字偏乐观(表内已标);部署前需在训练侧留出集定阈值。</li>
+<li>轻重分级由备注文本关键词推断,未经逐段人工复核;<code>train:4111</code>(备注"ok 的"但存档 fail)
+  挂起未进训练,待 user 定夺。</li>
+<li>8 类复训中 handshake 训练侧真标注为 0,配方修正对它是空操作,不在本轮范围。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

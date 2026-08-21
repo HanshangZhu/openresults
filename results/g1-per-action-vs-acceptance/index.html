@@ -29,6 +29,13 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <h1 id="g1">G1 动作段判定器 — 真标签入训后的逐类最佳配置,对验收判据的现状</h1>
 <p>Preliminary。本轮把人工标注正式接进训练(含 113 段判脏备注的逐条人工判读),按类挑出
 当前最佳模型,对照本日设定的验收判据(先 precision &gt; 0.9,再 recall &gt; 0.85)逐类记分。</p>
+<blockquote>
+<p><strong>更新(2026-08-21)</strong>:本文两处结论已被
+<a href="https://hanshangzhu.github.io/openresults/results/g1-punch-exam-reform-recipe-fix/">续篇</a>
+推翻——① punch"继续投标注大概率浪费"SUPERSEDED:病因是训练配方的 ×5 真标注过采样,
+修复后学习曲线复活;② 验收判据已修订为双口径(严格重度定义)。clap / cross_arms 的
+注册臂亦已被新配方臂取代。</p>
+</blockquote>
 <h2 id="conclusion">Conclusion</h2>
 <p><strong>MARGINAL</strong>(验收判据下 1/8 类达标;达标路径已被 kick 验证,但多数类连第一关都未过)</p>
 <ul>
