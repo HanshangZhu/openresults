@@ -29,6 +29,34 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <h1 id="g1-punch-2026-08-20-08-22">G1 动作段判定器 — punch 线三报告总览(2026-08-20 → 08-22)</h1>
 <p>三天内 punch 从"唯一加标注反而变差的类"走到"主指标双过 0.9 的候选流水线"。本文是三篇
 报告的导读与数字主线,细节一律看原文。</p>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>本文回答"三篇 punch 报告合起来说了什么、还剩什么"。速查术语(详细定义见各原文):</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>一句话定义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>金标准卷</td>
+<td>punch 冻结考卷 59 段(净 32/脏 27),现行标准逐段标注,只考不训</td>
+</tr>
+<tr>
+<td>判据 v3</td>
+<td>主指标 P(留侧纯度)&gt;0.9 且 NR(脏剔除)&gt;0.9;R(净留存)报告不设线</td>
+</tr>
+<tr>
+<td>流水线 v1</td>
+<td>最严档过滤 + 段首报警裁头重判;登记于 manifest <code>punch_pipeline_v1</code></td>
+</tr>
+<tr>
+<td>认证</td>
+<td>参数预固定后在未见批次上盲测复现;本文全部读数均未认证</td>
+</tr>
+</tbody>
+</table>
 <h2 id="_1">三篇报告</h2>
 <table>
 <thead>
