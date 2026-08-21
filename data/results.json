@@ -1,6 +1,40 @@
 {
  "results": [
   {
+   "slug": "g1-punch-pipeline-strict-trim-rejudge",
+   "title": "Punch release pipeline, near-final: strict filtering plus model-guided head-trim and re-judge",
+   "date": "2026-08-22",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "CANDIDATE",
+   "summary": "Consolidation of the punch line under revised acceptance criteria v3 (primary: kept-purity > 0.9 AND dirt-rejection > 0.9; retention becomes an auxiliary yield parameter). The selected pipeline filters at the strictest window-head threshold, then gives rejected segments whose alarms are confined to the first second a second chance: trim at the alarm end plus margin, re-judge, and admit in trimmed form. On the frozen 59-segment gold exam this is a Pareto improvement over pure strict filtering - purity 0.930 to 0.956 and retention 0.417 to 0.562 rise together, with dirt-rejection 0.963 - because the strict tier's false kills concentrate at segment heads and the re-judge recovers them. Onset loss is confined to ~16% of admitted clean segments (vs 100% under the vetoed unconditional trim). Both primary metrics clear 0.9 but remain uncertified: threshold and margin were chosen on the exam, and certification requires pre-fixed parameters plus a blind test on unseen batches. Projected yield at the estimated 1:2 clean:dirty pool ratio: 650-900 segments per class at ~0.95 purity.",
+   "path": "results/g1-punch-pipeline-strict-trim-rejudge/",
+   "thumbnail": "results/g1-punch-pipeline-strict-trim-rejudge/assets/thumbnail.png",
+   "thumbnailAlt": "Grouped bar chart of four operating points showing purity, dirt-rejection, and retention side by side with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears 0.9 on both primary metrics at retention 0.56.",
+   "tags": [
+    "release pipeline",
+    "acceptance criteria",
+    "head trim",
+    "operating point",
+    "punch",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.956 / 0.963",
+     "label": "Kept-purity and dirt-rejection of the selected pipeline (both primary metrics > 0.9, uncertified)"
+    },
+    {
+     "value": "(0.930, 0.417) → (0.956, 0.562)",
+     "label": "Pareto improvement over pure strict filtering: purity and retention rise together"
+    },
+    {
+     "value": "~16%",
+     "label": "Admitted clean segments that lose 1-1.5 s of onset - the confined remnant of the vetoed unconditional trim"
+    }
+   ]
+  },
+  {
    "slug": "g1-punch-window-head-ablation",
    "title": "Per-window head architecture ablation: why a memoryless MLP beats every context model",
    "date": "2026-08-22",

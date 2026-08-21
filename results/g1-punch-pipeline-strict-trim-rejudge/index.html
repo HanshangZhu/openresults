@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — punch 判定流水线准定稿:最严档 + 模型引导裁头重判</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-22-punch-pipeline-strict-trim-rejudge.md</code></p>
+<h1 id="g1-punch">G1 动作段判定器 — punch 判定流水线准定稿:最严档 + 模型引导裁头重判</h1>
+<p>准定稿,汇总 punch 线三轮探针(<a href="https://hanshangzhu.github.io/openresults/results/g1-punch-exam-reform-recipe-fix/">过采样归因</a>、
+<a href="https://hanshangzhu.github.io/openresults/results/g1-punch-window-head-ablation/">架构消融</a>、本轮流水线核算)
+的收束结果。判据 v3(user 2026-08-22 裁定)下,选定流水线的两个主指标均过 0.9。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>选定玩法:最严档过滤 + 模型引导裁头重判</strong>。金标准卷实测(3 种子):
+  <strong>P 0.956、NR 0.963</strong>(判据 v3 双主指标过 0.9),R 0.562(辅指标,决定产出量)。</li>
+<li>相对纯过滤最严档(P 0.930 / R 0.417),裁头重判是<strong>帕累托改进</strong>:纯度与留存同涨——
+  被段首误报冤杀的净段与真有头部残留的段,裁头重判后均以干净形态回池。</li>
+<li>起势代价限缩到位:入池净段约 16% 为裁头形态(损失 1~1.5 s 起始动作);其余净段
+  一帧不动。这是 user 否决的"无条件裁头"伤害的最小化版本,是否可接受待 user 终审。</li>
+<li><strong>状态:主指标双过线,未认证</strong>。认证工序 = 阈值(0.70)与裁剪余量(0.3 s)预先固定 →
+  未见过批次盲测;产出量(按 1:2 池估算每类约 650–900 段、纯度 ~0.95)是否满足下游
+  planner 需求,为唯一悬而未决的产品判断。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:在判据 v3(主 = 纯度与脏剔除,辅 = 留存)下,punch 当前标注与模型所能组成的
+最优 release 流水线是什么,读数多少,距认证还差什么。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>判据 v3</td>
+<td>主指标 P(留侧纯度)&gt; 0.9 且 NR(脏剔除)&gt; 0.9;R(净留存)与 acc 报告不设线。user 2026-08-22 裁定,取代 v2 字典序判据</td>
+<td>v2 的严格重度口径仍用于 P 的口径核算</td>
+</tr>
+<tr>
+<td>最严档</td>
+<td>MLP64 窗级头(冻结编码令牌,±0.6 s 实测感受野)逐 0.2 s 打分,阈值 0.70</td>
+<td>阈值在金标准卷上选取,认证时须预固定重验</td>
+</tr>
+<tr>
+<td>模型引导裁头重判</td>
+<td>被拒段中,全部过线窗位于段首 1.0 s 内的 → 按最末过线窗端点 + 0.3 s 裁头(裁后 ≥1.5 s)→ 裁后重打分,过线即以裁后形态入池</td>
+<td>与被 user 否决的"无条件裁头"相对:未报警的段一帧不裁,起势保留</td>
+</tr>
+<tr>
+<td>金标准卷</td>
+<td>punch 冻结考卷 59 段(净 32/脏 27),现行标准逐段标注含脏区间,零训练重叠</td>
+<td>裁后段的干净与否按 ground truth 区间核算,非模型自评</td>
+</tr>
+<tr>
+<td>认证</td>
+<td>全部超参数预先固定 → 从未见过的标注批次上盲测,主指标复现 &gt;0.9</td>
+<td>本报告读数为选参考卷上的成绩,未经认证</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>流水线三步(伪代码级):</p>
+<ol>
+<li>逐 0.2 s 窗打分;<strong>全窗 &lt; 0.70</strong> → 原样入池</li>
+<li>有窗过线且<strong>全部过线窗在段首 1.0 s 内</strong> → 裁头至最末过线窗端点 + 0.3 s(裁后须 ≥1.5 s)
+   → 裁后重打分;过 → <strong>裁后形态入池</strong></li>
+<li>其余(报警在段中/段尾/超长/裁后仍报警)→ 拒</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Criterion(判据 v3)</th>
+<th>Threshold</th>
+<th>Measured(3 种子均值)</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>主:P 留侧纯度</td>
+<td>&gt; 0.9</td>
+<td><strong>0.956</strong>(0.955–0.958)</td>
+<td><strong>过(未认证)</strong></td>
+</tr>
+<tr>
+<td>主:NR 脏剔除</td>
+<td>&gt; 0.9</td>
+<td><strong>0.963</strong></td>
+<td><strong>过(未认证)</strong></td>
+</tr>
+<tr>
+<td>辅:R 净留存</td>
+<td>报告不设线</td>
+<td>0.562(0.531–0.594)</td>
+<td>产出量待下游评判</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>判据沿革与 Run Spec 来源声明</summary>
+<p>判据沿革(全部留痕于 <code>zhead_best_v2_manifest.json</code>):v1 字典序 P&gt;0.9→R&gt;0.85(2026-08-20
+preregistered)→ v2 双口径(P_重度主判据)→ v2.1 严格重度定义(他类内容混入不论时长皆重度)
+→ <strong>v3 主辅指标制</strong>(本报告)。</p>
+<p><code>NOT PREREGISTERED — 流水线设计为会话内连续探针的收束</code>,各环节 user 原话定向:"我们需要
+把脏的数据去掉…留下尽可能干净的数据"(需求重推)→"不能裁剪"(否决无条件裁头)→"假设
+我们拿模型的输出去进行首段裁剪,p/r会改变多少。拿最严那一档算"(本流水线的直接来源)→
+"pp/nr似乎是比较重要的指标"(判据 v3)。证据链:
+<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>。</p>
+</details>
+<h2 id="results">Results</h2>
+<p><img alt="四个操作点在判据 v3 下的分组条形图:P、NR、R 三指标并列,主指标线 0.9 为红色虚线。选定流水线(最严档+裁头重判)P 0.96、NR 0.96 均过线,R 0.56;纯最严档 P 0.93/R 0.42;均衡档与注册臂主指标未过线。" src="assets/punch-pipeline-scoreboard.png"></p>
+<table>
+<thead>
+<tr>
+<th>操作点</th>
+<th>P(主)</th>
+<th>NR(主)</th>
+<th>R(辅)</th>
+<th>acc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>最严档 + 模型引导裁头重判(选定)</strong></td>
+<td><strong>0.956</strong></td>
+<td><strong>0.963</strong></td>
+<td>0.562</td>
+<td>0.746*</td>
+</tr>
+<tr>
+<td>MLP 最严档(纯过滤)</td>
+<td>0.930</td>
+<td>0.963</td>
+<td>0.417</td>
+<td>0.667</td>
+</tr>
+<tr>
+<td>MLP 均衡档(阈值 0.93)</td>
+<td>0.837</td>
+<td>0.827</td>
+<td>0.750</td>
+<td>0.785</td>
+</tr>
+<tr>
+<td>z-head 注册臂(阈值 0.5,无选参偏置)</td>
+<td>0.745</td>
+<td>0.679</td>
+<td>0.781</td>
+<td>0.734</td>
+</tr>
+</tbody>
+</table>
+<p>* 裁后入池的段按 ground truth 区间判净脏后计入。</p>
+<p>流水线分量核算(逐种子):原样入池 14–15 段;裁头重判尝试 22–24 段,救回 8–9 段
+(其中真有头部残留、裁后全净的 3–5 段;被段首误报冤杀、裁后洗清的净段 4–5 段);
+入池合计 22–24 段,混入脏稳定为 1 段。</p>
+<p>产出量换算(1:2 净脏比估计,每类池约 3,500 段):约 <strong>650–900 段 / 类,纯度 ~0.95</strong>;
+池配比换算后 P ≈ 0.88(考卷 46% 脏,池更脏会稀释),待 8443 考卷扩容实测各类脏率后修正。</p>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:双赢的机制是"最严档的冤杀集中在段首"——阈值收严后被拒的净段多因段首误报,
+  裁头重判给了它们第二次机会;真头部残留段同样借此以干净形态回池。两侧回流都提高留存,
+  且回流段的混脏率极低(3 种子均只混入 1 段),纯度同步上升。</li>
+<li>测量:起势损失从无条件裁头的"全部净段"限缩到"入池净段的约 16%";彻底归零的唯一路径
+  是段首报警精度继续涨(= 标注,报警<strong>端点</strong>的监督已在现行区间标注内)。</li>
+<li>判据 v3 使 R 从达标约束转为产出量参数;punch 的 R 增长通道(标注学习曲线
+  +0.05~0.06/翻倍)依然有效,不达标压力消失后可按下游需求决定是否继续投标注。</li>
+<li>next:①认证盲测(参数预固定,用下一批标注或 8443 扩容卷);②8443 考卷扩容出各类
+  真实脏率,修正池配比换算;③其余 7 类按缺口复制 punch 路线图(标注 → 最严档 →
+  裁头重判核算)。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>P = 入池真净 / 入池总数,seed0:23/24 = 0.958;NR = 1 − 入池脏/27 = 1 − 1/27 = 0.963</li>
+<li>R = 入池净段(含裁后形态)/32,seed0:19/32 = 0.594</li>
+<li>帕累托对照:纯最严档 (P, R) = (0.930, 0.417) → 流水线 (0.956, 0.562),两维同优</li>
+<li>流水线核算脚本:<code>(scratchpad)/probe_trim_pipeline.py</code>;证据档:
+  <code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>;
+  判据/流水线登记:<code>outputs/g1_motiongpt/zhead_best_v2_manifest.json#acceptance_criteria_v3 / #punch_pipeline_v1</code></li>
+<li>金标准卷:<code>outputs/g1_motiongpt/test_sets/punch_gold_exam_v1.json</code>(59 段,净 32/脏 27)</li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>阈值 0.70 与余量 0.3 s 在金标准卷上选取,读数偏乐观;认证 = 参数预固定 + 未见批次盲测,
+  在此之前"主指标双过线"不作对外结论。</li>
+<li>考卷 n=59,P 的置信区间约 ±0.06;换卷波动实测 ±0.05。</li>
+<li>1:2 净脏比为 user 估计;池配比下 P ≈ 0.88 属外推,8443 扩容卷实测后更新。</li>
+<li>裁后段以"GT 区间 ⊂ 裁剪深度"判净,未逐段人工复看裁后视频;抽查待 user 安排。</li>
+<li>入池净段约 16% 损失 1~1.5 s 起势,对下游 planner 的影响未实测。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
