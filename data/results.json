@@ -1,6 +1,40 @@
 {
  "results": [
   {
+   "slug": "g1-punch-line-overview",
+   "title": "The punch line in three reports: from worst class to a candidate pipeline",
+   "date": "2026-08-22",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "CANDIDATE",
+   "summary": "A reading guide to the three punch reports (Aug 20-22). Act one: the class that got worse with every label batch is diagnosed - a diluted exam manufactured fake readings and a 5x label-oversampling in the training recipe suppressed the learning curve; removing it revives growth at +0.05-0.07 purity per label doubling. Act two: an architecture ablation shows a memoryless per-window MLP beating every context-bearing head, resolved by measuring the frozen encoder's receptive field (each token actually spans +/-0.6 s - pretrained local context beats freshly trained full-segment memory at 115-segment scale). Act three: under revised criteria (primary = kept-purity and dirt-rejection), the selected release pipeline - strictest filtering plus model-guided head-trim re-judge - reads purity 0.956 and dirt-rejection 0.963 at retention 0.562 on the frozen gold exam, a Pareto improvement over pure filtering, pending blind-test certification. Closed lines: synthetic augmentation (five failures, mechanism identified), unconditional trimming (vetoed), full-segment memory heads, and the '120-segment plateau' artifact.",
+   "path": "results/g1-punch-line-overview/",
+   "thumbnail": "results/g1-punch-line-overview/assets/thumbnail.png",
+   "thumbnailAlt": "Grouped bar chart of punch operating points with purity, dirt-rejection and retention, the selected pipeline clearing the 0.9 primary-metric line on both purity and dirt-rejection.",
+   "tags": [
+    "overview",
+    "punch",
+    "gold exam",
+    "pipeline",
+    "acceptance criteria",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.745 → 0.956",
+     "label": "Kept-purity on the frozen gold exam, from the old registered arm to the selected pipeline"
+    },
+    {
+     "value": "3 天 4 条关账线",
+     "label": "Synthetic augmentation, unconditional trim, full-segment memory heads, and the plateau artifact - all closed with evidence"
+    },
+    {
+     "value": "2 道工序到定稿",
+     "label": "Blind-test certification and measured pool dirt-rates from the expanded exams"
+    }
+   ]
+  },
+  {
    "slug": "g1-punch-pipeline-strict-trim-rejudge",
    "title": "Punch release pipeline, near-final: strict filtering plus model-guided head-trim and re-judge",
    "date": "2026-08-22",
