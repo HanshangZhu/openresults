@@ -1,36 +1,37 @@
 {
  "results": [
   {
-   "slug": "g1-punch-line-overview",
-   "title": "The punch line in three reports: from worst class to a candidate pipeline",
+   "slug": "g1-punch-line-consolidated",
+   "title": "Cleaning robot motion data, the punch case: nine experiments, their conclusions, and a first deliverable pipeline",
    "date": "2026-08-22",
    "project": "VAD Alignment",
    "category": "Dataset & Tracker",
    "status": "CANDIDATE",
-   "summary": "A reading guide to the three punch reports (Aug 20-22). Act one: the class that got worse with every label batch is diagnosed - a diluted exam manufactured fake readings and a 5x label-oversampling in the training recipe suppressed the learning curve; removing it revives growth at +0.05-0.07 purity per label doubling. Act two: an architecture ablation shows a memoryless per-window MLP beating every context-bearing head, resolved by measuring the frozen encoder's receptive field (each token actually spans +/-0.6 s - pretrained local context beats freshly trained full-segment memory at 115-segment scale). Act three: under revised criteria (primary = kept-purity and dirt-rejection), the selected release pipeline - strictest filtering plus model-guided head-trim re-judge - reads purity 0.956 and dirt-rejection 0.963 at retention 0.562 on the frozen gold exam, a Pareto improvement over pure filtering, pending blind-test certification. Closed lines: synthetic augmentation (five failures, mechanism identified), unconditional trimming (vetoed), full-segment memory heads, and the '120-segment plateau' artifact.",
-   "path": "results/g1-punch-line-overview/",
-   "thumbnail": "results/g1-punch-line-overview/assets/thumbnail.png",
-   "thumbnailAlt": "Grouped bar chart of punch operating points with purity, dirt-rejection and retention, the selected pipeline clearing the 0.9 primary-metric line on both purity and dirt-rejection.",
+   "summary": "One report replacing the three process reports of Aug 20-22, written in plain research language. Nine experiments in cheapest-first order: splitting the hand labels in half exposed the old exam's diluted dirty side as the source of fake readings; a frozen 59-segment gold exam was instituted; the learning curve was flat only because the training recipe copied every human label five times (removing that one setting lifted discrimination immediately and restored +0.05 purity per label doubling); a linear probe cleared the features of suspicion; a five-way architecture comparison crowned the simplest per-window MLP, explained by measuring that each nominal 0.2-second feature vector actually spans +/-0.6 seconds of pretrained context; synthetic augmentation failed in five combinations because position-generated dirty labels are necessarily noise on distinctions that are semantic judgments. The deliverable pipeline: per-class window head, strictest threshold, and a second chance for rejected segments whose alarms sit inside the first second - trim the head, re-judge, admit trimmed. Frozen-exam readings: kept-purity 0.956, dirt-rejection 0.963, retention 0.562 - both primary metrics above 0.9, pending blind-test certification.",
+   "path": "results/g1-punch-line-consolidated/",
+   "thumbnail": "results/g1-punch-line-consolidated/assets/thumbnail.png",
+   "thumbnailAlt": "Grouped bar chart of punch operating points showing purity, dirt-rejection and retention with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears it on both primary metrics.",
    "tags": [
-    "overview",
+    "consolidated report",
+    "dataset cleaning",
+    "release pipeline",
+    "learning curve",
+    "architecture ablation",
     "punch",
-    "gold exam",
-    "pipeline",
-    "acceptance criteria",
     "G1"
    ],
    "metrics": [
     {
-     "value": "0.745 → 0.956",
-     "label": "Kept-purity on the frozen gold exam, from the old registered arm to the selected pipeline"
+     "value": "0.956 / 0.963",
+     "label": "Kept-purity and dirt-rejection of the deliverable pipeline on the frozen gold exam (uncertified)"
     },
     {
-     "value": "3 天 4 条关账线",
-     "label": "Synthetic augmentation, unconditional trim, full-segment memory heads, and the plateau artifact - all closed with evidence"
+     "value": "×5 → ×1",
+     "label": "The single recipe change (stop copying each label five times) that revived the learning curve"
     },
     {
-     "value": "2 道工序到定稿",
-     "label": "Blind-test certification and measured pool dirt-rates from the expanded exams"
+     "value": "9 experiments",
+     "label": "Cheapest-first probe chain from exam audit to pipeline accounting, all evidence on file"
     }
    ]
   },
@@ -40,7 +41,7 @@
    "date": "2026-08-22",
    "project": "VAD Alignment",
    "category": "Dataset & Tracker",
-   "status": "CANDIDATE",
+   "status": "ARCHIVED",
    "summary": "Consolidation of the punch line under revised acceptance criteria v3 (primary: kept-purity > 0.9 AND dirt-rejection > 0.9; retention becomes an auxiliary yield parameter). The selected pipeline filters at the strictest window-head threshold, then gives rejected segments whose alarms are confined to the first second a second chance: trim at the alarm end plus margin, re-judge, and admit in trimmed form. On the frozen 59-segment gold exam this is a Pareto improvement over pure strict filtering - purity 0.930 to 0.956 and retention 0.417 to 0.562 rise together, with dirt-rejection 0.963 - because the strict tier's false kills concentrate at segment heads and the re-judge recovers them. Onset loss is confined to ~16% of admitted clean segments (vs 100% under the vetoed unconditional trim). Both primary metrics clear 0.9 but remain uncertified: threshold and margin were chosen on the exam, and certification requires pre-fixed parameters plus a blind test on unseen batches. Projected yield at the estimated 1:2 clean:dirty pool ratio: 650-900 segments per class at ~0.95 purity.",
    "path": "results/g1-punch-pipeline-strict-trim-rejudge/",
    "thumbnail": "results/g1-punch-pipeline-strict-trim-rejudge/assets/thumbnail.png",
@@ -74,7 +75,7 @@
    "date": "2026-08-22",
    "project": "VAD Alignment",
    "category": "Dataset & Tracker",
-   "status": "IN PROGRESS",
+   "status": "ARCHIVED",
    "summary": "Five per-window judgment heads are compared on the frozen punch gold exam with identical labels: an MLP on frozen encoder tokens, the 6-layer transformer z-head, a bidirectional GRU, a +/-1s-context TCN at 0.1s resolution on raw features, and the GRU with head-shift augmentation (testing the hypothesis that context heads lose only because they starve for sequences). The MLP dominates at every recall level; augmentation makes the context head worse, and the MLP shows no plateau (purity +0.05-0.06 per label doubling). The paradox dissolves with a receptive-field measurement: each '0.2s' encoder token actually responds to frames +/-0.6s away, so the winner is pretrained local context plus a tiny head - effective sample size ~4200 windows - while freshly trained full-segment memory collapses the effective sample size to ~115 segments and overfits. Current punch scorecard: no single operating point yet clears both precision > 0.9 and recall > 0.85.",
    "path": "results/g1-punch-window-head-ablation/",
    "thumbnail": "results/g1-punch-window-head-ablation/assets/thumbnail.png",
@@ -109,7 +110,7 @@
    "date": "2026-08-21",
    "project": "VAD Alignment",
    "category": "Dataset & Tracker",
-   "status": "IN PROGRESS",
+   "status": "ARCHIVED",
    "summary": "Continuation of the acceptance scoreboard. Punch - previously the only class where labels made things worse - is fully diagnosed by a four-step probe chain: a gold exam built from the hand-labels themselves shows the model always had signal (the old V2 exam's dirty side was diluted); the learning curve was flat only because of a x5 real-label oversampling in the recipe (removing it alone lifts gold-exam ranking 0.754 to 0.816, and the curve un-flattens to +0.067 per doubling); a linear probe proves the frozen encoder separates every dirt mode (AUC 0.82-0.90), and a 64-unit window MLP matches the 10.9M transformer. The acceptance criterion was amended twice: severe dirt (any other-class content, regardless of duration) must stay out of the kept set - under this strict definition punch reads P_severe 0.757 and remains below the bar. Retraining all labeled classes without oversampling flips clap and cross_arms to new registered bests; classes with few or unbalanced labels are unchanged, and one legacy walk arm's perfect exam score is exposed as train-on-test contamination. Synthetic augmentation, retested under the fixed recipe, still fails to expand the precision-recall frontier.",
    "path": "results/g1-punch-exam-reform-recipe-fix/",
    "thumbnail": "results/g1-punch-exam-reform-recipe-fix/assets/thumbnail.png",
