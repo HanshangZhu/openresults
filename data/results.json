@@ -1,6 +1,41 @@
 {
  "results": [
   {
+   "slug": "g1-punch-window-head-ablation",
+   "title": "Per-window head architecture ablation: why a memoryless MLP beats every context model",
+   "date": "2026-08-22",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "status": "IN PROGRESS",
+   "summary": "Five per-window judgment heads are compared on the frozen punch gold exam with identical labels: an MLP on frozen encoder tokens, the 6-layer transformer z-head, a bidirectional GRU, a +/-1s-context TCN at 0.1s resolution on raw features, and the GRU with head-shift augmentation (testing the hypothesis that context heads lose only because they starve for sequences). The MLP dominates at every recall level; augmentation makes the context head worse, and the MLP shows no plateau (purity +0.05-0.06 per label doubling). The paradox dissolves with a receptive-field measurement: each '0.2s' encoder token actually responds to frames +/-0.6s away, so the winner is pretrained local context plus a tiny head - effective sample size ~4200 windows - while freshly trained full-segment memory collapses the effective sample size to ~115 segments and overfits. Current punch scorecard: no single operating point yet clears both precision > 0.9 and recall > 0.85.",
+   "path": "results/g1-punch-window-head-ablation/",
+   "thumbnail": "results/g1-punch-window-head-ablation/assets/thumbnail.png",
+   "thumbnailAlt": "Left: grouped bar chart of best-threshold purity at recall floors 0.6 and 0.75 for five per-window heads, MLP highest at 0.896/0.878. Right: measured receptive field curve of the frozen encoder token - response decays to zero beyond 0.8 seconds, shaded +/-0.6s.",
+   "tags": [
+    "architecture ablation",
+    "receptive field",
+    "per-window head",
+    "overfitting",
+    "sample efficiency",
+    "punch",
+    "G1"
+   ],
+   "metrics": [
+    {
+     "value": "0.896 vs 0.787",
+     "label": "Best purity at recall >= 0.6: memoryless MLP vs bidirectional GRU (same labels, same exam)"
+    },
+    {
+     "value": "±0.6 s",
+     "label": "Measured receptive field of one frozen encoder token - the 'memoryless' head sees context after all"
+    },
+    {
+     "value": "+0.05-0.06 / doubling",
+     "label": "MLP purity growth per label doubling - no plateau at current annotation volume"
+    }
+   ]
+  },
+  {
    "slug": "g1-punch-exam-reform-recipe-fix",
    "title": "Punch turned around: exam reform, an oversampling culprit, and an 8-class recipe retrain",
    "date": "2026-08-21",

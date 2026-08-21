@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — punch 逐窗判定头的架构消融与感受野实测</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-22-punch-window-head-architecture-ablation.md</code></p>
+<h1 id="g1-punch">G1 动作段判定器 — punch 逐窗判定头的架构消融与感受野实测</h1>
+<p>Preliminary,续接 <a href="https://hanshangzhu.github.io/openresults/results/g1-punch-exam-reform-recipe-fix/">2026-08-21 过采样归因报告</a>。
+上一篇确立"无上下文 MLP 窗级头是 punch 当前最佳"后,本篇按 user 的质疑逐项检验带时序
+上下文的替代架构,并以感受野实测解释了消融结果的反直觉之处。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>五种逐窗判定头同卷同标注对比,MLP64(冻结编码令牌直入)在每个留存档位的纯度都最高</strong>;
+  全段上下文的三种实现(Transformer / 双向 GRU / ±1s TCN)全部落败,给 GRU 叠加起点前移
+  增广(检验"上下文头输在段数饥饿、增广造段应救它"的假设)反而伤得最重。</li>
+<li><strong>反直觉的谜底是感受野实测</strong>:冻结编码器的每个"0.2 s 令牌"实际对前后各约 0.6 s 的帧有
+  响应——赢家并非"只凭当下",而是<strong>±0.6 s 预训练局部上下文 + 逐窗小头</strong>;落败方输在
+  "现学的全段记忆"(有效样本 = 段数 ≈115,过拟合)对"预训练的局部上下文"(有效样本 =
+  窗数 ≈4,200)。</li>
+<li><strong>MLP 尚无平台</strong>:半量标注 → 全量,纯度每翻倍 +0.05~0.06,与既有学习曲线斜率一致;
+  synthetic 增广对三类头均为负收益(本会话第 5 次复证),真标注仍是唯一被证实的增长通道。</li>
+<li>punch 现状(金标准卷,验收判据 P&gt;0.9 且 R&gt;0.85):三个操作点各过一边,<strong>尚无同时过
+  两边的操作点</strong>;主表见 Results。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:逐窗判定头是否应携带时序上下文;"无上下文 MLP 更好"这一消融结果能否被
+增广或更细粒度的上下文设计推翻,其机制是什么。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>金标准卷</td>
+<td>punch 冻结考卷 59 段(净 32/脏 27),现行标准逐段人工标注,与一切训练材料零重叠</td>
+<td>全项目冻结测试集(8443)是另一张卷</td>
+</tr>
+<tr>
+<td>逐窗判定头</td>
+<td>在每 0.2 s 编码令牌(或原始特征窗)上输出脏概率的小模型;段分 = 逐窗最大值</td>
+<td>与整段级判定(z-head 的 seg 头)相对</td>
+</tr>
+<tr>
+<td>P@R≥x</td>
+<td>阈值从松到紧扫描,在净留存不低于 x 的约束下能达到的最高纯度;用于头与头的相对比较</td>
+<td>阈值在考卷上挑,数字偏乐观,不作验收成绩</td>
+</tr>
+<tr>
+<td>段首带抓率</td>
+<td>考卷 27 段脏中,脏区间完全落在段首 0.6 s 内的 14 段里被判拒的比例</td>
+<td>只衡量主攻模式,与总体脏剔除(NR)相对</td>
+</tr>
+<tr>
+<td>感受野</td>
+<td>扰动距令牌中心 d 秒处的 1 帧、令牌向量的 L2 变化量;变化归零处即令牌"看不见"的边界</td>
+<td>实测值,非理论卷积感受野推导</td>
+</tr>
+<tr>
+<td>NP(拒侧纯度)</td>
+<td>被判拒的段中真脏的比例;NP 低 = 垃圾桶里错扔的好段多</td>
+<td>与 P(留侧纯度)互补</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>五臂同用 punch 训练池标注(约 115–143 段,×1 过采样等价的窗级监督),同考金标准卷,
+各 3 种子。对照臂与假设:</p>
+<table>
+<thead>
+<tr>
+<th>臂</th>
+<th>设计</th>
+<th>检验的假设</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MLP64(基线)</td>
+<td>冻结编码令牌 512→64→1,无显式上下文</td>
+<td>—</td>
+</tr>
+<tr>
+<td>z-head Transformer</td>
+<td>6L×384 全段双向注意力(注册臂配方)</td>
+<td>全段上下文助段首判别</td>
+</tr>
+<tr>
+<td>双向 GRU</td>
+<td>令牌序列上 GRU,每窗判定带全段历史+前瞻</td>
+<td>同上,隔离"上下文"单变量</td>
+</tr>
+<tr>
+<td>TCN ±1s / 0.1 s 步</td>
+<td>原始 106 维特征,历史 1 s+前瞻 1 s,边界 padding,0.1 s 分辨率(user 规格)</td>
+<td>更细粒度+显式局部上下文</td>
+</tr>
+<tr>
+<td>GRU + 前移增广</td>
+<td>训练序列 115→185(起点前移合成段)</td>
+<td>上下文头输在段数饥饿,增广造段可救(user 假设)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>替代架构超过基线</td>
+<td>任一留存档纯度高于 MLP64</td>
+<td>全部低于(主表)</td>
+<td>全负</td>
+</tr>
+<tr>
+<td>MLP 平台</td>
+<td>半量→全量纯度停涨</td>
+<td>+0.05~0.06/翻倍,未停</td>
+<td>无平台证据</td>
+</tr>
+<tr>
+<td>验收(P&gt;0.9 且 R&gt;0.85)</td>
+<td>同一操作点两者兼得</td>
+<td>三操作点各过一边</td>
+<td>未达标</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 与来源声明</summary>
+<p><code>NOT PREREGISTERED — 连续探针链,无单一确认版 Run Spec</code>;各臂均为 user 会话内逐项定向
+("用带历史的模型给逐窗判断" / "带历史1s+带前瞻1s…判断当下0.1s" / "假如我们再用回数据
+增广呢" / "mlp网络怕有平台"),执行与读数即时落
+<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>(context_head_battery
+等字段)与 <code>probes/</code> 目录。</p>
+</details>
+<h2 id="results">Results</h2>
+<p><img alt="左:五种逐窗判定头在金标准卷上的最优阈值纯度,净留存≥0.6 与 ≥0.75 两档;MLP64 最高(0.896/0.878),z-head、双向 GRU、±1s TCN 依次降低,GRU+前移增广最低。右:冻结编码器令牌感受野实测曲线,扰动距中心 0.5 秒内令牌仍有响应,0.8 秒外归零,阴影标出 ±0.6 秒的实际视野。" src="assets/punch-head-ablation-rf.png"></p>
+<table>
+<thead>
+<tr>
+<th>逐窗判定头</th>
+<th>P@R≥0.4</th>
+<th>P@R≥0.6</th>
+<th>P@R≥0.75</th>
+<th>段首带抓率</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MLP64(基线)</strong></td>
+<td><strong>0.963</strong></td>
+<td><strong>0.896</strong></td>
+<td><strong>0.878</strong></td>
+<td>0.74</td>
+</tr>
+<tr>
+<td>z-head Transformer(全段上下文)</td>
+<td>0.928</td>
+<td>0.850</td>
+<td>0.757</td>
+<td>0.57</td>
+</tr>
+<tr>
+<td>双向 GRU(全段历史+前瞻)</td>
+<td>0.890</td>
+<td>0.787</td>
+<td>0.780</td>
+<td>—</td>
+</tr>
+<tr>
+<td>TCN ±1s / 0.1 s 步(原始特征)</td>
+<td>0.904</td>
+<td>0.769</td>
+<td>0.720</td>
+<td>0.71</td>
+</tr>
+<tr>
+<td>GRU + 前移增广</td>
+<td>0.755</td>
+<td>0.710</td>
+<td>0.674</td>
+<td>0.88*</td>
+</tr>
+</tbody>
+</table>
+<p>* 增广臂段首带抓率最高但净段误伤同步翻倍——学会合成教的形态、赔掉别处纯度,前沿反而最低。</p>
+<p>punch 当前完整成绩单(五指标,金标准卷):</p>
+<table>
+<thead>
+<tr>
+<th>模型 / 操作点</th>
+<th>acc</th>
+<th>P</th>
+<th>R</th>
+<th>NP</th>
+<th>NR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>注册臂 z-head(阈值 0.5 预定,无乐观偏置)</td>
+<td>0.734</td>
+<td>0.745</td>
+<td>0.781</td>
+<td>0.730</td>
+<td>0.679</td>
+</tr>
+<tr>
+<td>MLP64 均衡档(阈值 0.93,考卷上挑)</td>
+<td>0.785</td>
+<td>0.837</td>
+<td>0.750</td>
+<td>0.736</td>
+<td>0.827</td>
+</tr>
+<tr>
+<td>MLP64 高纯度档(阈值 0.70,考卷上挑)</td>
+<td>0.667</td>
+<td><strong>0.930</strong></td>
+<td>0.417</td>
+<td>0.582</td>
+<td><strong>0.963</strong></td>
+</tr>
+</tbody>
+</table>
+<p>感受野实测(右图):扰动距令牌中心 0.05 s 处令牌变化 5.66,0.3 s 处 1.54,0.5 s 处
+0.67,<strong>0.8 s 外精确为 0</strong>——每个令牌是约 ±0.6 s 动作的预训练摘要。</p>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:消融的正确读法不是"上下文无用",而是"<strong>±0.6 s 预训练局部上下文已内置于令牌,
+  额外叠加现学的全段记忆是负资产</strong>"——带记忆的头把窗间梯度耦合起来,有效样本从约 4,200
+  个窗坍缩到约 115 段,先被过拟合杀死(z-head 分数两极化为同一病征)。</li>
+<li>测量:user 的"段数饥饿 → 增广造段救上下文头"假设已直接检验并否定(前沿 0.890→0.755);
+  合成标签按位置定脏净、在起势/残留语义带注入噪声的病理(上一篇)对上下文头同样成立。</li>
+<li>测量:MLP 半量→全量纯度 +0.05~0.06/翻倍,无平台证据;上下文架构约定在标注量再翻倍后
+  复测(届时其理论优势针对的变体/段内自恰模式恰是剩余主要漏项)。</li>
+<li>next:①段首带定向标注(模型段首分数 0.3–0.9 的不确定带采样,punch 预算余约 25 段);
+  ②8443 考卷扩容(7 类 ×50)标注中,产出后各类真实脏率替换 1:2 估计。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>MLP64 P@R≥0.6 = 0.896(3 种子最优阈值纯度均值);高纯度档 P = 0.930 @ R = 0.417</li>
+<li>感受野边界:令牌变化量 0.5 s 处 0.673 → 0.8 s 处 0.000</li>
+<li>MLP 平台探针:半量两切分排序 0.751 / 0.760 → 全量 0.811</li>
+<li>证据档:<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>
+  (context_head_battery / synth_autopsy 字段);逐臂分数:同目录 <code>probes/</code>
+  (gru_head_scores / gru_synth_scores / ctx_window_01s / mlp_base_scores)</li>
+<li>金标准卷:<code>outputs/g1_motiongpt/test_sets/punch_gold_exam_v1.json</code></li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>考卷 n=59,单段 = 1.7 个百分点;P@R 系列阈值在考卷上挑选,只作头间相对比较。</li>
+<li>各上下文臂均为单一实现(TCN/GRU 的宽度、步数未扫参);"当前标注量下落败"不排除
+  大数据量下反转,已约定复测点。</li>
+<li>感受野实测基于单段、单令牌位置、随机扰动 5 次平均;结论(±0.6 s)与卷积结构推导一致,
+  未做逐段普查。</li>
+<li>五指标表中 MLP 两档阈值未经部署前的训练侧定线程序,直接引用需按认证工序重定。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
