@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — 标签审计后全类现状与交付缺口盘点</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-23-lineup-status-and-delivery-gap.md</code></p>
+<h1 id="g1">G1 动作段判定器 — 标签审计后全类现状与交付缺口盘点</h1>
+<p>阶段状态报告,续接 <a href="https://hanshangzhu.github.io/openresults/results/g1-punch-line-consolidated/">punch 线综合报告</a>。
+记录 2026-08-23 时点:全量标签审计 + 8 类重训后的成绩档位、交付判据 v3 下的差距、剩余交付闸门。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>当前档位:8 类中 1 类过交付线</strong>——punch 流水线 P 0.956 / NR 0.963 双主指标过 0.9
+  (主表),<strong>未认证</strong>(参数预固定 + 盲测未做)。</li>
+<li>clap / handshake 属第二档:NR 已过线(0.971 / 0.941),P 差 0.04–0.07;punch 过线前
+  正是这个位置,靠裁头重判流水线补齐(两类是否复制该路线待 user 裁定)。</li>
+<li>walk / crouch 的 P 读数受考卷净段稀缺支配(每卷仅 11–12 段净;walk 同一模型跨三卷
+  P 0.50→0.92),数值上读不出方案差异;walk 的可用性证据来自 user 盲抽渲染复看:
+  12 段模型拒绝 = 9 对 / 3 debatable / 0 铁冤杀。kick / crouch 训练池净样本仅 6 / 12 段,
+  属净样本饥饿,任何头部/标签设计变不出净样本。</li>
+<li>距完整交付剩 4 道闸(闸门表):①认证盲测;②8443 考卷扩容实测各类池脏率;
+  ③交付前每类 20 段现场渲染抽查(user 2026-08-23 新增,walk/crouch 必做);
+  ④kick / wave_arms / cross_arms 标注缺口(~40–70 → 200)。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:标签全量审计与重训之后,每类判定器在判据 v3 下处于什么档位,离"可交付的
+自动清洗流水线"还缺哪些已定义的步骤。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P / R(留侧)</td>
+<td>P = 模型判 pass 的段中真净的比例(留侧纯度)↑;R = 真净段被留下的比例(净留存)↑</td>
+<td>R 是产出量参数,判据 v3 不设线</td>
+</tr>
+<tr>
+<td>NP / NR(拒侧)</td>
+<td>NP = 判拒的段中真脏的比例 ↑;NR = 真脏段被剔除的比例(脏剔除)↑</td>
+<td>NP 低 = 冤杀多;与 P 互补</td>
+</tr>
+<tr>
+<td>判据 v3</td>
+<td>P &gt; 0.9 且 NR &gt; 0.9 双主指标,R / acc 报告不设线(user 2026-08-22 裁定)</td>
+<td>取代 v1/v2 字典序判据</td>
+</tr>
+<tr>
+<td>金标卷 / 临时卷</td>
+<td>冻结只考不训的段级人工标注考卷;金标 = 50–59 段;临时卷 = 标注量未到位的类按对半切出</td>
+<td>临时卷 11–35 段,单段 3–8 个百分点,只看趋势</td>
+</tr>
+<tr>
+<td>扫描上限口径</td>
+<td>阈值在考卷上扫出的最优操作点,数字偏乐观</td>
+<td>交付成绩须"认证" = 参数预固定 + 未见批次盲测</td>
+</tr>
+<tr>
+<td>窗级 MLP64</td>
+<td>冻结编码器 0.2 s 令牌(实测感受野 ±0.6 s)上的 512→64→1 小头,段分 = 逐窗最大值</td>
+<td>与全段上下文头相对(消融已败,见架构消融报告)</td>
+</tr>
+<tr>
+<td>裁头重判流水线</td>
+<td>punch 选定玩法:最严档报警全在段首 1 s 内 → 裁头 +0.3 s → 重判入池</td>
+<td>与被否决的无条件裁头相对</td>
+</tr>
+<tr>
+<td>渲染抽查闸</td>
+<td>交付前每类抽 20 段全新 train 段现场渲染,对照模型判定逐条肉眼核对(user 2026-08-23 指定)</td>
+<td>是交付闸,不是每次重训后的例行检查</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<table>
+<thead>
+<tr>
+<th>Setup 轴</th>
+<th>本报告口径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>标签权威</td>
+<td><code>fine_annotation_train.sqlite3</code>;2026-08-23 全量审计:8 类 904 条逐条对照评论遍历,36 处修正落盘(整段脏被当余段净 27 + 区间解析断链 9),分层溯源保留原判</td>
+</tr>
+<tr>
+<td>训练配方</td>
+<td>真标注、×1 过采样、无截断全长编码、3 种子;修正标签后 8 类全部重训</td>
+</tr>
+<tr>
+<td>成绩口径</td>
+<td>每种子考卷全阈值扫描,词典序 min(P,NR)→R 选点;pass 侧 &lt;5 段的档位判为假象档不采信;3 种子均值</td>
+</tr>
+<tr>
+<td>punch 例外</td>
+<td>无标签修正未重训;引用流水线成绩(阈值 0.70 + 裁剪余量 0.3 s,考卷上选取)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>判据 v3 双主指标</td>
+<td>P &gt; 0.9 且 NR &gt; 0.9</td>
+<td>punch 0.956 / 0.963;其余见主表</td>
+<td>punch 过(未认证),其余未过</td>
+</tr>
+<tr>
+<td>认证</td>
+<td>参数预固定 + 未见批次盲测复现</td>
+<td>未执行</td>
+<td>全类 PENDING</td>
+</tr>
+<tr>
+<td>渲染抽查闸</td>
+<td>每类 20 段全新段肉眼核对</td>
+<td>未执行(walk 曾做同式 12 段先导)</td>
+<td>PENDING</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 状态与来源声明</summary>
+<p>本报告为状态盘点,不含新实验;引用的各实验 spec 状态:</p>
+<ul>
+<li>walk 严重度软标签探针:<strong>有确认版探针 spec</strong>(user 2026-08-23 确认),原文与结果在
+  <code>evidence_v2cleanexam.json#walk_severity_soft_probe_2026-08-23</code>。</li>
+<li>punch 流水线:<code>NOT PREREGISTERED — 连续探针链收束</code>,沿革见 punch 线综合报告 Method。</li>
+<li>全类扫线 / kick 扩卷重训:user 会话内直接指令的复评("每个模型都汇报一下调阈值以后
+  最佳的数据" / "kick 70段了"),证据字段
+  <code>post_audit_threshold_sweep_2026-08-23</code>、<code>kick_71seg_retrain_2026-08-23</code>。</li>
+<li>标签审计:user /goal 指令("每20条一个batch查看分析…遍历每个我们标注过的动作"),
+  账本 <code>full_label_comment_audit</code>。</li>
+</ul>
+</details>
+<h2 id="results">Results</h2>
+<p><img alt="8 类判定器考卷最优操作点的 P 与 NR 分组条形图,红色虚线为交付线 0.9。punch 双过线;handshake/clap 的 NR 过线而 P 在 0.83-0.86;walk/crouch 的 P 在 0.5 附近;kick/cross_arms 未及格。浅色柱为小卷类,只看趋势。" src="assets/lineup-delivery-scoreboard.png"></p>
+<p>主表(考卷最优操作点,扫描上限口径,3 种子均值;↑ = 越高越好):</p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>考卷(净/总)</th>
+<th>操作点</th>
+<th>acc↑</th>
+<th>P↑</th>
+<th>R↑</th>
+<th>NP↑</th>
+<th>NR↑</th>
+<th>判据 v3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>punch</td>
+<td>32/59 金标</td>
+<td>流水线(0.70+裁头)</td>
+<td>0.746</td>
+<td><strong>0.956</strong></td>
+<td>0.562</td>
+<td>—</td>
+<td><strong>0.963</strong></td>
+<td><strong>过(未认证)</strong></td>
+</tr>
+<tr>
+<td>handshake</td>
+<td>33/50 金标</td>
+<td>严档</td>
+<td>0.447</td>
+<td>0.863</td>
+<td>0.192</td>
+<td>0.375</td>
+<td><strong>0.941</strong></td>
+<td>差 P 0.04</td>
+</tr>
+<tr>
+<td>clap</td>
+<td>16/50 金标</td>
+<td>t≈0.44</td>
+<td>0.760</td>
+<td>0.830</td>
+<td>0.312</td>
+<td>0.750</td>
+<td><strong>0.971</strong></td>
+<td>差 P 0.07</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td>7/12 临时</td>
+<td>扫优</td>
+<td>0.833</td>
+<td>0.857</td>
+<td>0.857</td>
+<td>0.800</td>
+<td>0.800</td>
+<td>小卷,趋势接近</td>
+</tr>
+<tr>
+<td>walk</td>
+<td>11/50 金标</td>
+<td>pass≥5 档</td>
+<td>0.780</td>
+<td>0.500</td>
+<td>0.485</td>
+<td>0.856</td>
+<td>0.863</td>
+<td>未过(读数受限)</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td>12/50 金标</td>
+<td>pass≥5 档</td>
+<td>0.753</td>
+<td>0.490</td>
+<td>0.500</td>
+<td>0.841</td>
+<td>0.833</td>
+<td>未过(净样本饥饿)</td>
+</tr>
+<tr>
+<td>kick</td>
+<td>8/35 临时</td>
+<td>t=0.99 扫描</td>
+<td>0.667</td>
+<td>0.392</td>
+<td>0.833</td>
+<td>0.926</td>
+<td>0.617</td>
+<td>未过(净样本饥饿)</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td>7/11 临时</td>
+<td>高 R 档</td>
+<td>0.697</td>
+<td>0.689</td>
+<td>0.952</td>
+<td>0.833</td>
+<td>0.250</td>
+<td>小卷,未过</td>
+</tr>
+</tbody>
+</table>
+<p>walk 的第二类证据(数值考卷之外的盲抽渲染复看):</p>
+<table>
+<thead>
+<tr>
+<th>抽检</th>
+<th>设计</th>
+<th>user 裁定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全新 20 段 @严档</td>
+<td>拒 18/留 2,拒段随机渲染 6 段全盲复看</td>
+<td>4 铁脏 + 2 debatable,零铁冤杀</td>
+</tr>
+<tr>
+<td>val 段中报警 6 段</td>
+<td>7 月已标 pass、现模型段中报警的段渲染复看</td>
+<td>5 真有问题 + 1 debatable</td>
+</tr>
+<tr>
+<td>合计 12 段拒绝</td>
+<td>—</td>
+<td>9 对 / 3 debatable / 0 铁冤杀;"7月标准确实比现在低"</td>
+</tr>
+</tbody>
+</table>
+<p>交付闸门表(离交付有多远,按类):</p>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>已就位</th>
+<th>缺口</th>
+<th>所需动作(量级)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>punch</td>
+<td>流水线双过线;金标卷;变体标准册</td>
+<td>认证 + 渲染抽查</td>
+<td>参数预固定后盲测一批新标注(~50 段)+ 20 段渲染</td>
+</tr>
+<tr>
+<td>walk</td>
+<td>盲抽方向校验;金标卷</td>
+<td>P 读数被净段稀缺卡死 + 认证 + 渲染抽查(必做)</td>
+<td>标注补净段扩卷,或直接按裁头流水线核算后认证</td>
+</tr>
+<tr>
+<td>clap / handshake</td>
+<td>NR 过线;金标卷</td>
+<td>P 差 0.04–0.07</td>
+<td>裁头重判核算是否复制,user 裁定</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td>金标卷</td>
+<td>净样本饥饿(池净 12)</td>
+<td>标注,优先补净段;渲染抽查必做</td>
+</tr>
+<tr>
+<td>kick</td>
+<td>扩容临时卷</td>
+<td>净样本饥饿(池净 6;脏率 80%,净样本最贵)</td>
+<td>标注 71→200(预期净 ~40)</td>
+</tr>
+<tr>
+<td>wave_arms / cross_arms</td>
+<td>临时卷</td>
+<td>标注量(40/39 条)+ 无正式金标卷</td>
+<td>标注至 200 后切金标卷再评</td>
+</tr>
+</tbody>
+</table>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:lineup 呈三档——双过线(punch)、差 P 一项(clap/handshake)、读数或净样本受限
+  (walk/crouch/kick + 两小卷类);差距的性质各不相同,主表与闸门表逐类对应。</li>
+<li>测量:walk 数值与盲抽结论的分歧已有定论(user 裁定):val 表面一致率低是 7 月标签标准
+  偏松所致,非模型误差;"binary 标签压平轻重"假设按预注册判据关账(金标卷 +0.056 &lt; 0.07,
+  重切分方向翻负)。</li>
+<li>测量:kick / crouch 的瓶颈是净样本供给(池内 6 / 12 段)——kick 按当前 80% 脏率,标满
+  200 条预期净样本仍只有 ~40 段,是 8 类中净样本获取成本最高的类(<code>待验证</code>:脏率随标注
+  推进可能变化)。</li>
+<li>next(user 已定向):标注继续推向 200/类;交付前执行渲染抽查闸。认证盲测批次与 8443
+  扩容的排期、clap/handshake 是否复制裁头重判路线,待 user 裁定。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>punch 流水线 P(seed0)= 入池真净/入池总数 = 23/24 = 0.958,3 种子均值 0.956;
+  NR = 1 − 1/27 = 0.963</li>
+<li>walk 跨卷波动:同一 binary 臂 P@R≥0.4 = 0.500(金标)/ 0.851(重切分1)/ 0.917(重切分2)</li>
+<li>kick 净样本账:全类净 14 = 考卷 8 + 训练池 6;脏率 = 57/71 = 0.80</li>
+<li>证据档(均在 <code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>):</li>
+<li><code>full_label_comment_audit</code>(审计账本 + user 复看单)</li>
+<li><code>post_audit_threshold_sweep_2026-08-23</code>(全类扫线,含逐类假象档记录)</li>
+<li><code>kick_71seg_retrain_2026-08-23</code>(扩卷 + 重训 + 排序诊断)</li>
+<li><code>walk_severity_soft_probe_2026-08-23</code>(确认版 spec + 三臂三卷结果)</li>
+<li><code>walk_reject_blind_spotcheck</code> / <code>walk_val_agreement_and_vintage</code>(盲抽与 vintage 结论)</li>
+<li>判据与流水线登记:<code>outputs/g1_motiongpt/zhead_best_v2_manifest.json</code>
+  (<code>acceptance_criteria_v3</code> / <code>punch_pipeline_v1</code> / <code>variant_standards</code> / <code>models_v3_current</code>)</li>
+<li>考卷:<code>outputs/g1_motiongpt/test_sets/</code>(金标卷 JSON + ids;kick 临时卷 08-23 扩容,
+  旧卷备份 <code>.bak-2026-08-23-pre-expand</code>)</li>
+<li>部署中模型:<code>logs/g1_motiongpt/zhead_mlp_&lt;cls&gt;_v1/zhead.pt</code>(8 类,审计后重训版,
+  标注前端 8769 在用)</li>
+</ul>
+</details>
+<details>
+<summary>walk 盲抽渲染媒体路径</summary>
+<ul>
+<li>全新 20 段拒段抽检 6 段:<code>outputs/walk_reject_showcase/*.mp4</code>(+ provenance.json)</li>
+<li>val 段中报警抽检 6 段:<code>outputs/walk_val_midalarm_showcase/*.mp4</code>(+ provenance.json)</li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>全表为扫描上限口径:阈值在考卷上选取,数字偏乐观;实测预固定 vs 扫线的 NR 差距曾达
+  0.28–0.60,交付引用必须走认证工序。</li>
+<li>小卷类(wave_arms 12 / cross_arms 11 / kick 35)单段 3–8 个百分点,只作趋势读数。</li>
+<li>punch 流水线成绩未认证;walk 盲抽 n=12 仅方向校验,不构成 NP 的统计估计。</li>
+<li>标签审计修正了考卷内若干段的判定,本报告数字与审计前报告不可直接对比(尺子变了)。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
