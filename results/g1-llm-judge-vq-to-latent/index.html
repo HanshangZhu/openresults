@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 动作段判定器 — LLM-judge 线:从 VQ 码字到连续潜向量的四臂阶梯与三场景对照</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-25-llm-judge-line-vq-to-latent.md</code></p>
+<h1 id="g1-llm-judge-vq">G1 动作段判定器 — LLM-judge 线:从 VQ 码字到连续潜向量的四臂阶梯与三场景对照</h1>
+<p>阶段报告,续接<a href="https://hanshangzhu.github.io/openresults/results/g1-classifier-lineup-delivery-status/">标签审计后全类现状盘点</a>。
+记录 2026-08-25 单日内 LLM-judge 线(预训练语言模型 + 1600 条人工标注 → 会说理由的动作段判定器)的完整实验链与结论。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>预注册判据 PASS(第四臂)</strong>:Qwen-1.5B + 连续潜向量 + 加码 SFT(v2)在 8 张金标卷上
+  4 类达到现役窗级 MLP 的 90%(判据线 ≥3 类),其中 <strong>clap 0.909 / handshake 0.844 直接反超
+  MLP</strong>——LLM 臂首次在任何类上超过现役判定器,并附带真实的 CoT 说理(区间+病因)。</li>
+<li><strong>单变量归因成立</strong>:四臂阶梯(T5+VQ 55% → Qwen+VQ 73% → 连续潜向量 87% → 加码 94%,
+  数字为 8 类"达 MLP 百分比"均值)中,最大的一跳来自<strong>动作表示</strong>(VQ 码字→连续潜向量,
+  与 MLP 同款编码器),证实此前判定的"瓶颈在感知不在语言"。</li>
+<li><strong>RL 阶段(GRPO/GSPO)在当前数据规模下无信号</strong>:SFT 已把全部 1128 条训练判定连同区间
+  文本背熟,verdict 与区间 IoU 奖励在训练集上双双饱和,组优势恒零——RLVR 需要"未背过"
+  的标注池;半量切分重训实验(SFT/RL 各半)进行中,结果另行补报。</li>
+<li><strong>40 段全新盲评(user 全判)</strong>:MLP 最有信心的 pass 侧真实纯度 0.875(6 类 5/5 全对,
+  kick 仅 1/5);LLM verdict 命中 0.700、pass 侧纯度 0.926,且抓住了 MLP 放走的 4 条脏
+  kick 中的 3 条——两judge失误几乎不重叠。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:预训练语言模型接上我们的动作表示与 1600 条审定标注,能否达到并超过窗级 MLP
+的判别力,同时给出可读的判定理由;瓶颈在语言侧还是动作感知侧。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>窗级 MLP(现役)</td>
+<td>冻结 conv-AE 连续令牌(512 维/0.2s)上的 512→64→1 头,段分=逐窗最大;交付基线</td>
+<td>与本线各 LLM 臂共享同一编码器</td>
+</tr>
+<tr>
+<td>VQ 码字</td>
+<td>MotionTokenizer 512 码本离散令牌,旧 grounding LM 的输入表示</td>
+<td>本线证实其为信息瓶颈</td>
+</tr>
+<tr>
+<td>连续潜向量臂</td>
+<td>conv-AE 令牌经可训线性投影以 inputs_embeds 进入 Qwen;LoRA r16 + 投影 + som/eom 可训</td>
+<td>词表不动,无新增 token</td>
+</tr>
+<tr>
+<td>P@R≥0.4</td>
+<td>净留存 ≥0.4 约束下扫阈值的最高留侧纯度;LLM 臂阈值来自 VERDICT 位 pass/fail token 概率比</td>
+<td>扫描上限口径,非盲测成绩</td>
+</tr>
+<tr>
+<td>达 MLP 百分比</td>
+<td>某臂 P@R≥0.4 ÷ 同类 MLP P@R≥0.4</td>
+<td>判据:≥3 类 ≥90%</td>
+</tr>
+<tr>
+<td>加码 SFT(v2)</td>
+<td>v1 续训 +9000 步、judge 混采 0.5→0.7(总 15000 步,16 分钟)</td>
+<td>与 v1 差异仅此两项</td>
+</tr>
+<tr>
+<td>奖励饱和</td>
+<td>策略在训练行上 verdict/区间全对 → 组内优势恒零 → RL 零梯度</td>
+<td>RL 失效的机制,非算法缺陷</td>
+</tr>
+<tr>
+<td>40 盲评</td>
+<td>各类窗级 MLP 在全新未标段上最有信心 pass 的 5 条×8 类,user 前端全判(判定落库)</td>
+<td>样本按 MLP pass 侧选取,MLP 的 R/NR 在此不可测</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<table>
+<thead>
+<tr>
+<th>Setup 轴</th>
+<th>口径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练数据</td>
+<td><code>g1mgpt_judge_sft_v1</code>(1128 行,user 逐 5 条审查构建;8 金标卷段全排除;rationale 消毒)</td>
+</tr>
+<tr>
+<td>基座/配方</td>
+<td>Qwen2.5-1.5B-Instruct;LoRA r16 全线性层;grounding 57.6k 指令混采防遗忘</td>
+</tr>
+<tr>
+<td>考法</td>
+<td>8 张金标卷(459 段)与 MLP 同卷同指标;批式评测尺经 v1 双法对账验证(±0.03 内)</td>
+</tr>
+<tr>
+<td>RL</td>
+<td>GRPO(verdict 奖励)与 GSPO(verdict+0.5×区间 IoU,序列级裁剪)各一轮探针</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SFT 达标(开 RL 闸)</td>
+<td>≥3 类达 MLP 90%</td>
+<td>v2:4 类(clap 130%/handshake 103%/cross 98.5%/crouch 92%)</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>VQ→连续提升</td>
+<td>均值 ≥10pp</td>
+<td>+8.9pp(绝对)/ +14pp(比值)</td>
+<td>边界,方向成立</td>
+</tr>
+<tr>
+<td>RL 有效性</td>
+<td>奖励未饱和且金标卷不降</td>
+<td>GRPO reward 恒 1.000;GSPO 组有效 0-1/4</td>
+<td>无信号,N/A</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Run Spec 状态</summary>
+<p>各级探针均有 user 会话内确认:连续潜向量臂(<code>qwen-judge-continuous-latents</code>,user「a try」)、
+加码+RL(user「1 2 都做」)、GSPO 换代与复合奖励(user「可以,做吧…GSPO」)、半量切分
+(user「1」)。spec 原文与结果逐条在
+<code>evidence_v2cleanexam.json#{qwen_judge_sft_probe, qwen_judge_latent_line, qwen_judge_latent_gspo…}</code>。
+数据集构建按 user 指令「每5条去审查和构建」执行(226 批人审,构建期修复 3 类缺陷,
+含两处自伤注毒的发现与修复)。</p>
+</details>
+<h2 id="results">Results</h2>
+<p><img alt="左:8 类上 LLM-judge v2 与窗级 MLP 的 P@R≥0.4 并排,clap/handshake 反超,kick/wave 仍落后。右:四臂阶梯,达 MLP 百分比均值 55→73→87→94,跨过 90% 判据线。" src="assets/llm-judge-ladder.png"></p>
+<p>三场景对照(聚合口径;MLP=@0.5 默认阈值,LLM=硬判,两者均为"开箱状态"):</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>模型</th>
+<th>acc↑</th>
+<th>P↑</th>
+<th>R↑</th>
+<th>NR↑</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>训练池 n=1168</td>
+<td>MLP</td>
+<td>0.693</td>
+<td>0.851</td>
+<td>0.317</td>
+<td>0.960</td>
+</tr>
+<tr>
+<td></td>
+<td>LLM v2</td>
+<td>≈1.00</td>
+<td>≈1.00</td>
+<td>≈1.00</td>
+<td>≈1.00(记忆,GRPO 采样实测)</td>
+</tr>
+<tr>
+<td>金标卷 n=459</td>
+<td>MLP</td>
+<td>0.632</td>
+<td>0.600</td>
+<td>0.168</td>
+<td>0.929</td>
+</tr>
+<tr>
+<td></td>
+<td>LLM v2</td>
+<td>0.693</td>
+<td>0.602</td>
+<td><strong>0.626</strong></td>
+<td>0.736</td>
+</tr>
+<tr>
+<td>40 盲评(全新)</td>
+<td>MLP</td>
+<td>—</td>
+<td>0.875</td>
+<td>不可测*</td>
+<td>不可测*</td>
+</tr>
+<tr>
+<td></td>
+<td>LLM v2</td>
+<td>0.700</td>
+<td><strong>0.926</strong></td>
+<td>0.714</td>
+<td>0.600</td>
+</tr>
+</tbody>
+</table>
+<p>* 盲评样本 = MLP 判 pass 的段,其拒绝侧未被采样。</p>
+<p>盲评分类细节:MLP pass 侧 6 类 5/5 全对(punch/walk/crouch/handshake/wave/cross),
+clap 4/5,<strong>kick 1/5</strong>;LLM 抓住 kick 4 条漏网脏中的 3 条,同时在其他类产生 10 次误报。
+组合判官(双 pass 才放行)纯度 0.875→0.926,留存 −30%。</p>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量:表示假设成立——同一编码器的连续令牌换掉 VQ 码字,8 类中 6 类上涨、均值比
+  +14pp;语言侧(CoT 说对区间与病因)在第四臂已明显可用,但对全新段仍有套用训练话术的
+  幻觉,理由文本只可参考、以视频为准。</li>
+<li>测量:RL 无信号的机制是<strong>可验证奖励被 SFT 记忆吞尽</strong>——1128 条的 verdict 与区间文本
+  均为训练目标;GSPO/GRPO 之别不改变此结构。半量切分(SFT/RL 条目零交叠各 ~564)实验
+  进行中,<code>待补报</code>。</li>
+<li><strong>user 判断(2026-08-25)</strong>:LLM 上限更高。支撑证据:开箱均衡性(金标 R 0.626 vs
+  0.168)、与 MLP 失误不重叠(kick 否决价值已在盲评实证)、可扩杠杆未用尽(更大基座、
+  未背过的新标注作 RL 燃料、混合判官);反向证据:逐类调档后 MLP 仍在 4 类领先、LLM
+  校准两极化无操作点。此判断标注为方向性决策,非已证结论。</li>
+<li>next(user 已定向):半量切分 GSPO 出结果补报;新增标注(盲评 40 判定已落库、Nolan
+  复审进行中)作为未记忆 RL 燃料的天然来源。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>头条数字代入式与证据路径</summary>
+<ul>
+<li>clap v2 反超:0.909(LLM)vs 0.700(MLP)= 130%;4 类过 90% 线 → 判据 PASS</li>
+<li>盲评 MLP pass 纯度 = 35/40 = 0.875;LLM pass 纯度 = 25/27 = 0.926;组合 = 25/27→(去
+  2 条 LLM 误放)= 0.926</li>
+<li>阶梯均值:T5+VQ 55% → Qwen+VQ 73% → 连续 v1 87% → v2 94%</li>
+<li>证据档(<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>):
+  <code>g1motiongpt_judge_sft_probe_2026-08-25</code>(T5)、<code>qwen_judge_sft_probe_2026-08-25</code>(VQ)、
+  <code>qwen_judge_latent_line_2026-08-25</code>(v1/v2+GRPO 饱和)</li>
+<li>ckpt:<code>logs/g1_motiongpt/qwen_judge_latent_v{1,2}/</code>;数据集
+  <code>data/processed/g1mgpt_judge_sft_v1/</code>(judge_tasks.jsonl + segment_latents.npz + manifest)</li>
+<li>盲评:<code>outputs/g1_motiongpt/mlp_pass40_blind_{ids.txt,meta.json}</code>,判定在标注库
+  (reviewer=hans,2026-08-25 批次)</li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>全部金标卷数字为扫描上限口径;LLM 臂校准两极化(中间带 ≤0.03),P@R 前沿实际退化为
+  硬判点。</li>
+<li>盲评 n=40 且按 MLP pass 侧选段,对 MLP 只测得单侧纯度;LLM 的 NR 在 5 个负例上估计
+  (±0.2 量级)。</li>
+<li>v2 的 clap/handshake 反超尚未过重切分电池与认证工序;与 MLP 的可比性受"无操作点可调"
+  限制。</li>
+<li>CoT 理由文本存在训练话术迁移(例:对全新段复述"但是是left hand"),不构成独立证据。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

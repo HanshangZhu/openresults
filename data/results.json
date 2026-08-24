@@ -1,6 +1,38 @@
 {
   "results": [
     {
+      "slug": "g1-llm-judge-vq-to-latent",
+      "title": "An LLM motion judge in one day: the four-arm ladder from VQ codes to continuous latents",
+      "date": "2026-08-25",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "CANDIDATE",
+      "summary": "Can a pretrained language model plus 1,128 human labels become a segment-quality judge that explains itself? Four arms in one day: T5-small on VQ codes reaches 55% of the deployed window-MLP's precision frontier, Qwen-1.5B on the same codes 73%, switching the motion representation to the MLP's own continuous latents 87%, and doubling the judge mix plus steps 94% — passing the preregistered gate (4 of 8 classes at or above 90% of the MLP, with clap at 130% and handshake at 103%, the first arms to beat the deployed judge anywhere). RL on top (GRPO, then GSPO with a span-IoU reward) produced zero gradient: SFT had memorized every training verdict and span, so the verifiable reward saturates — a clean negative with a clean mechanism. A 40-segment blind review on unseen data (all judged by the annotator) measured the MLP's confident-pass purity at 0.875 (perfect on six classes, 1/5 on kick) and the LLM at 0.926 pass-side purity, catching three of the four dirty kicks the MLP admitted.",
+      "path": "results/g1-llm-judge-vq-to-latent/",
+      "thumbnail": "results/g1-llm-judge-vq-to-latent/assets/llm-judge-ladder.png",
+      "thumbnailAlt": "Grouped bars comparing LLM judge v2 and window MLP per class, plus a four-arm ladder rising 55-73-87-94 percent across the 90 percent criterion line.",
+      "tags": [
+        "llm-judge",
+        "motion-representation",
+        "rlvr",
+        "dataset-cleaning"
+      ],
+      "metrics": [
+        {
+          "label": "prereg gate",
+          "value": "PASS (4/8 classes ≥90% of MLP)"
+        },
+        {
+          "label": "ladder",
+          "value": "55→73→87→94% of MLP"
+        },
+        {
+          "label": "blind pass purity",
+          "value": "MLP 0.875 / LLM 0.926"
+        }
+      ]
+    },
+    {
       "slug": "g1-classifier-lineup-delivery-status",
       "title": "Segment-quality classifier lineup after the full label audit: per-class standing and the remaining gates to delivery",
       "date": "2026-08-23",
