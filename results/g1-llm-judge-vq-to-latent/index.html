@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="./">
-<title>G1 动作段判定器 — LLM-judge 线:从 VQ 码字到连续潜向量的四臂阶梯与三场景对照</title>
+<title>G1 动作段判定器 — 语言模型判定器四个版本的对比与 40 段盲评</title>
 <style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
 --cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
 --mono:"SFMono-Regular",Consolas,monospace}
@@ -26,27 +26,31 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <body>
 <main>
 <p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-25-llm-judge-line-vq-to-latent.md</code></p>
-<h1 id="g1-llm-judge-vq">G1 动作段判定器 — LLM-judge 线:从 VQ 码字到连续潜向量的四臂阶梯与三场景对照</h1>
-<p>阶段报告,续接<a href="https://hanshangzhu.github.io/openresults/results/g1-classifier-lineup-delivery-status/">标签审计后全类现状盘点</a>。
-记录 2026-08-25 单日内 LLM-judge 线(预训练语言模型 + 1600 条人工标注 → 会说理由的动作段判定器)的完整实验链与结论。</p>
+<h1 id="g1-40">G1 动作段判定器 — 语言模型判定器四个版本的对比与 40 段盲评</h1>
+<p>背景一句话:我们在清洗一个机器人动作数据集,已有一个部署中的小型判定器(窗级 MLP)逐段判
+"干净/脏";本报告测试另一条路线——把预训练语言模型改造成判定器,让它不仅判净脏,还能用
+文字说出理由(哪一秒有什么问题)。</p>
 <h2 id="conclusion">Conclusion</h2>
 <ul>
-<li><strong>预注册判据 PASS(第四臂)</strong>:Qwen-1.5B + 连续潜向量 + 加码 SFT(v2)在 8 张金标卷上
-  4 类达到现役窗级 MLP 的 90%(判据线 ≥3 类),其中 <strong>clap 0.909 / handshake 0.844 直接反超
-  MLP</strong>——LLM 臂首次在任何类上超过现役判定器,并附带真实的 CoT 说理(区间+病因)。</li>
-<li><strong>单变量归因成立</strong>:四臂阶梯(T5+VQ 55% → Qwen+VQ 73% → 连续潜向量 87% → 加码 94%,
-  数字为 8 类"达 MLP 百分比"均值)中,最大的一跳来自<strong>动作表示</strong>(VQ 码字→连续潜向量,
-  与 MLP 同款编码器),证实此前判定的"瓶颈在感知不在语言"。</li>
-<li><strong>RL 阶段(GRPO/GSPO)在当前数据规模下无信号</strong>:SFT 已把全部 1128 条训练判定连同区间
-  文本背熟,verdict 与区间 IoU 奖励在训练集上双双饱和,组优势恒零——RLVR 需要"未背过"
-  的标注池;半量切分重训实验(SFT/RL 各半)进行中,结果另行补报。</li>
-<li><strong>40 段全新盲评(user 全判)</strong>:MLP 最有信心的 pass 侧真实纯度 0.875(6 类 5/5 全对,
-  kick 仅 1/5);LLM verdict 命中 0.700、pass 侧纯度 0.926,且抓住了 MLP 放走的 4 条脏
-  kick 中的 3 条——两judge失误几乎不重叠。</li>
+<li><strong>第四个版本达到了预先定下的及格线</strong>:8 个动作类里有 4 个类,语言模型判定器的纯度达到
+  现役小判定器的 90% 以上(及格线是"至少 3 个类");其中拍手类 0.909、握手类 0.844,
+  <strong>首次反超现役判定器</strong>(它们分别是 0.700 和 0.819)。</li>
+<li><strong>四个版本逐一换掉一个部件,找到了真正的瓶颈</strong>:瓶颈不在语言模型大小,而在"动作以什么
+  形式喂给语言模型"。把动作压缩成 512 个离散编号(向量量化)喂进去,平均只能达到现役
+  判定器的 73%;改成直接喂连续向量(和现役判定器吃的完全同一种),一步涨到 87%;再把
+  判定任务的训练占比和步数加倍,到 94%。</li>
+<li><strong>强化学习阶段没有产生任何提升,原因查清了</strong>:监督训练已经把全部 1128 条训练答案
+  (判定和脏区间)背得一字不差,强化学习给它出的题它全部答对,没有错误可学,梯度为零。
+  这不是算法选错,是训练数据全部用尽后的必然;补救实验(把数据切成两半,一半只用来监督
+  训练、另一半留给强化学习)正在进行,结果另行补报。</li>
+<li><strong>40 段全新数据盲评(标注者逐段人工判定)</strong>:现役判定器"最有信心是干净"的段里,真干净
+  的占 87.5%——其中 6 个类 5 条全对,但踢腿类 5 条里 4 条实际是脏的;语言模型判定器在
+  同一批段上,判"干净"的段里真干净的占 92.6%,并抓住了那 4 条漏网脏踢里的 3 条。
+  <strong>两个判定器犯的错几乎不重叠</strong>,这是把它们组合使用的价值所在。</li>
 </ul>
 <h2 id="problem-and-terminology">Problem and terminology</h2>
-<p>研究问题:预训练语言模型接上我们的动作表示与 1600 条审定标注,能否达到并超过窗级 MLP
-的判别力,同时给出可读的判定理由;瓶颈在语言侧还是动作感知侧。</p>
+<p>研究问题:预训练语言模型接上我们的动作编码和 1128 条人工标注,判别力能否追上并超过现役的
+小型判定器,同时给出人能读懂的判定理由;如果追不上,瓶颈在语言部分还是在动作感知部分。</p>
 <table>
 <thead>
 <tr>
@@ -57,78 +61,97 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </thead>
 <tbody>
 <tr>
-<td>窗级 MLP(现役)</td>
-<td>冻结 conv-AE 连续令牌(512 维/0.2s)上的 512→64→1 头,段分=逐窗最大;交付基线</td>
-<td>与本线各 LLM 臂共享同一编码器</td>
+<td>现役判定器(窗级 MLP)</td>
+<td>部署中的小模型:动作每 0.2 秒编码成一个 512 维向量,每个向量过一个两层小网络得到"这 0.2 秒脏的概率",整段取最大值当段分</td>
+<td>参数量约 3 万,无语言能力,只出分数不说理由</td>
 </tr>
 <tr>
-<td>VQ 码字</td>
-<td>MotionTokenizer 512 码本离散令牌,旧 grounding LM 的输入表示</td>
-<td>本线证实其为信息瓶颈</td>
+<td>语言模型判定器</td>
+<td>Qwen2.5-1.5B(通用预训练语言模型)+ 我们的动作输入,微调后输出一句理由 + 最后给"判净"或"判脏"</td>
+<td>四个版本见 Method;非公开的 MotionGPT 模型</td>
 </tr>
 <tr>
-<td>连续潜向量臂</td>
-<td>conv-AE 令牌经可训线性投影以 inputs_embeds 进入 Qwen;LoRA r16 + 投影 + som/eom 可训</td>
-<td>词表不动,无新增 token</td>
+<td>离散编号输入(VQ)</td>
+<td>动作向量先四舍五入到 512 个固定"码字"中最近的一个,把编号当生词喂给语言模型</td>
+<td>四舍五入会丢细节——本报告证实这是主要信息瓶颈</td>
+</tr>
+<tr>
+<td>连续向量输入</td>
+<td>不做四舍五入,动作向量经一个可训练的线性变换直接接入语言模型内部</td>
+<td>与现役判定器共用同一个动作编码器,信息零损失</td>
+</tr>
+<tr>
+<td>金标卷</td>
+<td>每类 50–100 段冻结的人工标注考卷,只用来考试、从不参与训练,共 459 段</td>
+<td>数字是"考卷上挑最优阈值"的乐观口径,全文一致,只作模型间相对比较</td>
+</tr>
+<tr>
+<td>纯度 P</td>
+<td>被判"干净"的段里真干净的比例(越高越好)</td>
+<td>与之相对:R = 真干净的段里被留下来的比例</td>
 </tr>
 <tr>
 <td>P@R≥0.4</td>
-<td>净留存 ≥0.4 约束下扫阈值的最高留侧纯度;LLM 臂阈值来自 VERDICT 位 pass/fail token 概率比</td>
-<td>扫描上限口径,非盲测成绩</td>
+<td>在至少保住 40% 真干净段的前提下,纯度最高能做到多少——本报告的主对比指标</td>
+<td>单看纯度可以靠"几乎全拒"作弊,加了保底留存后才可比</td>
 </tr>
 <tr>
-<td>达 MLP 百分比</td>
-<td>某臂 P@R≥0.4 ÷ 同类 MLP P@R≥0.4</td>
-<td>判据:≥3 类 ≥90%</td>
-</tr>
-<tr>
-<td>加码 SFT(v2)</td>
-<td>v1 续训 +9000 步、judge 混采 0.5→0.7(总 15000 步,16 分钟)</td>
-<td>与 v1 差异仅此两项</td>
-</tr>
-<tr>
-<td>奖励饱和</td>
-<td>策略在训练行上 verdict/区间全对 → 组内优势恒零 → RL 零梯度</td>
-<td>RL 失效的机制,非算法缺陷</td>
-</tr>
-<tr>
-<td>40 盲评</td>
-<td>各类窗级 MLP 在全新未标段上最有信心 pass 的 5 条×8 类,user 前端全判(判定落库)</td>
-<td>样本按 MLP pass 侧选取,MLP 的 R/NR 在此不可测</td>
+<td>40 段盲评</td>
+<td>从从未标注过的数据里,取现役判定器每类最有信心"干净"的 5 段,标注者在不知道模型判什么的情况下逐段人工判定</td>
+<td>样本只覆盖"判净"一侧,所以只能测两个判定器"判净时的可信度"</td>
 </tr>
 </tbody>
 </table>
 <h2 id="method">Method</h2>
+<p>先后训练了四个版本,每次只换一个部件,其余不动:</p>
 <table>
 <thead>
 <tr>
-<th>Setup 轴</th>
-<th>口径</th>
+<th>版本</th>
+<th>语言模型</th>
+<th>动作输入</th>
+<th>训练量</th>
+<th>目的</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>训练数据</td>
-<td><code>g1mgpt_judge_sft_v1</code>(1128 行,user 逐 5 条审查构建;8 金标卷段全排除;rationale 消毒)</td>
+<td>1</td>
+<td>T5-small(约 6 千万参数)</td>
+<td>离散编号</td>
+<td>4 千步</td>
+<td>起点</td>
 </tr>
 <tr>
-<td>基座/配方</td>
-<td>Qwen2.5-1.5B-Instruct;LoRA r16 全线性层;grounding 57.6k 指令混采防遗忘</td>
+<td>2</td>
+<td>Qwen2.5-1.5B(25 倍大)</td>
+<td>离散编号</td>
+<td>6 千步</td>
+<td>检验"语言模型不够大"假设</td>
 </tr>
 <tr>
-<td>考法</td>
-<td>8 张金标卷(459 段)与 MLP 同卷同指标;批式评测尺经 v1 双法对账验证(±0.03 内)</td>
+<td>3</td>
+<td>Qwen2.5-1.5B</td>
+<td><strong>连续向量</strong></td>
+<td>6 千步</td>
+<td>检验"离散化丢信息"假设</td>
 </tr>
 <tr>
-<td>RL</td>
-<td>GRPO(verdict 奖励)与 GSPO(verdict+0.5×区间 IoU,序列级裁剪)各一轮探针</td>
+<td>4</td>
+<td>Qwen2.5-1.5B</td>
+<td>连续向量</td>
+<td><strong>1.5 万步,判定任务占比加大</strong></td>
+<td>检验"训练量不足"假设</td>
 </tr>
 </tbody>
 </table>
+<p>训练数据:1128 条人工标注(逐 5 条人工复核后构建;8 张金标卷的段全部排除在外)。每条=
+动作 + 指令"判断这段 X 动作干不干净,先说理由再给结论",理由直接采用标注者当时写的评论。
+考试方法:8 张金标卷,和现役判定器同卷同指标。</p>
 <table>
 <thead>
 <tr>
-<th>Criterion</th>
+<th>Criterion(预先定下)</th>
 <th>Threshold</th>
 <th>Measured</th>
 <th>Verdict</th>
@@ -136,52 +159,53 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </thead>
 <tbody>
 <tr>
-<td>SFT 达标(开 RL 闸)</td>
-<td>≥3 类达 MLP 90%</td>
-<td>v2:4 类(clap 130%/handshake 103%/cross 98.5%/crouch 92%)</td>
+<td>语言模型判定器及格</td>
+<td>≥3 个类达到现役判定器纯度的 90%</td>
+<td>版本 4:4 个类(拍手 130%、握手 103%、抱臂 98.5%、下蹲 92%)</td>
 <td><strong>PASS</strong></td>
 </tr>
 <tr>
-<td>VQ→连续提升</td>
-<td>均值 ≥10pp</td>
-<td>+8.9pp(绝对)/ +14pp(比值)</td>
-<td>边界,方向成立</td>
+<td>换连续向量的提升</td>
+<td>8 类平均 ≥10 个百分点</td>
+<td>+8.9 个百分点</td>
+<td>差 1.1 点,方向明确</td>
 </tr>
 <tr>
-<td>RL 有效性</td>
-<td>奖励未饱和且金标卷不降</td>
-<td>GRPO reward 恒 1.000;GSPO 组有效 0-1/4</td>
-<td>无信号,N/A</td>
+<td>强化学习有效</td>
+<td>奖励在训练数据上未饱和</td>
+<td>全部样本奖励恒为满分,零梯度</td>
+<td>无信号,记 N/A</td>
 </tr>
 </tbody>
 </table>
 <details>
-<summary>Run Spec 状态</summary>
-<p>各级探针均有 user 会话内确认:连续潜向量臂(<code>qwen-judge-continuous-latents</code>,user「a try」)、
-加码+RL(user「1 2 都做」)、GSPO 换代与复合奖励(user「可以,做吧…GSPO」)、半量切分
-(user「1」)。spec 原文与结果逐条在
-<code>evidence_v2cleanexam.json#{qwen_judge_sft_probe, qwen_judge_latent_line, qwen_judge_latent_gspo…}</code>。
-数据集构建按 user 指令「每5条去审查和构建」执行(226 批人审,构建期修复 3 类缺陷,
-含两处自伤注毒的发现与修复)。</p>
+<summary>实验确认记录(Run Spec 状态)</summary>
+<p>每一级实验都有 user 会话内确认后开跑:版本 3(连续向量)spec 确认语"a try";版本 4 与
+强化学习"1 2 都做";强化学习换 GSPO 算法并加脏区间奖励"可以,做吧…GSPO";数据对半切分
+补救实验"1"。spec 原文与逐级结果存于
+<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code> 的
+<code>qwen_judge_*</code> 各字段。训练数据集按 user 指令"每 5 条去审查和构建"执行(226 批逐批人工
+复核;复核中发现并修复了 3 类构建缺陷)。</p>
 </details>
 <h2 id="results">Results</h2>
-<p><img alt="左:8 类上 LLM-judge v2 与窗级 MLP 的 P@R≥0.4 并排,clap/handshake 反超,kick/wave 仍落后。右:四臂阶梯,达 MLP 百分比均值 55→73→87→94,跨过 90% 判据线。" src="assets/llm-judge-ladder.png"></p>
-<p>三场景对照(聚合口径;MLP=@0.5 默认阈值,LLM=硬判,两者均为"开箱状态"):</p>
+<p><img alt="左图:8 个动作类上,语言模型判定器(版本4)与现役判定器的纯度并排,拍手和握手两类反超,踢腿和挥臂仍落后。右图:四个版本的平均水平从现役判定器的 55% 一路升到 94%,跨过 90% 及格线。" src="assets/llm-judge-ladder.png"></p>
+<p>三个场景下两个判定器的对比(判定口径:现役判定器用默认阈值 0.5,语言模型直接看它输出的
+判净/判脏结论——两者都是"不做任何调参"的开箱状态):</p>
 <table>
 <thead>
 <tr>
 <th>场景</th>
-<th>模型</th>
-<th>acc↑</th>
-<th>P↑</th>
-<th>R↑</th>
-<th>NR↑</th>
+<th>判定器</th>
+<th>判对率</th>
+<th>纯度 P</th>
+<th>净留存 R</th>
+<th>脏剔除 NR</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>训练池 n=1168</td>
-<td>MLP</td>
+<td>训练数据(1168 段)</td>
+<td>现役</td>
 <td>0.693</td>
 <td>0.851</td>
 <td>0.317</td>
@@ -189,15 +213,15 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td></td>
-<td>LLM v2</td>
+<td>语言模型</td>
 <td>≈1.00</td>
 <td>≈1.00</td>
 <td>≈1.00</td>
-<td>≈1.00(记忆,GRPO 采样实测)</td>
+<td>≈1.00(全部背熟——见下)</td>
 </tr>
 <tr>
-<td>金标卷 n=459</td>
-<td>MLP</td>
+<td>金标卷(459 段)</td>
+<td>现役</td>
 <td>0.632</td>
 <td>0.600</td>
 <td>0.168</td>
@@ -205,23 +229,23 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 <tr>
 <td></td>
-<td>LLM v2</td>
+<td>语言模型</td>
 <td>0.693</td>
 <td>0.602</td>
 <td><strong>0.626</strong></td>
 <td>0.736</td>
 </tr>
 <tr>
-<td>40 盲评(全新)</td>
-<td>MLP</td>
+<td>40 段盲评(全新)</td>
+<td>现役</td>
 <td>—</td>
 <td>0.875</td>
-<td>不可测*</td>
-<td>不可测*</td>
+<td>测不了*</td>
+<td>测不了*</td>
 </tr>
 <tr>
 <td></td>
-<td>LLM v2</td>
+<td>语言模型</td>
 <td>0.700</td>
 <td><strong>0.926</strong></td>
 <td>0.714</td>
@@ -229,52 +253,60 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tr>
 </tbody>
 </table>
-<p>* 盲评样本 = MLP 判 pass 的段,其拒绝侧未被采样。</p>
-<p>盲评分类细节:MLP pass 侧 6 类 5/5 全对(punch/walk/crouch/handshake/wave/cross),
-clap 4/5,<strong>kick 1/5</strong>;LLM 抓住 kick 4 条漏网脏中的 3 条,同时在其他类产生 10 次误报。
-组合判官(双 pass 才放行)纯度 0.875→0.926,留存 −30%。</p>
+<p>* 盲评的 40 段全是现役判定器"判净"的段,它的拒绝侧没有样本,故只能测判净侧。</p>
+<p>三个值得单独说的观察:</p>
+<ul>
+<li><strong>语言模型在训练数据上全对不是本事,是背诵</strong>——正因为背得太熟,强化学习阶段(先试
+  GRPO 算法,再试 GSPO 算法加"脏区间报得准不准"的奖励)完全没有可学的错误:同一段采样
+  8 个回答,8 个全对且几乎逐字相同,奖励无差别,更新量为零。</li>
+<li>金标卷上,两个判定器纯度打平(0.60 对 0.60),但<strong>语言模型多留住近 4 倍的干净段</strong>
+  (0.626 对 0.168)——现役判定器天生保守(宁可错杀),语言模型天生均衡。</li>
+<li>盲评里现役判定器的判净可信度分布极端:6 个类 5/5 全对、拍手 4/5,<strong>踢腿只有 1/5</strong>——
+  踢腿是它的已知短板(该类的"高动态是否算脏"标准仍待裁定);语言模型恰好在踢腿上抓回
+  3 条漏网的脏段,在其他类则多报了 10 次假警报。</li>
+</ul>
 <h2 id="analysis">Analysis</h2>
 <ul>
-<li>测量:表示假设成立——同一编码器的连续令牌换掉 VQ 码字,8 类中 6 类上涨、均值比
-  +14pp;语言侧(CoT 说对区间与病因)在第四臂已明显可用,但对全新段仍有套用训练话术的
-  幻觉,理由文本只可参考、以视频为准。</li>
-<li>测量:RL 无信号的机制是<strong>可验证奖励被 SFT 记忆吞尽</strong>——1128 条的 verdict 与区间文本
-  均为训练目标;GSPO/GRPO 之别不改变此结构。半量切分(SFT/RL 条目零交叠各 ~564)实验
-  进行中,<code>待补报</code>。</li>
-<li><strong>user 判断(2026-08-25)</strong>:LLM 上限更高。支撑证据:开箱均衡性(金标 R 0.626 vs
-  0.168)、与 MLP 失误不重叠(kick 否决价值已在盲评实证)、可扩杠杆未用尽(更大基座、
-  未背过的新标注作 RL 燃料、混合判官);反向证据:逐类调档后 MLP 仍在 4 类领先、LLM
-  校准两极化无操作点。此判断标注为方向性决策,非已证结论。</li>
-<li>next(user 已定向):半量切分 GSPO 出结果补报;新增标注(盲评 40 判定已落库、Nolan
-  复审进行中)作为未记忆 RL 燃料的天然来源。</li>
+<li>测量结论:四个版本的对照说明,决定语言模型判定器成败的是<strong>动作以什么形式进入模型</strong>——
+  离散化(四舍五入到 512 个码字)丢掉的细节,正是判净脏所需要的;换成无损的连续向量后,
+  一个 25 倍大的语言模型才真正发挥出来。</li>
+<li>测量结论:语言模型给出的文字理由在训练数据覆盖的模式上是准确的(能报对脏区间的起止
+  秒数和病因),但对全新数据偶尔会照搬训练里见过的句子——<strong>理由文字可作参考,不可单独
+  当证据,以视频复核为准</strong>。</li>
+<li><strong>user 判断(2026-08-25,方向性决策,非已证结论)</strong>:语言模型路线的上限更高。支撑:
+  开箱即均衡(净留存高 4 倍)、与现役判定器的错误不重叠(踢腿否决价值已在盲评实证)、
+  可加码的空间还没用完(更大的模型、新增标注做强化学习燃料、两个判定器组合使用)。
+  反面:现役判定器逐类调阈值后仍在 4 个类领先,且语言模型的输出概率两极化,没有"调松
+  调紧"的旋钮。</li>
+<li>next(user 已定向):数据对半切分的强化学习补救实验出结果后补报;盲评产生的 40 条新
+  标注与协作者复审中的 52 条,将作为语言模型没有背过的新题,供下一轮强化学习使用。</li>
 </ul>
 <h2 id="appendix">Appendix</h2>
 <details>
-<summary>头条数字代入式与证据路径</summary>
+<summary>头条数字的代入式与证据路径</summary>
 <ul>
-<li>clap v2 反超:0.909(LLM)vs 0.700(MLP)= 130%;4 类过 90% 线 → 判据 PASS</li>
-<li>盲评 MLP pass 纯度 = 35/40 = 0.875;LLM pass 纯度 = 25/27 = 0.926;组合 = 25/27→(去
-  2 条 LLM 误放)= 0.926</li>
-<li>阶梯均值:T5+VQ 55% → Qwen+VQ 73% → 连续 v1 87% → v2 94%</li>
-<li>证据档(<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>):
-  <code>g1motiongpt_judge_sft_probe_2026-08-25</code>(T5)、<code>qwen_judge_sft_probe_2026-08-25</code>(VQ)、
-  <code>qwen_judge_latent_line_2026-08-25</code>(v1/v2+GRPO 饱和)</li>
-<li>ckpt:<code>logs/g1_motiongpt/qwen_judge_latent_v{1,2}/</code>;数据集
-  <code>data/processed/g1mgpt_judge_sft_v1/</code>(judge_tasks.jsonl + segment_latents.npz + manifest)</li>
-<li>盲评:<code>outputs/g1_motiongpt/mlp_pass40_blind_{ids.txt,meta.json}</code>,判定在标注库
-  (reviewer=hans,2026-08-25 批次)</li>
+<li>拍手类反超:语言模型 0.909 ÷ 现役 0.700 = 130%;达标类数 4 ≥ 判据 3 → PASS</li>
+<li>盲评判净可信度:现役 = 35 真净 ÷ 40 判净 = 0.875;语言模型 = 25 ÷ 27 = 0.926</li>
+<li>四版本平均(相对现役判定器):55% → 73% → 87% → 94%</li>
+<li>证据档:<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>
+  (<code>g1motiongpt_judge_sft_probe</code> = 版本1,<code>qwen_judge_sft_probe</code> = 版本2,
+  <code>qwen_judge_latent_line</code> = 版本3/4与强化学习饱和记录)</li>
+<li>模型:<code>logs/g1_motiongpt/qwen_judge_latent_v{1,2}/</code>;训练数据集
+  <code>data/processed/g1mgpt_judge_sft_v1/</code>;盲评名单
+  <code>outputs/g1_motiongpt/mlp_pass40_blind_{ids.txt,meta.json}</code>,人工判定已入标注库</li>
 </ul>
 </details>
 <details>
 <summary>已知限制</summary>
 <ul>
-<li>全部金标卷数字为扫描上限口径;LLM 臂校准两极化(中间带 ≤0.03),P@R 前沿实际退化为
-  硬判点。</li>
-<li>盲评 n=40 且按 MLP pass 侧选段,对 MLP 只测得单侧纯度;LLM 的 NR 在 5 个负例上估计
-  (±0.2 量级)。</li>
-<li>v2 的 clap/handshake 反超尚未过重切分电池与认证工序;与 MLP 的可比性受"无操作点可调"
-  限制。</li>
-<li>CoT 理由文本存在训练话术迁移(例:对全新段复述"但是是left hand"),不构成独立证据。</li>
+<li>金标卷数字全部是"考卷上挑最优阈值"的乐观口径,只作模型之间的相对比较,不是对外可
+  引用的交付成绩(交付需预固定参数后在未见过的数据上盲测)。</li>
+<li>盲评只有 40 段且按现役判定器的判净侧取样;语言模型的脏剔除率只由 5 个脏例估出,误差
+  可达 ±0.2。</li>
+<li>拍手/握手两类的反超还没有做"换考卷重考"的稳健性检验(此前经验:单卷领先可能是考卷
+  抽样的运气)。</li>
+<li>语言模型输出的判净概率两极化(几乎只有 0 和 1),意味着无法像现役判定器那样通过调
+  阈值在"纯度优先"和"留存优先"之间切换。</li>
 </ul>
 </details>
 </main>
