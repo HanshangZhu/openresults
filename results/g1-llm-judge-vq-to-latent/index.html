@@ -42,7 +42,9 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <li><strong>强化学习阶段没有产生任何提升,原因查清了</strong>:监督训练已经把全部 1128 条训练答案
   (判定和脏区间)背得一字不差,强化学习给它出的题它全部答对,没有错误可学,梯度为零。
   这不是算法选错,是训练数据全部用尽后的必然;补救实验(把数据切成两半,一半只用来监督
-  训练、另一半留给强化学习)正在进行,结果另行补报。</li>
+  训练、另一半留给强化学习)已完成,结果见 Results 的"对半切分补救实验"小节:<strong>只靠
+  对错和区间重叠两个分数(不给文字答案)喂第二半数据,判定纯度和时间定位双双追平
+  "第二半也逐字喂"的全量监督</strong>——没有超过,但证明了便宜的分数监督能顶替昂贵的文字标注。</li>
 <li><strong>40 段全新数据盲评(标注者逐段人工判定)</strong>:现役判定器"最有信心是干净"的段里,真干净
   的占 87.5%——其中 6 个类 5 条全对,但踢腿类 5 条里 4 条实际是脏的;语言模型判定器在
   同一批段上,判"干净"的段里真干净的占 92.6%,并抓住了那 4 条漏网脏踢里的 3 条。
@@ -173,8 +175,8 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <tr>
 <td>强化学习有效</td>
 <td>奖励在训练数据上未饱和</td>
-<td>全部样本奖励恒为满分,零梯度</td>
-<td>无信号,记 N/A</td>
+<td>全量数据上奖励恒为满分,零梯度;对半切分后恢复有效梯度</td>
+<td>全量记 N/A;补救实验见 Results</td>
 </tr>
 </tbody>
 </table>
@@ -254,6 +256,53 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 </tbody>
 </table>
 <p>* 盲评的 40 段全是现役判定器"判净"的段,它的拒绝侧没有样本,故只能测判净侧。</p>
+<h3 id="2026-08-25">对半切分补救实验(2026-08-25 补报)</h3>
+<p>把 1128 条训练标注切成两半:563 条只做监督训练(得到"半量监督"模型),另外 565 条模型
+从未逐字见过、只通过强化学习的对错奖励接触(在半量监督模型上继续训练 400 步,得到
+"半量+强化"模型)。奖励 = 判定对错 + 报出的脏区间与人工标注区间的重叠度。起初仍无梯度
+(采样出的回答组内完全相同,组内没有对比),改为按整批的平均奖励做基准后恢复有效更新。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>见到的标注</th>
+<th>判定纯度 P@R≥0.4(8 类平均)</th>
+<th>脏区间时间定位(重叠度,112 段三方配对)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>半量监督</td>
+<td>563 条逐字</td>
+<td>0.613</td>
+<td>0.484</td>
+</tr>
+<tr>
+<td>半量+强化</td>
+<td>563 条逐字 + 565 条只给分数</td>
+<td>0.646</td>
+<td>0.607</td>
+</tr>
+<tr>
+<td>全量监督(版本 4)</td>
+<td>1128 条逐字</td>
+<td>0.652</td>
+<td>0.595</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>两个指标上,半量+强化都追平了全量监督</strong>(纯度 0.646 对 0.652,定位 0.607 对
+  0.595),而它对第二半数据只见过两个数字(判定对错、区间重叠度),从没见过那些标注的
+  文字内容。同样的信息换成逐字监督(全量)并不更好——<strong>第二半标注的价值,用便宜的
+  分数形式就能全部兑现</strong>。</li>
+<li><strong>时间定位的病根被两条路各自修好了一半以上</strong>(0.484 → 约 0.6)。背景是 40 段盲评后
+  标注者的观察——模型"病因说得对、时间点是错的"(典型例:人工标注 2.6–3.2 秒抖脚,
+  模型写 0–0.37 秒抖脚,病因词一字不差、位置差 2.5 秒);错时间戳几乎全是"0 到零点几
+  秒"的段头句式,即训练评论里最常见的区间模式被当默认答案背了出来。多见一倍区间文本
+  (全量监督)和直接奖励区间重叠(强化学习)都能纠这个偏,幅度相当;两条路没有叠加
+  测试过(在全量监督之上已无剩余数据可做强化学习——这正是最初饱和的原因)。</li>
+</ul>
 <p>三个值得单独说的观察:</p>
 <ul>
 <li><strong>语言模型在训练数据上全对不是本事,是背诵</strong>——正因为背得太熟,强化学习阶段(先试
@@ -278,8 +327,9 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
   可加码的空间还没用完(更大的模型、新增标注做强化学习燃料、两个判定器组合使用)。
   反面:现役判定器逐类调阈值后仍在 4 个类领先,且语言模型的输出概率两极化,没有"调松
   调紧"的旋钮。</li>
-<li>next(user 已定向):数据对半切分的强化学习补救实验出结果后补报;盲评产生的 40 条新
-  标注与协作者复审中的 52 条,将作为语言模型没有背过的新题,供下一轮强化学习使用。</li>
+<li>next(user 已定向):盲评产生的 40 条新标注与协作者复审中的 52 条,将作为语言模型没有
+  背过的新题,供下一轮强化学习使用;另有更大规模动作数据的基座继续预训练在集群上筹备中,
+  完成后重跑本报告的全套考卷。</li>
 </ul>
 <h2 id="appendix">Appendix</h2>
 <details>
@@ -290,7 +340,12 @@ summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
 <li>四版本平均(相对现役判定器):55% → 73% → 87% → 94%</li>
 <li>证据档:<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code>
   (<code>g1motiongpt_judge_sft_probe</code> = 版本1,<code>qwen_judge_sft_probe</code> = 版本2,
-  <code>qwen_judge_latent_line</code> = 版本3/4与强化学习饱和记录)</li>
+  <code>qwen_judge_latent_line</code> = 版本3/4与强化学习饱和记录,
+  <code>qwen_judge_blind40_span_probe</code> = 时间点错/病因对的量化探针,
+  <code>qwen_judge_half_gspo_result</code> = 对半切分补救实验)</li>
+<li>补救实验模型:<code>logs/g1_motiongpt/qwen_judge_half_gspo/</code>;时间定位重叠度=区间交并比,
+  配对口径:金标判脏、三个模型都判脏、且金标与三个模型都有数字区间的 112 段
+  (整段脏的行不参与)</li>
 <li>模型:<code>logs/g1_motiongpt/qwen_judge_latent_v{1,2}/</code>;训练数据集
   <code>data/processed/g1mgpt_judge_sft_v1/</code>;盲评名单
   <code>outputs/g1_motiongpt/mlp_pass40_blind_{ids.txt,meta.json}</code>,人工判定已入标注库</li>
