@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>G1 判定器 RL 算法电池与时间戳注入 — 一夜七实验的整合结论</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-26-rl-algorithm-battery-and-timestamp-line.md</code></p>
+<h1 id="g1-rl">G1 判定器 RL 算法电池与时间戳注入 — 一夜七实验的整合结论</h1>
+<p>背景一句话:语言模型判定器(动作连续向量 + Qwen2.5-1.5B)上,我们用同一份数据、同一个
+奖励、同一个起点,对五种强化学习算法做了受控对比,并验证了"输入端时间戳注入"这一格式
+改动;所有实验为 user 会话内逐项确认后执行。</p>
+<h2 id="conclusion">Conclusion</h2>
+<ul>
+<li><strong>时间戳注入是本夜最大的单点收益</strong>:动作序列每 1 秒插一个文本时间标签(零新参数),
+  仅此一项就把脏区间定位重叠度从 0.515 提到 0.609,追平"训练数据翻倍"的效果;该格式
+  已按 user 裁定烤入集群大规模预训练。</li>
+<li><strong>算法排序(3 seeds 确认头尾)</strong>:GSPO 0.664±0.008 &gt; GRPO 0.636 &gt; 无RL基线 0.625 ≈
+  PPO 0.624 &gt; SAO 0.601 &gt; DAPO 0.595±0.010。GSPO 对 GRPO、对基线的优势均超出种子方差
+  数倍——<strong>"GSPO 比 GRPO 好"在本设置成立</strong>;critic 类算法(PPO/SAO)在小预算下因价值
+  估计学不准而无增益;DAPO 因去掉 KL 锚在 400 步内漂移垫底。</li>
+<li><strong>定位天花板与算法无关</strong>:七个模型的定位重叠度全部落在 0.55-0.63;标注端点抖动模拟
+  显示 ±0.3~0.5 秒的人工模糊下完美定位器也只能得 0.58-0.67——现有考卷已量不出更好的
+  定位,改进方向是换合成拼接考卷,不是换算法。</li>
+<li><strong>奖励设计是判定侧的真瓶颈</strong>:7/8 个类"闭眼全判脏"的期望奖励高于诚实判别(kick 基率
+  80% 时 0.84 对 0.20),所有 RL 臂在弱类上一致学会弃疗;唯一基率平衡的 handshake
+  (47%)恰是 RL 唯一干净起飞的类(纯度 0.9-1.0)。类平衡奖励是下一轮的首要修改。</li>
+</ul>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:同一判定任务上,(a)五种 RL 算法的真实排序;(b)输入端时间标签能否替代
+数据量/RL 修复时间定位;(c)判定与定位各自的瓶颈在哪一层。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>本报告 operational definition</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>起点模型 half-TS</td>
+<td>563 条标注(半量)+时间戳格式监督训练出的判定器</td>
+<td>RL 各臂的共同初始化;另一半 565 条只以奖励形式接触</td>
+</tr>
+<tr>
+<td>判定主指标</td>
+<td>P@R≥0.4:保住 ≥40% 真净段前提下的最高纯度,8 类金标卷平均</td>
+<td>乐观口径,仅模型间比较;交付另按高纯度档(user 2026-08-26 裁定)</td>
+</tr>
+<tr>
+<td>定位重叠度</td>
+<td>模型报的脏区间与人工标注区间的交并比,多方同段配对</td>
+<td>上限受标注端点模糊(±0.3-0.5s)封顶,见噪声地板</td>
+</tr>
+<tr>
+<td>奖励</td>
+<td>判定对错(1.0)+ 0.5×区间重叠度</td>
+<td>五臂完全相同;其基率套利缺陷即第 4 条结论</td>
+</tr>
+<tr>
+<td>死组</td>
+<td>组内采样奖励全同 → 组相对优势为零、该组零梯度</td>
+<td>GRPO/GSPO 原生问题;DAPO 动态采样与批级基线是两种解法</td>
+</tr>
+</tbody>
+</table>
+<h2 id="method">Method</h2>
+<p>五臂共同点:起点 half-TS、RL 数据 565 条(模型未逐字见过)、每步 32 条序列、400 步、
+温度 1.4、lr 1e-6。差异仅在算法机制:</p>
+<table>
+<thead>
+<tr>
+<th>臂</th>
+<th>优势估计</th>
+<th>比率/裁剪</th>
+<th>KL</th>
+<th>采样</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GRPO</td>
+<td>组内均值/方差</td>
+<td>token 级 ±0.2</td>
+<td>0.02</td>
+<td>4 组×8</td>
+</tr>
+<tr>
+<td>GSPO</td>
+<td>组内均值/方差</td>
+<td><strong>序列级</strong> ±0.1</td>
+<td>0.02</td>
+<td>4 组×8</td>
+</tr>
+<tr>
+<td>PPO</td>
+<td>critic(冻结特征线性探针)</td>
+<td>token 级 ±0.2</td>
+<td>0.02</td>
+<td>32×1</td>
+</tr>
+<tr>
+<td>DAPO</td>
+<td>组内 + <strong>死组动态重采(≤3 次)</strong></td>
+<td>token 级 -0.2/+0.28,全 token 聚合</td>
+<td>无</td>
+<td>4 组×8</td>
+</tr>
+<tr>
+<td>SAO 移植</td>
+<td>critic 高频更新</td>
+<td>token 级 ±0.1</td>
+<td>无</td>
+<td>32×1(异步 N/A)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion(预注册)</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>头尾分离需确认</td>
+<td>差距 ≥0.08 → 各补 2 seed</td>
+<td>GSPO-DAPO 差 0.069,种子方差 ~0.01</td>
+<td>补种后 <strong>分离确认</strong></td>
+</tr>
+<tr>
+<td>时间戳注入有效</td>
+<td>定位显著高于 half-SFT 0.515</td>
+<td>0.609(与 v2 全量 0.609 持平)</td>
+<td><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>确认记录与偏离</summary>
+<p>电池 spec、TS-GSPO spec、裁剪增广 spec 均为 user 会话内原文确认("再加一个GRPO VS GSPO
+VS PPO VS DAPO VS SAO 对照实验"/"先挂上TS-GSPO"/三 spec 回贴确认)。偏离记录:GSPO 序列
+级裁剪 ±0.1 为实现选择(论文用更小范围);SAO 异步机制单卡不可复现,记 N/A;GSPO 补种子
+首跑死于奖励解析边角(生成文本以 VERDICT: 结尾),修复后重跑。首夜另有两项负结果:随机
+裁窗增广 0.563(合成 pass 文本淹没)、投影 warmup 课程 0.551、prediction 混料 0.576,
+均单 seed。首尾残留抢救(user 原始设计,140 条过 MLP 静音门)0.630,小胜基线。</p>
+</details>
+<h2 id="results">Results</h2>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>判定 P@R≥0.4</th>
+<th>seeds</th>
+<th>定位 IoU(127 段七方配对)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GSPO</strong></td>
+<td><strong>0.664 ± 0.008</strong></td>
+<td>3</td>
+<td>0.580</td>
+</tr>
+<tr>
+<td>TS-GSPO(批级基线参照)</td>
+<td>0.657</td>
+<td>1</td>
+<td>0.554</td>
+</tr>
+<tr>
+<td>GRPO</td>
+<td>0.636</td>
+<td>1</td>
+<td>0.586</td>
+</tr>
+<tr>
+<td>half-TS 基线(无 RL)</td>
+<td>0.625</td>
+<td>—</td>
+<td>0.569</td>
+</tr>
+<tr>
+<td>PPO</td>
+<td>0.624</td>
+<td>1</td>
+<td>0.561</td>
+</tr>
+<tr>
+<td>SAO 移植</td>
+<td>0.601</td>
+<td>1</td>
+<td>0.555</td>
+</tr>
+<tr>
+<td>DAPO</td>
+<td>0.595 ± 0.010</td>
+<td>3</td>
+<td>0.592</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>判定侧:GSPO 三种子稳定第一;所有 RL 臂共享 kick/walk 留存塌陷(walk R 0.18-0.36)。</li>
+<li>定位侧:七方 0.554-0.592,分布宽度小于种子噪声——<strong>与算法无关</strong>。</li>
+</ul>
+<h2 id="analysis">Analysis</h2>
+<ul>
+<li>测量结论:序列级比率(GSPO)在短输出、小 LoRA 设置下优于 token 级(GRPO),且组相对
+  优势优于弱 critic;KL 锚在 400 步小预算内是稳定器(DAPO 去 KL 即漂移)。</li>
+<li>测量结论:时间定位的改进空间已被考卷测量精度封顶;判定的改进空间被奖励结构封顶——
+  <strong>两个瓶颈都不在模型容量</strong>,这与"规模预训练前先修后训练方法"的 user 判断一致。</li>
+<li><span style="color:#9a6b15">draft</span> 下一步优先级(待 user 审定):①类平衡+对称
+  奖励的 GSPO 重跑(spec 已出待确认);②合成拼接考卷裁决定位真实上限;③集群 stage-A
+  预训练(进行中)完成后重考全套。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>证据路径与复现</summary>
+<ul>
+<li>五臂 checkpoint:<code>logs/g1_motiongpt/qwen_judge_rl_battery/&lt;algo&gt;[_s&lt;seed&gt;]/</code>
+  (各含 evidence.json:算法参数、裁剪、KL、实现注记)</li>
+<li>逐类成绩单:evidence ledger <code>qwen_judge_*</code> 字段与本仓库 scratchpad 的
+  <code>bat_*_gold_results.json</code>;时间戳/抢救/负结果各实验:<code>qwen_judge_ts_probe</code>、
+  <code>rl_reward_degenerate_landscape</code>、<code>span_exam_noise_floor_probe</code> 等字段,
+  均在 <code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code></li>
+<li>训练脚本:battery=<code>rl_battery.py</code>(ALGO/SEED/OUT_DIR 环境变量),时间戳系
+  <code>train_qwen_half_ts.py</code> 族;评测 <code>eval_qwen_ts.py</code>(时间戳同构拼接)</li>
+<li>头条数字代入:GSPO 3 seeds (0.675+0.659+0.658)/3=0.664;DAPO (0.581+0.601+0.602)/3=0.595;
+  分离 0.664-0.595=0.069 ≈ 7×种子std</li>
+</ul>
+</details>
+<details>
+<summary>已知限制</summary>
+<ul>
+<li>除 GSPO/DAPO 外各臂单 seed;中段排序(GRPO/PPO/SAO 间 ~0.03 的差)不可分辨。</li>
+<li>PPO/SAO 用线性探针 critic(冻结特征),非完整微调 critic——它们的垫底反映的是
+  "小预算下 critic 难学",不能外推到大预算全参数设置。</li>
+<li>本报告为纯离线数值分析(判定器评测),无物理执行,按规则免 rollout 视频。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
