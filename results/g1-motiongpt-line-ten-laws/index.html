@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="../../../Research/VAD_Alignment/report/G1_MotionGPT/">
+<title>G1-MotionGPT 线大总结:十条经验规律(2026-08-29)</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>report/G1_MotionGPT/2026-08-29-motiongpt-line-retrospective-ten-laws.md</code></p>
+<h1 id="g1-motiongpt-2026-08-29">G1-MotionGPT 线大总结:十条经验规律(2026-08-29)</h1>
+<p>背景一句话:我们在清洗一个人形机器人(Unitree G1)动作数据集,把预训练语言模型改造成
+"动作段审查员"——读一段动作,判干净/脏,并写出问题区间与病因。本文总结这条线
+(2026-08 下旬密集战役)沉淀出的十条经验规律,每条给证据数字和适用边界。</p>
+<h2 id="problem-and-terminology">Problem and terminology</h2>
+<p>研究问题:把小型预训练语言模型改造成动作段审查员,哪些设计选择真正影响判定质量,
+哪些直觉在受控实验下不成立。</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stage-A</td>
+<td>动作向量注入 Qwen 的动作-语言预训练(BONES-SEED 142k + BABEL 13k 描述/定位任务)</td>
+<td>不含判定标签</td>
+</tr>
+<tr>
+<td>stage-B</td>
+<td>2,437 段人工 pass/fail(fail 带区间+病因文本)上的 LoRA 判定微调</td>
+<td>唯一见判定标签的阶段</td>
+</tr>
+<tr>
+<td>verdict AUC ↑</td>
+<td>370 段 held-out(按源 entry 分组)上 P(fail) 首 token 的 ROC-AUC</td>
+<td>val 被逐 epoch 观察,非冻结 test 集</td>
+</tr>
+<tr>
+<td>mid 探针</td>
+<td>冻结模型中层在动作 token 位置均值池化 + 逻辑回归 5 折,442 段 kick 考卷 AUC</td>
+<td>测内部信息量;已证不可预测微调终分(规律 7)</td>
+</tr>
+<tr>
+<td>conv-AE / HBERT 前端</td>
+<td>动作编码器:卷积自编码 512 维 vs HumanoidBERT 双向注意力 1536 维</td>
+<td>HBERT v1(自蒸馏)已淘汰,本文 HBERT 均指 v0</td>
+</tr>
+<tr>
+<td>R@P90 ↑</td>
+<td>判脏 precision≥0.90 时的判脏 recall(十判一错时能自动剔多少脏)</td>
+<td>依赖底率,本卷脏占 49%</td>
+</tr>
+<tr>
+<td>MMLU 守门</td>
+<td>456 题四选一,语言能力保持读数;守门线 0.557(裸底座 0.577)</td>
+<td>只测语言,不测判定</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_1">管线形态(读懂规律所需的最小背景)</h2>
+<ul>
+<li><strong>动作编码前端</strong>:动作序列(关节角/速度/连杆位置,20Hz)→ 编码器(conv-AE 512 维,或
+  HumanoidBERT 双向注意力 1536 维)→ 每 0.2 秒一个连续向量。</li>
+<li><strong>stage-A(动作-语言预训练)</strong>:把动作向量当"词"插进 Qwen2.5-1.5B 的输入流,在
+  155k 段动作描述/定位任务(BONES-SEED + BABEL)上训练,LLM 学会"读动作"。</li>
+<li><strong>stage-B(判定微调)</strong>:在 2,437 段人工 pass/fail(fail 带区间+病因文本)上 LoRA 微调,
+  LLM 学会"判动作"。评测 = 370 段 held-out(按源 entry 分组防泄漏)verdict AUC。</li>
+<li><strong>生产版</strong>:stage-B v2(fail 标签文本经改写重训),val AUC 0.888,90% 判脏准度下自动
+  剔除约六成脏段。</li>
+</ul>
+<h2 id="_2">十条规律</h2>
+<h3 id="1-15b">1. 语言能力与动作判定在 1.5B 里抢地盘,没有配置两头兼得</h3>
+<ul>
+<li>完整前沿:LoRA r32(判定 0.889 / MMLU 0.471,破守门线)↔ 全参(0.839 / 0.564)↔
+  全参+KL(0.818 / 0.575)。判定每涨一档,语言掉一档,反之亦然。</li>
+<li>容量归因证据:文本锚配比 0.15→0.50 对 LoRA 的 MMLU 无效(0.48-0.50 平坦),换全参立刻
+  +5pp——语言保持是容量问题,不是数据配比问题。</li>
+<li>边界:仅在 ~1.5-4B 小模型上验证;判定器当纯打分器用时语言破线无实际伤害。</li>
+</ul>
+<h3 id="2-lora">2. LoRA 不只是够用,是最优;约束越松判定越好</h3>
+<ul>
+<li>同前端同数据同学习率(1e-5)下终分单调:r32(0.883)&gt; r128(0.861)&gt; 全参(0.839)&gt;
+  全参+KL(0.818)。</li>
+<li>反直觉的一半:KL 与全参<strong>保住了冻结特征</strong>(全参+KL 的探针比全参高 2.9pp)却<strong>降低了
+  微调终分</strong>——约束保护表征几何,同时降低可塑性(与规律 7 同源)。</li>
+<li>边界:结论属于"2.4k 样本判定微调"这个数据规模;数据大一个量级后是否仍单调未测。</li>
+</ul>
+<h3 id="3-humanoidbert">3. HumanoidBERT 双向前端条件性有用,前端与学习率有交互</h3>
+<ul>
+<li>统一 1e-5 下 HBERT 压 conv-AE:r32 臂 +2.1pp(0.883 vs 0.862),r128 臂打平
+  (0.861 vs 0.864);而在 1e-4 与全参配方下前端无增益(stage-A 四读数逐位持平)。</li>
+<li>反例记录:HBERT v1(逐关节 token + 自蒸馏)训练后低于自身随机初始化(0.720 &lt; 0.746),
+  自蒸馏在此配置下表征塌缩,放大方向关账。</li>
+<li>边界:+2.1pp 在单切分噪声(±2.5pp)门槛边上,"方向性支持"而非坐实;需第二切分。</li>
+</ul>
+<h3 id="4-babelbones-stage-a">4. 针对 BABEL/BONES 大幅动作预训练(stage-A)有特征层证据,终分级对照缺失</h3>
+<ul>
+<li>特征层:stage-A 把判裁相关内部特征抬进 0.79 档(30k→60k 递进),六个进入 stage-B 的
+  底座全部带 stage-A。</li>
+<li>诚实标注:<strong>"无 stage-A 直接 stage-B"的对照从未跑过</strong>(动作投影层由 stage-A 训练,
+  跳过它需改协议),该规律在终分层面待补对照。</li>
+</ul>
+<h3 id="5-080">5. 段内信息天花板约 0.80:换表征已榨干,剩余误差不在特征里</h3>
+<ul>
+<li>五种模态/架构冻结特征在同一张 442 段 kick 考卷上收敛:HBERT 0.773、DiT 0.780、
+  282M 预训练动作模型 0.774、<strong>纯像素 V-JEPA2(从未见过关节角)0.774</strong>、stage-A Qwen 0.791。</li>
+<li>三连探针关线:显式加速度/jerk 标量(最高 0.61)、段外结构+边界几何(最高 0.64)、
+  视觉先验(0.774,融合零增量)。</li>
+<li>推论:剩余误差住在语义判断与标签噪声里;标签噪声底(同段盲判自一致率)是整条线上限的
+  最便宜测量,尚未执行。</li>
+</ul>
+<h3 id="6">6. 冻结特征与零样本行为之间有巨大"兑现缺口",判定微调是收账动作</h3>
+<ul>
+<li>同一模型:冻结特征线性可读 0.79,零样本嘴上判定只有 0.58;stage-B 微调后 0.889——
+  信息在,通道原本没打通。</li>
+<li>兑现最大的地方是语义类:punch/wave 在任何冻结特征头上都 ~0.55(死类),判定微调后
+  0.82-0.89——靠"标称动作 × 实际动作比对"这一冻结特征头拿不到的语义通道。</li>
+<li>长期最弱类是 kick(0.78-0.80):病因在细粒度运动学,LLM 通道反而丢精度。</li>
+</ul>
+<h3 id="7">7. 特征质量与可微调性是两个量,探针不能当选型器</h3>
+<ul>
+<li>mid 层探针预测 stage-B 终分的"同序律"曾 4/4 全中,扩到 8 臂后 Spearman 相关 −0.62
+  (预测第一的臂终分垫底)——小样本巧合,已打 SUPERSEDED。</li>
+<li>机制解释与规律 2 的 KL 现象同源:约束提高冻结特征质量、降低微调可塑性,两者解耦。</li>
+</ul>
+<h3 id="8">8. 换底座六战六败,且"别处越聪明,判定越差"</h3>
+<ul>
+<li>统一训法下:Qwen2.5-1.5B(0.883)&gt; Qwen3-1.7B(0.831)≈ Qwen3.5-2B(0.829,22k 步
+  参考臂)&gt; R1-Distill(0.816)&gt; <strong>Phi-4-mini-3.8B(0.779,参数最大、推理基准最亮、垫底)</strong>。</li>
+<li>推理蒸馏系包揽倒数三名;参数量假设同场阵亡(2.5 倍参数反退 10pp)。</li>
+<li>机制假设(待验证):思考型输出习惯与简短判词格式冲突。</li>
+</ul>
+<h3 id="9">9. 别让它想,别听它说:思考与对话在小判定器上是负资产</h3>
+<ul>
+<li>测试时思维链:先分析再判,AUC 从 0.889 跌到 0.669——训练里病因文本只跟在 fail 后面,
+  任何分析样文本都拉高判脏倾向,且被迫思考时会在干净段上编造缺陷。</li>
+<li>小规模 GRPO(每类 20 段):3 分钟收敛为"跳过思考直接给判词"(奖励无思考项,最短路径
+  拿满),链条件 AUC 仅回到 0.700。</li>
+<li>纠错对话:真纠正改口 20/20,<strong>被冤枉也改口 17/20</strong>——85% 是无条件服从。用法结论:
+  判定器当打分器(读 P(fail)),人的纠正直接落库,不经模型确认。</li>
+</ul>
+<h3 id="10">10. 病因文本是双刃剑:密集监督救语义类,风格耦合毒化判决与判词</h3>
+<ul>
+<li>正面:1,147 条"区间+病因"文本是 stage-B 的密集监督,是语义类被救活的原料之一。</li>
+<li>反面之一:病因文本与 fail 标签风格耦合(见规律 9 的思维链病理)。</li>
+<li>反面之二:模型逐字继承标注速记的口癖与元评论(输出过"模型应该判脏"这类标注者旁注)。</li>
+<li>修法已验证:1,147 条标签重述(区间数字逐字保留、删元评论)后重训,AUC 0.8886→0.8883
+  零代价,判词风格病灶清零;原标注永久保留于独立 sidecar。</li>
+</ul>
+<h2 id="_3">生产状态与开放问题</h2>
+<ul>
+<li>生产判定器 = stage-B v2(改写标签版):val AUC 0.888 / acc@0.5 0.811 / 90% 准度剔脏
+  recall ≈ 0.6;已接入抽查前端。</li>
+<li>开放:①标签噪声底盲判(上限测量);②三个 ~0.88 配方需第二切分分序;③规律 4 的
+  无 stage-A 对照;④kick 类的人工保留策略。</li>
+</ul>
+<h2 id="appendix">Appendix</h2>
+<details>
+<summary>证据与产物路径</summary>
+<ul>
+<li>决策级报告:<code>docs/report/2026-08-29-stageb-judge-controlled-battery-and-selection.md</code></li>
+<li>evidence 总账:<code>logs/g1_motiongpt/zhead_multi_punch_real60/evidence_v2cleanexam.json</code></li>
+<li>生产判定器:<code>logs/g1_motiongpt/stageB_judge_v2_rephrase/</code>;改写 sidecar:
+  <code>data/processed/g1mgpt_judge_sft_v1/stageb_targets_rephrased_2026-08-29.json</code></li>
+<li>主要口径:verdict AUC = val 370 段(entry 分组 held-out,训练中被逐 epoch 观察,非冻结
+  test 集)P(fail) 首 token ROC-AUC;探针 = 442 段 kick 考卷冻结特征 5 折。</li>
+<li>基建教训:aarch64 上新架构(Qwen3.5)训练可慢 10 倍;<code>; echo</code> 结尾会把 job 内部崩溃洗成
+  COMPLETED;Gemma-4 逐层输入机制与连续嵌入注入不兼容。</li>
+</ul>
+</details>
+</main>
+</body>
+</html>
