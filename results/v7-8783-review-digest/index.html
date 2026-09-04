@@ -86,6 +86,32 @@ border:1px solid var(--green);border-radius:9px;padding:16px 20px;margin:16px 0}
     cross_arms 穿模需源头修复；punch 漏周期需修复检测算法</li>
 </ul>
 </div>
+
+<h2>八类动作概览</h2>
+<table>
+<thead><tr><th>动作</th><th>审查发现</th></tr></thead>
+<tbody>
+<tr><td><a href="#walk"><b>walk</b></a></td>
+    <td>质量最好。小比例动作有上肢 retarget 抖动；转身段不含周期（设计预期）</td></tr>
+<tr><td><a href="#wave_arms"><b>wave_arms</b></a></td>
+    <td>end-effector 水平方向有周期，竖直方向分量少、识别率低。容易漏切，尤其同一个周期内。
+        rtgt 抖动（不是左右手抖动）。driver-hand 机制不在前端可见，待 Nolan 复核</td></tr>
+<tr><td><a href="#punch"><b>punch</b></a></td>
+    <td>另一只手 guard 时，闲手摆动或拉手会被误记为出拳 → 漏拳。
+        one-strike 队列中 60% 不可用：根因是 periodic 动作漏了周期，被错误丢入 one-strike</td></tr>
+<tr><td><a href="#clap"><b>clap</b></a></td>
+    <td>periodic 全部可用。穿模、坐姿是零星问题。one-strike 废数据和切错占多数</td></tr>
+<tr><td><a href="#kick"><b>kick</b></a></td>
+    <td>periodic ↔ one-strike 互相混入是主要问题。幅度大时助跑侧腿被算入周期；
+        骨盆也动时 one-strike 被拆为 2 个周期。one-strike 本身极少问题</td></tr>
+<tr><td><a href="#crouch"><b>crouch</b></a></td>
+    <td>hold 混入坐姿动作；retargeting 膝盖抖动、手↔腿穿模；少量带起身的 hold；
+        带踮脚的 crouch 脚会有点浮空。one-strike 几乎全部干净</td></tr>
+<tr><td><a href="#bow"><b>bow</b></a></td>
+    <td>hold-bow 没问题。one-strike 的唯一问题是 retarget jitter（28% 有 note）</td></tr>
+<tr><td><a href="#cross_arms"><b>cross_arms</b></a></td>
+    <td>切分全部正确，但 95% 有手臂穿模——retarget 质量问题，不是切分 bug</td></tr>
+</tbody></table>
 <h2>目标与定义</h2>
 <p>对 v7 八动作分割包 <code>babel_soma_semantic_clean_v7_final</code>
    的切刀输出进行人工逐窗审查，回答：各类动作的分割质量是否达到可用标准？
@@ -115,7 +141,7 @@ border:1px solid var(--green);border-radius:9px;padding:16px 20px;margin:16px 0}
     <td>retarget 后肢体几何体互相穿透</td>
     <td>切刀不检测穿模</td></tr>
 <tr><td>晋级-only note</td>
-    <td>“候选对但没选上”，不视为瑕疵（31 条被剥除）</td>
+    <td>仅说明检测结果未被采纳的备注，不视为瑕疵（31 条被剥除）</td>
     <td>clap periodic 21 + punch periodic 10</td></tr>
 </tbody></table>
 <h2>跨类 Failure Mode 总览</h2>
@@ -377,7 +403,7 @@ border:1px solid var(--green);border-radius:9px;padding:16px 20px;margin:16px 0}
 </div>
 <h2 id="clap">clap</h2>
 <div class="contract"><b>切刀合同</b>：一拍一条。按本窗条数分队列（同 punch）。收回准备位是闭合。</div>
-<div class="finding">34 窗（periodic 28 + one-strike 6）。periodic 全部投了单次实例（100%），但 21 条晋级-only note 被剥除——这些都是“候选对了但没选上”的备注，不是瑕疵。有效瑕疵只有 rtgt jitter 3 条和穿模 1 条。one-strike 则问题较多：4/6 neither（坐姿、废数据、切错）。</div>
+<div class="finding">34 窗（periodic 28 + one-strike 6）。periodic 全部投了单次实例（100%），21 条晋级-only note 被剥除（仅说明检测结果未被采纳，不是瑕疵）。有效瑕疵只有 rtgt jitter 3 条和穿模 1 条。one-strike 则问题较多：4/6 neither（坐姿、废数据、切错）。</div>
 <h3 id="clap_one_strike">clap · one_strike（6 窗）</h3>
 <div class="stat-row"><span>单次实例 <b>2</b></span><span>都不对 <b>4</b></span></div>
 <ul class="failure-list">
