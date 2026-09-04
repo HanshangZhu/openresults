@@ -98,7 +98,8 @@ border:1px solid var(--green);border-radius:9px;padding:16px 20px;margin:16px 0}
         rtgt 抖动（不是左右手抖动）。driver-hand 机制不在前端可见，待 Nolan 复核</td></tr>
 <tr><td><a href="#punch"><b>punch</b></a></td>
     <td>另一只手 guard 时，闲手摆动或拉手会被误记为出拳 → 漏拳。
-        one-strike 队列中 60% 不可用：根因是 periodic 动作漏了周期，被错误丢入 one-strike</td></tr>
+        one-strike 队列中 60% 不可用：根因是 periodic 动作漏了周期，被错误丢入 one-strike。
+        影响切分留存率，但不影响下游 tracker / residual 模块用切分后片段训练</td></tr>
 <tr><td><a href="#clap"><b>clap</b></a></td>
     <td>periodic 全部可用。穿模、坐姿是零星问题。one-strike 废数据和切错占多数</td></tr>
 <tr><td><a href="#kick"><b>kick</b></a></td>
