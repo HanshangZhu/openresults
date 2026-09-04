@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>v7 8783 已审窗消化与切刀特性</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>docs/report/2026-09-04-v7-8783-review-digest-and-cutter-characteristics.md</code></p>
+<h1 id="v7-8783">v7 8783 已审窗消化与切刀特性</h1>
+<blockquote>
+<p>Date/scale: <code>2026-09-04 / babel_soma_semantic_clean_v7_final；已审 314 窗（空判定 2 条丢掉）</code><br>
+Output profile: <code>markdown-project-report</code>（用户要求图文浏览，另渲染 HTML）<br>
+Results profile: <code>dataset-verifier</code><br>
+Verdict: <code>PASS</code>（当前已审样本可用；审查未完成）</p>
+</blockquote>
+<p>在 8783 对照台上读完 v7 已审窗的判定与 comment，并把 walk / hold-crouch / punch-clap / kick 的刀合同写清。用户裁定：当前样本 <strong>PASS，但还需要继续审查</strong>。</p>
+<h2 id="1-conclusion">1. Conclusion</h2>
+<p><strong>PASS——已审 314 窗里单次实例可用占多数；残余问题集中，审查未关账。</strong></p>
+<ul>
+<li>Decisive evidence: Results 主表合计行与图 1。单次实例可用占多数，都不对是少数且集中在 punch / crouch / clap / wave。</li>
+<li>Counter-signal or limitation: 图 2 的残余集中项。wave_arms 仍待 Nolan 复核。</li>
+<li>Not shown: 未审窗的质量；kick 审查页队列尚未按 0.8 s 双脚着地规则改分；本报告不是训练评测。</li>
+<li>Decision: 包可以继续当对照与审查对象。不据此开训。继续审未审窗，并复核 punch / kick 模式混入与 retarget 瑕疵。</li>
+</ul>
+<h2 id="2-problem-and-terminology">2. Problem and terminology</h2>
+<p>v7 八类 50 Hz 包在 8783 上，已审窗是否够用，刀合同是否与审查纸条一致，还剩哪些必须再审的问题？</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Operational definition in this report</th>
+<th>Scope / not to confuse with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单次实例</td>
+<td>v7 导出的一条 unit；本报告投票名 <code>lingfanb</code>。无有效 note = 可用且干净；有有效 note = 可用有瑕疵</td>
+<td>审查页按手/按脚拆开的色块；不是 PCA</td>
+</tr>
+<tr>
+<td>SIGNAL</td>
+<td>8783 上的标量周期对照轨</td>
+<td>不是可部署切刀；SIGNAL 票 = 单次实例还不够好</td>
+</tr>
+<tr>
+<td>PCA</td>
+<td>只作对照波形，不记投票</td>
+<td>不是本轮选定切刀</td>
+</tr>
+<tr>
+<td>蓝框</td>
+<td><code>review_required</code> 待审描边。顺着蓝框做的总结无参考意义</td>
+<td>橙色 candidate；只有 candidate 本身有用</td>
+</tr>
+<tr>
+<td>有效 note</td>
+<td>剥掉「候选对但没被选上 / 没晋级」之后仍剩的 comment</td>
+<td>晋级-only 31 条不当瑕疵</td>
+</tr>
+<tr>
+<td>完整步幅</td>
+<td>两脚各迈一次（L-R-L 或 R-L-R 取最早结束、不重叠的一族）</td>
+<td>左脚一条、右脚一条</td>
+</tr>
+<tr>
+<td>hold</td>
+<td>骨盆低于标称站高 ≥ 6 cm，且 |vz| ≤ 0.08 m/s，连续 ≥ 1.00 s</td>
+<td>全身冻住；手不能动</td>
+</tr>
+<tr>
+<td>punch/clap 真 one-strike</td>
+<td>本窗只有 1 条单次实例；≥ 2 条整窗进 periodic</td>
+<td>v7 字段 <code>one_shot</code> / <code>temporal_type</code></td>
+</tr>
+<tr>
+<td>kick 复位</td>
+<td>双脚着地 → 踢 → 再双脚着地，且下一次踢前双脚空档 <strong>&gt; 0.8 s</strong> 才算 one-strike。悬空停不算复位</td>
+<td>punch 收回准备位即闭合；前端 kick 队列仍跟 unit <code>temporal_type</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-method">3. Method</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Setup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task/data</td>
+<td><code>babel_soma_semantic_clean_v7_final</code>，八类 50 Hz；审查库 <code>pca_tf_review_v7.sqlite3</code></td>
+</tr>
+<tr>
+<td>Target</td>
+<td>窗级最新判定 + 有效 note；蓝框不进结论</td>
+</tr>
+<tr>
+<td>Evaluation</td>
+<td>已审全数 314 窗（最新判定非空）。模式：walk / wave_arms = periodic；punch / clap / kick ≈ 本窗单次实例条数 1 vs ≥2；crouch / bow / cross_arms = hold vs one-strike（按 hold / one_shot 条数）</td>
+</tr>
+<tr>
+<td>Evidence profile</td>
+<td><code>outputs/soma_retarget_review/v7_review_digest/{groups,inventory,examples}.json</code>；刀合同 <code>data/BABEL_SOMA_G1/2026-0903-observation-motion-characteristics.md</code></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Threshold</th>
+<th>Measured</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>已审窗单次实例可用（↑）</td>
+<td>用户裁定：当前样本可通过</td>
+<td>277/314（88.2%）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>都不对（↓）</td>
+<td>无预注册上限；集中度见 Results</td>
+<td>25/314（8.0%）</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>刀合同已落盘</td>
+<td>walk 步幅、hold-crouch、punch/clap 按窗条数、kick ≠ punch</td>
+<td>四条均已写入特性页</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>审查是否关账</td>
+<td>用户要求继续审</td>
+<td>未审窗未覆盖；wave 待 Nolan；kick 队列未改</td>
+<td>MARGINAL</td>
+</tr>
+</tbody>
+</table>
+<details>
+<summary>Differences and Run Spec</summary>
+<h3 id="differences-from-prior-setup">Differences from prior setup</h3>
+<ul>
+<li>审查包从 <code>babel_soma_eight_actions_review_20260831T130654Z</code> 换成 v7 final。</li>
+<li>晋级-only note 不再当瑕疵。</li>
+<li>punch / clap 审查队列按本窗单次实例条数，不跟 v7 <code>temporal_type</code>。</li>
+<li>kick 时间类型按双脚着地空档 0.8 s；8783 前端尚未改。</li>
+</ul>
+<h3 id="run-spec">Run Spec</h3>
+<p>NOT PREREGISTERED — no confirmed Run Spec found after searching: <code>docs/plans/</code>、<code>docs/PROTOCOLS.md</code>、<code>data/SOMA-BABEL/</code>、<code>data/BABEL_SOMA_G1/</code>。本轮是已审窗事后消化 + 刀合同归档。判据表是用户 2026-09-04 当场裁定，不是预先冻结线。</p>
+</details>
+<h2 id="4-results">4. Results</h2>
+<p>采样：已审窗全数，窗级最新判定。聚合：一窗一行。抖动 = 有效 note 含 抖 / 抽动 / jitter / rtgt / retarget。</p>
+<table>
+<thead>
+<tr>
+<th>动作</th>
+<th style="text-align: right;">已审窗</th>
+<th style="text-align: right;">单次实例 ↑</th>
+<th style="text-align: right;">都不对 ↓</th>
+<th style="text-align: right;">SIGNAL</th>
+<th style="text-align: right;">有效 note</th>
+<th style="text-align: right;">抖动 note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>walk</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">4/25</td>
+</tr>
+<tr>
+<td>wave_arms</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">3/30</td>
+</tr>
+<tr>
+<td>punch</td>
+<td style="text-align: right;">35</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">0/35</td>
+</tr>
+<tr>
+<td>clap</td>
+<td style="text-align: right;">34</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">3/34</td>
+</tr>
+<tr>
+<td>kick</td>
+<td style="text-align: right;">68</td>
+<td style="text-align: right;">65</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">1/68</td>
+</tr>
+<tr>
+<td>crouch</td>
+<td style="text-align: right;">59</td>
+<td style="text-align: right;">53</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">8/59</td>
+</tr>
+<tr>
+<td>bow</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">10/41</td>
+</tr>
+<tr>
+<td>cross_arms</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">0/22</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td style="text-align: right;"><strong>314</strong></td>
+<td style="text-align: right;"><strong>277</strong></td>
+<td style="text-align: right;"><strong>25</strong></td>
+<td style="text-align: right;"><strong>12</strong></td>
+<td style="text-align: right;"><strong>104</strong></td>
+<td style="text-align: right;"><strong>29/314</strong></td>
+</tr>
+</tbody>
+</table>
+<p>图 1：已审窗按动作与判定。绿 = 单次实例可用。punch 是都不对与 SIGNAL 最集中的类。</p>
+<p><img alt="已审窗判定构成" src="assets/decision_mix.png"></p>
+<p>图 2：去掉晋级句之后最大的残余问题。决定「还要再审」的是这几档，不是全包均匀差。</p>
+<p><img alt="残余问题占比" src="assets/residual_issues.png"></p>
+<p>切刀合同（与纸条对齐，实现未改标签）：</p>
+<ul>
+<li>walk unit = 有位移的完整步幅（踝世界位移 ≥ 4 cm）。原地踏转可以无 unit；边走边转可以进池。</li>
+<li>hold-crouch = 稳住的低姿，不是冻住。手无单独否决；甩臂常把骨盆 |vz| 抬过 0.08 m/s。</li>
+<li>punch / clap：一下一条；审查队列看本窗条数。收回准备位是这一下的闭合。</li>
+<li>kick：单腿连踢或悬空停仍是 periodic。幅度大时助跑侧腿会被算进周期。</li>
+</ul>
+<h2 id="5-analysis">5. Analysis</h2>
+<ul>
+<li><strong>Finding:</strong> 主表上多数已审窗投单次实例。图 2 的残余按类分开：cross_arms 是 retarget 穿模；punch one-strike 是漏周期把连打丢进该队列；bow / walk / crouch 抖动是质量 note，多数仍标可用。</li>
+<li><strong>Working interpretation:</strong> 刀合同与纸条一致。kick one-strike 与 bow hold 在已审子集上几乎全是单次实例且无大问题 note，和纸条「hold-bow 没问题」对齐。punch 主因不是抖动。</li>
+<li><strong>Unknown:</strong> wave_arms 水平周期、漏切、driver-hand 前端不可见，仍待 Nolan 后复核。kick 前端仍按 <code>temporal_type</code> 排队，与 0.8 s 裁定不一致的窗数未重算。</li>
+<li><strong>Next:</strong> 继续审未审窗。优先 punch 模式混入、kick 队列与助跑腿、crouch sit / 穿模、bow jitter、cross_arms 穿模。wave 等 Nolan。不开训。</li>
+</ul>
+<h2 id="6-appendix">6. Appendix</h2>
+<details>
+<summary>Terms, calculations, evidence, and reproduction</summary>
+<h3 id="worked-examples">Worked examples</h3>
+<pre><code class="language-text">usable = 23+24+20+30+65+53+40+22 = 277
+neither = 0+3+8+4+3+6+1+0 = 25
+SIGNAL  = 2+3+7+0+0+0+0+0 = 12
+277 + 25 + 12 = 314
+usable rate = 277/314 = 0.8822 → 88.2%
+jitter   = 4+3+0+3+1+8+10+0 = 29
+jitter rate = 29/314 = 0.0924 → 9.2%
+promo-only dropped = clap periodic 21 + punch periodic 10 = 31
+</code></pre>
+<h3 id="cutter-characteristics">Cutter characteristics（摘要）</h3>
+<p>来源：<code>data/BABEL_SOMA_G1/2026-0903-observation-motion-characteristics.md</code>。</p>
+<p>walk 实现：<code>src/data_audit/walk_complete_stride.py</code>，配置 <code>cvpr_workspace/configs/walk_complete_stride_v1.json</code>。<br>
+hold-crouch：<code>src/data_audit/full_action_recut.py</code> 的 <code>posture_units</code>；<code>whole_body_stillness_required = false</code>。<br>
+punch/clap 队列：<code>outputs/soma_retarget_review/clap_pca_tf_webapp/index.html</code> 的 <code>typeCount</code>。<br>
+kick 切边界：<code>kick_periodic.py</code>（双脚是否同时着地分尺）。时间类型以特性页为准；书面标准 §4.2 与标签未改。</p>
+<h3 id="representative-waveforms">Representative waveforms</h3>
+<p>橙带 = candidate；青带 = 蓝框待审。PCA 轨只对照。</p>
+<p>punch one-strike 漏周期（<code>CMU__86__86_01#841-1023</code>）：</p>
+<p><img alt="punch missed period" src="assets/punch_os_missed_period.png"></p>
+<p>kick 一下拆成两周期（<code>BMLrub__rub039#769-975</code>）：</p>
+<p><img alt="kick split" src="assets/kick_per_split.png"></p>
+<p>crouch hold 混 sit + 膝抖（<code>BMLmovi Subject_24_F_21#324-377</code>）：</p>
+<p><img alt="crouch sit" src="assets/crouch_hold_sit.png"></p>
+<p>bow one-strike rtgt jitter（<code>ichige apologize#303-390</code>）：</p>
+<p><img alt="bow jitter" src="assets/bow_os_jitter.png"></p>
+<p>cross_arms 手臂穿模（<code>BMLmovi Subject_13_F_14#55-141</code>）：</p>
+<p><img alt="cross_arms penetration" src="assets/cross_hold_pen.png"></p>
+<p>wave 漏切（<code>CMU__15__15_11#890-1174</code>）：</p>
+<p><img alt="wave missed cycle" src="assets/wave_missed_cycle.png"></p>
+<p>walk 上肢/全身轻微抖动（<code>BMLrub rub043 circle_walk#0-732</code>）：</p>
+<p><img alt="walk jitter" src="assets/walk_periodic_jitter.png"></p>
+<p>clap periodic 严重 jitter、周期趋势仍对（<code>kanno applause#1065-1354</code>）：</p>
+<p><img alt="clap jitter" src="assets/clap_per_jitter.png"></p>
+<p>逐原因表与全部 comment：<code>data/BABEL_SOMA_G1/2026-09-04-v7-review-digest.md</code>。</p>
+<h3 id="evidence-and-commands">Evidence and commands</h3>
+<ul>
+<li>Evidence: <code>outputs/soma_retarget_review/v7_review_digest/groups.json</code></li>
+<li>Inventory: <code>outputs/soma_retarget_review/v7_review_digest/inventory.json</code></li>
+<li>Examples: <code>outputs/soma_retarget_review/v7_review_digest/examples.json</code></li>
+<li>Waveforms: <code>outputs/soma_retarget_review/v7_review_digest/waveforms/</code></li>
+<li>Reviews: <code>data/processed/soma_retarget_review/pca_tf_review_v7.sqlite3</code></li>
+<li>Serve: <code>scripts/serve_clap_pca_tf_review.py</code></li>
+<li>Prior 8783 reports: <code>docs/report/2026-09-01-soma-periodic-motion-segmentation-tf-ssa-report.md</code>，<code>docs/report/2026-09-02-soma-periodic-cutter-review-round-archive.md</code></li>
+</ul>
+<h3 id="_1">审查纸条（已确认）</h3>
+<ul>
+<li>crouch hold：sit、膝抖、手↔腿穿模、少量起身、踮脚浮空</li>
+<li>cross_arms：手臂穿模</li>
+<li>hold-bow：没问题</li>
+<li>walk：转身不含周期；上肢抖动是小比例</li>
+<li>punch：guard / 拉手漏到另一只手；one-strike 里混入漏周期的 periodic</li>
+<li>kick：periodic ↔ one-strike 互混；助跑侧腿；骨盆相对地动时一下被拆成两周期</li>
+<li>clap：穿模、坐姿</li>
+<li>bow one-strike：retarget jitter</li>
+<li>wave_arms：初步判断为水平周期；竖直分量少；易漏切；driver-hand 前端不可见</li>
+</ul>
+</details>
+</main>
+</body>
+</html>

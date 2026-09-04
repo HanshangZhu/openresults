@@ -1,5 +1,38 @@
 {
  "results": [
+{
+  "slug": "v7-8783-review-digest",
+  "path": "results/v7-8783-review-digest/",
+  "title": "v7 8783 已审窗消化与切刀特性",
+  "project": "VAD Alignment",
+  "category": "Dataset & Tracker",
+  "date": "2026-09-04",
+  "status": "PASS",
+  "tags": [
+   "babel",
+   "soma",
+   "v7",
+   "segmentation",
+   "human-review"
+  ],
+  "metrics": [
+   {
+    "label": "已审窗单次实例可用",
+    "value": "277/314 (88.2%)"
+   },
+   {
+    "label": "都不对",
+    "value": "25/314"
+   },
+   {
+    "label": "最大残余",
+    "value": "穿模 20/22 · punch 漏周期 12/20"
+   }
+  ],
+  "summary": "babel_soma_semantic_clean_v7_final 在 8783 上的已审 314 窗消化，并写清 walk 完整步幅、hold-crouch、punch/clap 按窗条数、kick 双脚着地 0.8 s 的刀合同。Verdict PASS，但审查未关账：晋级-only note 不当瑕疵；残余集中在 cross_arms 穿模、punch one-strike 漏周期、bow 抖动、wave 漏切。不开训，继续审未审窗。",
+  "thumbnail": "results/v7-8783-review-digest/assets/decision_mix.png",
+  "thumbnailAlt": "Stacked bars of 314 reviewed v7 windows by action class and decision: single-instance usable, neither, and SIGNAL."
+ },
   {
    "slug": "g1-motiongpt-line-ten-laws",
    "path": "results/g1-motiongpt-line-ten-laws/",
@@ -27,15 +60,11 @@
     {
      "label": "底座轴",
      "value": "换底座 0/6 胜,Phi-4-3.8B 垫底"
-    },
-    {
-     "label": "表征天花板",
-     "value": "五模态冻结特征收敛 0.77-0.79"
     }
    ],
    "summary": "把 Qwen2.5-1.5B 改造成 G1 动作段审查员(判干净/脏 + 写出区间与病因)这条线的收官总结,十条经验规律各带证据数字与适用边界:语言(MMLU)与动作判定在 1.5B 里抢地盘、LoRA 最小约束最优、HumanoidBERT 双向前端条件性有用、段内信息天花板 ~0.80(五种模态含纯像素 V-JEPA2 收敛同一高原)、冻结特征与零样本行为间的兑现缺口靠判定微调收账、特征质量与可微调性解耦(探针选型律 8 臂证伪)、换底座六战六败且推理系包揽倒数、思维链/GRPO/纠错对话在小判定器上均为负资产、病因文本是密集监督也是风格污染源(标签重述零代价修复)。附生产状态与四个开放问题。",
-   "thumbnail": "",
-   "thumbnailAlt": ""
+   "thumbnail": "results/g1-motiongpt-line-ten-laws/assets/thumbnail.png",
+   "thumbnailAlt": "Title card for the G1-MotionGPT ten-laws retrospective."
   },
   {
    "slug": "g1-llm-judge-vq-to-latent",
