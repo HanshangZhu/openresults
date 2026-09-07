@@ -1,38 +1,72 @@
 {
  "results": [
-{
-  "slug": "v7-8783-review-digest",
-  "path": "results/v7-8783-review-digest/",
-  "title": "v7 8783 已审窗消化与切刀特性",
-  "project": "VAD Alignment",
-  "category": "Dataset & Tracker",
-  "date": "2026-09-04",
-  "status": "PASS",
-  "tags": [
-   "babel",
-   "soma",
-   "v7",
-   "segmentation",
-   "human-review"
-  ],
-  "metrics": [
-   {
-    "label": "已审窗单次实例可用",
-    "value": "277/314 (88.2%)"
-   },
-   {
-    "label": "都不对",
-    "value": "25/314"
-   },
-   {
-    "label": "最大残余",
-    "value": "穿模 20/22 · punch 漏周期 12/20"
-   }
-  ],
-  "summary": "babel_soma_semantic_clean_v7_final 在 8783 上的已审 314 窗消化，并写清 walk 完整步幅、hold-crouch、punch/clap 按窗条数、kick 双脚着地 0.8 s 的刀合同。Verdict PASS，但审查未关账：晋级-only note 不当瑕疵；残余集中在 cross_arms 穿模、punch one-strike 漏周期、bow 抖动、wave 漏切。不开训，继续审未审窗。",
-  "thumbnail": "results/v7-8783-review-digest/assets/decision_mix.png",
-  "thumbnailAlt": "Stacked bars of 314 reviewed v7 windows by action class and decision: single-instance usable, neither, and SIGNAL."
- },
+  {
+   "slug": "gmt-v1-residual",
+   "path": "results/gmt-v1-residual/",
+   "title": "GMT 宿主残差 · 走路/出拳/踢腿（种子 0）",
+   "project": "VAD Alignment",
+   "category": "Tracker Training",
+   "date": "2026-09-07",
+   "status": "CANDIDATE",
+   "tags": [
+    "residual",
+    "gmt",
+    "host-swap",
+    "dev-val",
+    "seed0",
+    "jitter"
+   ],
+   "metrics": [
+    {
+     "label": "走路 幅度收口",
+     "value": "+36.4%（判赢）"
+    },
+    {
+     "label": "踢腿 躯干/站姿收口",
+     "value": "+6.6% / +5.2%（判赢）"
+    },
+    {
+     "label": "出拳",
+     "value": "半赢（躯干过冲，w0 配方病）"
+    }
+   ],
+   "summary": "BASE-V7 残差配方原样换宿主为冻结 GMT 跟踪器，三臂 dev_val 七指标：走路赢、踢腿赢（摔倒经 318 单元大样本证伪）、出拳半赢（w_torso=0 躯干过冲，复现 TASK-482）。残差把 GMT 不优化的描述子（幅度/姿态）收回来，不碰 GMT 自身高频抖动；授权探针证明抖在指令、被物理低通掉 93%，残差修不动。含踢腿四方叠加回放。",
+   "thumbnail": "results/gmt-v1-residual/thumb.jpg",
+   "thumbnailAlt": "踢腿一周期，SONIC / GMT 零残差 / GMT 残差 三格叠参考蓝影"
+  },
+  {
+   "slug": "v7-8783-review-digest",
+   "path": "results/v7-8783-review-digest/",
+   "title": "v7 8783 已审窗消化与切刀特性",
+   "project": "VAD Alignment",
+   "category": "Dataset & Tracker",
+   "date": "2026-09-04",
+   "status": "PASS",
+   "tags": [
+    "babel",
+    "soma",
+    "v7",
+    "segmentation",
+    "human-review"
+   ],
+   "metrics": [
+    {
+     "label": "已审窗单次实例可用",
+     "value": "277/314 (88.2%)"
+    },
+    {
+     "label": "都不对",
+     "value": "25/314"
+    },
+    {
+     "label": "最大残余",
+     "value": "穿模 20/22 · punch 漏周期 12/20"
+    }
+   ],
+   "summary": "babel_soma_semantic_clean_v7_final 在 8783 上的已审 314 窗消化，并写清 walk 完整步幅、hold-crouch、punch/clap 按窗条数、kick 双脚着地 0.8 s 的刀合同。Verdict PASS，但审查未关账：晋级-only note 不当瑕疵；残余集中在 cross_arms 穿模、punch one-strike 漏周期、bow 抖动、wave 漏切。不开训，继续审未审窗。",
+   "thumbnail": "results/v7-8783-review-digest/assets/decision_mix.png",
+   "thumbnailAlt": "Stacked bars of 314 reviewed v7 windows by action class and decision: single-instance usable, neither, and SIGNAL."
+  },
   {
    "slug": "g1-motiongpt-line-ten-laws",
    "path": "results/g1-motiongpt-line-ten-laws/",

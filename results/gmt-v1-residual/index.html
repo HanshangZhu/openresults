@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>GMT 宿主 · 走路 / 出拳 / 踢腿残差（种子 0）</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:28px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">Generated from Markdown source: <code>docs/eval_standard/results/gmt_v1_seed0_20260907.md</code></p>
+<h1 id="gmt-0">GMT 宿主 · 走路 / 出拳 / 踢腿残差（种子 0）</h1>
+<p>数字只来自下列对照文件，本卡不写过程与验收裁定。评测范围：dev_val 第一回合，走路 599、出拳 34、踢腿 66 单元，种子 0，一次重复。BASE-V7 配方逐字继承，只把宿主从 SONIC 换成冻结的 GMT 跟踪器（23 关节控制）。</p>
+<h2 id="1">1. 对照来源</h2>
+<ul>
+<li>训练配置：<code>cvpr_workspace/configs/gmt_v1/{walk,punch,kick}.json</code>（继承 <code>base_v7/&lt;动作&gt;.json</code>，只换宿主 / bank / span / 数据根）；出拳剂量对照 <code>cvpr_workspace/configs/gmt_v1/punch_w025.json</code>（躯干权重 0.25）</li>
+<li>检查点与侧写：<code>outputs/align_va_warp/gmt_v1/&lt;动作&gt;/{policy.pt,train.json}</code></li>
+<li>评测：<code>outputs/align_va_warp/gmt_v1/&lt;动作&gt;/eval_devval/{eval.json,units.csv}</code>；抖动 <code>.../jitter/jitter.json</code>；授权探针 <code>outputs/gmt_baseline/jitter_authority_kick.json</code></li>
+</ul>
+<p>零残差 = 同一 GMT 宿主、残差动作为零。残差 = 195 次近端策略优化后的 <code>policy.pt</code>。收口 = <code>(零残差误差 − 残差误差) / 零残差误差</code>，正值表示残差更接近参考。躯干与站姿用 TASK-472 新尺（躯干静止前倾、骨盆到脚底站姿）；旧「前倾 / 骨盆高度」描述子尺已撤，不进本卡。逐帧关节能量在 470 约束外，不判定。</p>
+<h2 id="2">2. 逐动作主表</h2>
+<h3 id="n599">走路（n=599）</h3>
+<p><strong>幅度（官方尺，奖励内）</strong> 尺子 <code>RULER-AMP-*-T50-V1</code>，圈加权。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>圈加权全单元</td>
+<td style="text-align: right;">0.0821 m</td>
+<td style="text-align: right;">0.0522 m</td>
+<td style="text-align: right;">+36.4%</td>
+</tr>
+<tr>
+<td>亏空≥2cm 子集（n=512）</td>
+<td style="text-align: right;">0.0942 m</td>
+<td style="text-align: right;">0.0546 m</td>
+<td style="text-align: right;">+42.0%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tracking（均不在奖励内）</strong></p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>摔倒（数/单元）</td>
+<td style="text-align: right;">0/599</td>
+<td style="text-align: right;">0/599</td>
+<td style="text-align: right;">不适用（只准降）</td>
+</tr>
+<tr>
+<td>塌倒盲区复扫</td>
+<td style="text-align: right;">0/599</td>
+<td style="text-align: right;">0/599</td>
+<td style="text-align: right;">不适用</td>
+</tr>
+<tr>
+<td>MPJPE</td>
+<td style="text-align: right;">0.0232 m</td>
+<td style="text-align: right;">0.0283 m</td>
+<td style="text-align: right;">-21.7%</td>
+</tr>
+<tr>
+<td>支撑脚滑</td>
+<td style="text-align: right;">0.4744 m/s</td>
+<td style="text-align: right;">0.5389 m/s</td>
+<td style="text-align: right;">-13.6%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>姿态（TASK-472 新尺，奖励内）</strong> 收口按逐单元 |执行−参考| 均值；地板 = 零残差亏空低于 2cm 或前倾低于参考跨度 10%。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差误差</th>
+<th style="text-align: right;">残差误差</th>
+<th style="text-align: right;">收口</th>
+<th>地板</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>躯干静止前倾</td>
+<td style="text-align: right;">0.0432</td>
+<td style="text-align: right;">0.0188</td>
+<td style="text-align: right;">+56.4%</td>
+<td>上</td>
+</tr>
+<tr>
+<td>躯干整周期前倾</td>
+<td style="text-align: right;">0.0404</td>
+<td style="text-align: right;">0.0131</td>
+<td style="text-align: right;">+67.6%</td>
+<td>下</td>
+</tr>
+<tr>
+<td>骨盆到脚底站姿</td>
+<td style="text-align: right;">0.0149</td>
+<td style="text-align: right;">0.0173</td>
+<td style="text-align: right;">-16.0%</td>
+<td>下</td>
+</tr>
+<tr>
+<td>展开守卫（≤+1cm 过）</td>
+<td style="text-align: right;">0.0299 m</td>
+<td style="text-align: right;">0.0309 m</td>
+<td style="text-align: right;">Δ+0.10cm</td>
+<td>过</td>
+</tr>
+</tbody>
+</table>
+<p><strong>附加·末端抖动</strong>（世界系 Welch 8–25Hz，毫米）参考 0.14｜零残差 0.43｜残差 0.53；残差−零残差 中位 +0.058 / p95 +0.722。</p>
+<h3 id="n34">出拳（n=34）</h3>
+<p><strong>幅度（官方尺，奖励内）</strong> 尺子 <code>RULER-AMP-*-T50-V1</code>，圈加权。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>圈加权全单元</td>
+<td style="text-align: right;">0.0885 m</td>
+<td style="text-align: right;">0.0730 m</td>
+<td style="text-align: right;">+17.5%</td>
+</tr>
+<tr>
+<td>亏空≥2cm 子集（n=32）</td>
+<td style="text-align: right;">0.0933 m</td>
+<td style="text-align: right;">0.0748 m</td>
+<td style="text-align: right;">+19.8%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tracking（均不在奖励内）</strong></p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>摔倒（数/单元）</td>
+<td style="text-align: right;">0/34</td>
+<td style="text-align: right;">0/34</td>
+<td style="text-align: right;">不适用（只准降）</td>
+</tr>
+<tr>
+<td>塌倒盲区复扫</td>
+<td style="text-align: right;">0/34</td>
+<td style="text-align: right;">0/34</td>
+<td style="text-align: right;">不适用</td>
+</tr>
+<tr>
+<td>MPJPE</td>
+<td style="text-align: right;">0.0369 m</td>
+<td style="text-align: right;">0.0418 m</td>
+<td style="text-align: right;">-13.3%</td>
+</tr>
+<tr>
+<td>支撑脚滑</td>
+<td style="text-align: right;">0.3683 m/s</td>
+<td style="text-align: right;">0.3712 m/s</td>
+<td style="text-align: right;">-0.8%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>姿态（TASK-472 新尺，奖励内）</strong> 收口按逐单元 |执行−参考| 均值；地板 = 零残差亏空低于 2cm 或前倾低于参考跨度 10%。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差误差</th>
+<th style="text-align: right;">残差误差</th>
+<th style="text-align: right;">收口</th>
+<th>地板</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>躯干静止前倾</td>
+<td style="text-align: right;">0.0392</td>
+<td style="text-align: right;">0.0584</td>
+<td style="text-align: right;">-49.0%</td>
+<td>下</td>
+</tr>
+<tr>
+<td>躯干整周期前倾</td>
+<td style="text-align: right;">0.0351</td>
+<td style="text-align: right;">0.0708</td>
+<td style="text-align: right;">-101.5%</td>
+<td>下</td>
+</tr>
+<tr>
+<td>骨盆到脚底站姿</td>
+<td style="text-align: right;">0.0111</td>
+<td style="text-align: right;">0.0117</td>
+<td style="text-align: right;">-5.1%</td>
+<td>下</td>
+</tr>
+<tr>
+<td>展开守卫（≤+1cm 过）</td>
+<td style="text-align: right;">0.0850 m</td>
+<td style="text-align: right;">0.0950 m</td>
+<td style="text-align: right;">Δ+1.00cm</td>
+<td>过</td>
+</tr>
+</tbody>
+</table>
+<p><strong>附加·末端抖动</strong>（世界系 Welch 8–25Hz，毫米）参考 0.12｜零残差 0.51｜残差 0.35；残差−零残差 中位 -0.031 / p95 +0.054。</p>
+<h3 id="0-vs-025-dev_val-34">出拳剂量对照（躯干权重 0 vs 0.25，同 dev_val 34 单元）</h3>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">出拳 w0</th>
+<th style="text-align: right;">出拳 w0.25</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>幅度收口</td>
+<td style="text-align: right;">+17.5%</td>
+<td style="text-align: right;">+11.5%</td>
+</tr>
+<tr>
+<td>躯干静止前倾收口</td>
+<td style="text-align: right;">−49.0%（地板下）</td>
+<td style="text-align: right;">+9.0%（地板下）</td>
+</tr>
+<tr>
+<td>骨盆站姿收口</td>
+<td style="text-align: right;">−5.1%（地板下）</td>
+<td style="text-align: right;">+0.3%（地板下）</td>
+</tr>
+<tr>
+<td>展开守卫</td>
+<td style="text-align: right;">Δ+1.00cm 过</td>
+<td style="text-align: right;">Δ+1.01cm 破</td>
+</tr>
+<tr>
+<td>MPJPE ×零残差</td>
+<td style="text-align: right;">×1.13</td>
+<td style="text-align: right;">×1.11</td>
+</tr>
+</tbody>
+</table>
+<p>躯干权重 0.25 把躯干过冲掰回（−49% → +9%），但幅度掉 6 点、展开守卫越界。与 lingfanb TASK-482 在 SONIC 上「w0.25 幅度不过线、V7 维持 w0」同结论；出拳建议维持 w0。</p>
+<h3 id="n66">踢腿（n=66）</h3>
+<p><strong>幅度（官方尺，奖励内）</strong> 尺子 <code>RULER-AMP-*-T50-V1</code>，圈加权。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>圈加权全单元</td>
+<td style="text-align: right;">0.0921 m</td>
+<td style="text-align: right;">0.0860 m</td>
+<td style="text-align: right;">+6.6%</td>
+</tr>
+<tr>
+<td>亏空≥2cm 子集（n=51）</td>
+<td style="text-align: right;">0.1127 m</td>
+<td style="text-align: right;">0.0960 m</td>
+<td style="text-align: right;">+14.8%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tracking（均不在奖励内）</strong></p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差</th>
+<th style="text-align: right;">残差</th>
+<th style="text-align: right;">收口</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>摔倒（数/单元）</td>
+<td style="text-align: right;">1/66</td>
+<td style="text-align: right;">2/66</td>
+<td style="text-align: right;">不适用（只准降）</td>
+</tr>
+<tr>
+<td>塌倒盲区复扫</td>
+<td style="text-align: right;">6/66</td>
+<td style="text-align: right;">9/66</td>
+<td style="text-align: right;">不适用</td>
+</tr>
+<tr>
+<td>MPJPE</td>
+<td style="text-align: right;">0.0645 m</td>
+<td style="text-align: right;">0.0687 m</td>
+<td style="text-align: right;">-6.6%</td>
+</tr>
+<tr>
+<td>支撑脚滑</td>
+<td style="text-align: right;">0.6716 m/s</td>
+<td style="text-align: right;">0.7445 m/s</td>
+<td style="text-align: right;">-10.9%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>姿态（TASK-472 新尺，奖励内）</strong> 收口按逐单元 |执行−参考| 均值；地板 = 零残差亏空低于 2cm 或前倾低于参考跨度 10%。</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: right;">零残差误差</th>
+<th style="text-align: right;">残差误差</th>
+<th style="text-align: right;">收口</th>
+<th>地板</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>躯干静止前倾</td>
+<td style="text-align: right;">0.1315</td>
+<td style="text-align: right;">0.1228</td>
+<td style="text-align: right;">+6.6%</td>
+<td>上</td>
+</tr>
+<tr>
+<td>躯干整周期前倾</td>
+<td style="text-align: right;">0.0982</td>
+<td style="text-align: right;">0.0917</td>
+<td style="text-align: right;">+6.6%</td>
+<td>上</td>
+</tr>
+<tr>
+<td>骨盆到脚底站姿</td>
+<td style="text-align: right;">0.0374</td>
+<td style="text-align: right;">0.0355</td>
+<td style="text-align: right;">+5.2%</td>
+<td>上</td>
+</tr>
+<tr>
+<td>展开守卫（≤+1cm 过）</td>
+<td style="text-align: right;">0.0816 m</td>
+<td style="text-align: right;">0.0827 m</td>
+<td style="text-align: right;">Δ+0.10cm</td>
+<td>过</td>
+</tr>
+</tbody>
+</table>
+<p><strong>附加·末端抖动</strong>（世界系 Welch 8–25Hz，毫米）参考 0.37｜零残差 1.17｜残差 1.36；残差−零残差 中位 +0.049 / p95 +0.422。</p>
+<p>踢腿 dev_val 摔倒多 1 单元（1→2），训练集 252 单元复核：残差摔 5 &lt; 零残差摔 7；合计 318 单元残差 7 &lt; 零残差 8。摔倒增加不成立。</p>
+<h2 id="3">3. 代表回放</h2>
+<p>踢腿一个周期，四方叠加，同机位同时钟，2 倍慢放。蓝透明 = 参考，实心机器人 = 物理执行；左起 SONIC、GMT 零残差、GMT 残差。</p>
+<video src="kick_ref_sonic_gmt_residual.mp4" controls muted loop playsinline preload="metadata"></video>
+
+<p>单元 <code>kick__train_7381__f000627_000707__right</code>，80 帧。</p>
+<h2 id="4">4. 附加抖动与授权</h2>
+<p>末端高频抖动 <code>JITTER-EE-HF-WELCH-V1</code>（世界系，8–25 赫兹 Welch 带内均方根，毫米；定义见 <code>docs/eval_standard/jitter_ee_hf_extra_metric.md</code>）。三臂残差对抖动几乎无影响（残差−零残差 中位 +0.06 / −0.03 / +0.05 毫米），符合 V7 无平滑项，且没把抖做坏。GMT 裸执行本身的抖仍在（踢腿零残差 1.17 毫米，远高于参考 0.37）。</p>
+<p>授权探针（踢腿 16 单元）：GMT 指令的高频抖（末端等效 23.5 毫米）远大于执行（1.5 毫米），执行/指令 = 0.07——物理把指令高频低通掉 93%。抖起源于指令通道，残差名义碰得着，但物理同样衰减残差的高频修正 7 倍，残差也无法在 50 赫兹预测并反相抵消 GMT 的 8–25 赫兹抖。故残差修不动 GMT 的底噪抖；频域项只能保证「残差自己不加抖」。</p>
+<h2 id="5">5. 单臂判定</h2>
+<p>综合逐格 + 全指标（目标改善、无被判指标恶化、三守卫过）：<strong>走路 赢、踢腿 赢、出拳 半赢</strong>。踢腿摔倒经大样本证伪（§2）；出拳躯干过冲是 <code>w_torso=0</code> 配方所致，非 GMT 特性。</p>
+<h2 id="6-run-spec">6. Run Spec 与偏差</h2>
+<p>确认版 Run Spec：<code>outputs/align_va_warp/gmt_v1/RUN_SPEC.md</code>（2026-09-07 预注册，七指标逐格判 + 综合裁决）。偏差：训练池为 08-31 审查包按表演者重切的 bank（<code>training_use_allowed: false</code>，非对方冻结 V7 训练池，远端不可达）；单种子；出拳 dev_val 仅 1 个表演者（低于 Goal DATA-001 下限，只作描述性）；收口量级 dev_val 与训练集差一个量级，未补种子钉死。</p>
+</main>
+</body>
+</html>
