@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>TASK-515 八动作数据集 · 人工审查三处毛病</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:30px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+.clip{max-width:520px}.tag{display:inline-block;font:12px var(--mono);padding:2px 9px;border-radius:99px;
+border:1px solid var(--line);margin-right:6px}.tag.jit{color:var(--yellow)}.tag.risk{color:var(--red)}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">评审对象：<code>data/BABEL_SOMA_G1_final_0908/task515_eight_action_phc_input_dataset_with_annotations_20260908</code>（八动作 PHC 输入，1,882 片段 / 235,708 帧 / 3,918 周期）。审查工具：<code>scripts/serve_task515_reference_review.py</code>，MuJoCo 直渲 <code>reference_qpos</code>。判定库 <code>outputs/task515_reference_review/review.sqlite3</code>。</p>
+<h1 id="top">TASK-515 八动作数据集 · 人工审查三处毛病</h1>
+<p>人工过审 271 片段后挑出的三处毛病，每处给数据集原生片段名与执行回放。数据集自报 <code>physics_processed:false、quality_approved:false</code>：它逐帧标了关节越限 / 自穿插 / 地面穿插，但对<strong>关节抖动</strong>和<strong>整体悬空</strong>不设门——下面三处正好落在这两个盲区里。</p>
+
+<blockquote>
+本页只报人工看到的毛病与片段名，不下「剔除」裁定（审查中三处均记为 pass + note，未剔）。回放为参考轨迹的运动学直渲（<code>reference_qpos</code> → MuJoCo，无物理跟踪器），50fps。
+</blockquote>
+
+<h2 id="1">1. cross_arms 抱臂 · 手臂高频跳变（类内普遍）</h2>
+<p><span class="tag jit">reason=jitter</span> 片段 <code>cross_arms_0015</code>（train）· 同类 <code>cross_arms_0016 / 0017</code> 同样病。62 帧，源自 AMASS <code>BMLmovi/Subject_79_F_14</code> 帧 65–127。</p>
+<p>抱臂时双臂前臂出现逐帧小幅跳变，不是单条坏样本，是抱臂这一类的共性——像是 retarget 在双臂交叠构型下的不稳。几何审计这条抓到的是<strong>另一回事</strong>：自穿插 62/62 帧、峰值 43.9mm（双臂交叠必然互穿），但审计不报「抖动」。</p>
+<video class="clip" src="cross_arms_0015.mp4" controls muted loop playsinline preload="metadata"></video>
+
+<h2 id="2">2. crouch 下蹲 · 膝盖跳变（几何审计全干净却仍抖）</h2>
+<p><span class="tag jit">reason=jitter</span> 片段 <code>crouch_0002</code>（dev_val）· 同类 <code>crouch_0000 / 0003–0006</code> 同样病。67 帧，源自 AMASS <code>MPIHDM05/HDM_dg_03-05</code> 帧 1319–1386。</p>
+<p>下蹲到底再起身的过程膝关节有可见跳变。这条最能说明审计盲区：<strong>自穿插 0、地面穿插峰值 0.6mm、关节越限 0 帧——几何全过</strong>，但人眼一眼看到膝盖抖。抖动不在几何审计的量纲里。</p>
+<video class="clip" src="crouch_0002.mp4" controls muted loop playsinline preload="metadata"></video>
+
+<h2 id="3">3. crouch 下蹲 · 双脚腾空（动力学风险，非抖动）</h2>
+<p><span class="tag risk">reason=risk</span> 片段 <code>crouch_0007</code>（dev_val）。39 帧，源自 AMASS <code>MPImosh/50004/simple_crouch</code> 帧 240–279。</p>
+<p>唯一一处从「抖动」升级到「动力学风险」的：下蹲相里出现双脚同时离地。地面穿插审计只看穿地（脚在地面<em>以下</em>），<strong>看不见悬空</strong>（脚在地面<em>以上</em>）——所以这条几何审计地面穿插峰值仅 0.3mm、判干净，实际却是腾空。若后续拿这份数据喂 PHC / tracker，这类离地帧直接影响可执行性，呼应 REPORT 里「训练准备 ≠ 动态可执行」。</p>
+<video class="clip" src="crouch_0007.mp4" controls muted loop playsinline preload="metadata"></video>
+
+<h2 id="verdict">小结</h2>
+<ul>
+<li>三处毛病、两个盲区：<strong>抖动</strong>（cross_arms 手臂、crouch 膝盖，且 crouch_0002 几何全干净）与<strong>悬空</strong>（crouch_0007 双脚腾空，被地面穿插审计漏看）。</li>
+<li>其中两处是<strong>类内系统性</strong>（cross_arms 全类手臂跳变、crouch 多条膝盖跳变），不是个别坏样本，指向 retarget 管线在这两类构型上的共性。</li>
+<li>与数据集自报 <code>quality_approved:false</code> 一致：几何审计覆盖穿插 / 越限，抖动与悬空需人眼补门。三处均未剔除，仅记录。</li>
+</ul>
+
+<details><summary>片段与证据路径</summary>
+<pre>cross_arms_0015  data/BABEL_SOMA_G1_final_0908/.../dataset/reference_inputs/train/cross_arms_0015.npz
+crouch_0002      data/BABEL_SOMA_G1_final_0908/.../dataset/reference_inputs/dev_val/crouch_0002.npz
+crouch_0007      data/BABEL_SOMA_G1_final_0908/.../dataset/reference_inputs/dev_val/crouch_0007.npz
+审查判定与备注   outputs/task515_reference_review/review.sqlite3（reviews 表，最新胜）
+几何审计逐帧     每片段 npz 内 joint_limit_violation / self_penetration_m / ground_penetration_m
+数据集来源清单   annotation/manifest.json（每片段 AMASS 源路径 + 帧范围 + 周期边界 + sha256）</pre>
+</details>
+</main>
+</body>
+</html>

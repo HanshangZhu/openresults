@@ -1,867 +1,901 @@
 {
- "results": [
-  {
-   "slug": "gmt-v1-residual",
-   "path": "results/gmt-v1-residual/",
-   "title": "GMT 宿主残差 · 走路/出拳/踢腿（种子 0）",
-   "project": "VAD Alignment",
-   "category": "Tracker Training",
-   "date": "2026-09-07",
-   "status": "CANDIDATE",
-   "tags": [
-    "residual",
-    "gmt",
-    "host-swap",
-    "dev-val",
-    "seed0",
-    "jitter"
-   ],
-   "metrics": [
+  "results": [
     {
-     "label": "走路 幅度收口",
-     "value": "+36.4%（判赢）"
+      "slug": "task515-eight-action-review-defects",
+      "path": "results/task515-eight-action-review-defects/",
+      "title": "TASK-515 八动作数据集 · 人工审查三处毛病",
+      "project": "VAD Alignment",
+      "category": "Dataset Review",
+      "date": "2026-09-09",
+      "status": "REVIEW",
+      "tags": [
+        "dataset",
+        "babel-soma-g1",
+        "eight-action",
+        "human-review",
+        "jitter",
+        "geometry-audit"
+      ],
+      "metrics": [
+        {
+          "label": "审查片段",
+          "value": "271 / 1882（全 pass，11 备注）"
+        },
+        {
+          "label": "报告毛病",
+          "value": "3 处（2 抖动 + 1 悬空）"
+        },
+        {
+          "label": "审计盲区",
+          "value": "jitter 与 airborne 未门控"
+        }
+      ],
+      "summary": "八动作 PHC 输入数据集人工过审后挑出三处毛病，各带数据集原生片段名与执行回放：cross_arms 手臂跳变（类内普遍）、crouch 膝盖跳变（几何审计全干净却仍抖）、crouch_0007 双脚腾空（被地面穿插审计漏看的动力学风险）。三处落在几何审计的两个盲区——抖动与悬空，与数据集自报 quality_approved:false 一致；均记录未剔。",
+      "thumbnail": "results/task515-eight-action-review-defects/thumb.jpg",
+      "thumbnailAlt": "下蹲片段一帧，G1 双脚离地悬空"
     },
     {
-     "label": "踢腿 躯干/站姿收口",
-     "value": "+6.6% / +5.2%（判赢）"
+      "slug": "gmt-v1-residual",
+      "path": "results/gmt-v1-residual/",
+      "title": "GMT 宿主残差 · 走路/出拳/踢腿（种子 0）",
+      "project": "VAD Alignment",
+      "category": "Tracker Training",
+      "date": "2026-09-07",
+      "status": "CANDIDATE",
+      "tags": [
+        "residual",
+        "gmt",
+        "host-swap",
+        "dev-val",
+        "seed0",
+        "jitter"
+      ],
+      "metrics": [
+        {
+          "label": "走路 幅度收口",
+          "value": "+36.4%（判赢）"
+        },
+        {
+          "label": "踢腿 躯干/站姿收口",
+          "value": "+6.6% / +5.2%（判赢）"
+        },
+        {
+          "label": "出拳",
+          "value": "半赢（躯干过冲，w0 配方病）"
+        }
+      ],
+      "summary": "BASE-V7 残差配方原样换宿主为冻结 GMT 跟踪器，三臂 dev_val 七指标：走路赢、踢腿赢（摔倒经 318 单元大样本证伪）、出拳半赢（w_torso=0 躯干过冲，复现 TASK-482）。残差把 GMT 不优化的描述子（幅度/姿态）收回来，不碰 GMT 自身高频抖动；授权探针证明抖在指令、被物理低通掉 93%，残差修不动。含踢腿四方叠加回放。",
+      "thumbnail": "results/gmt-v1-residual/thumb.jpg",
+      "thumbnailAlt": "踢腿一周期，SONIC / GMT 零残差 / GMT 残差 三格叠参考蓝影"
     },
     {
-     "label": "出拳",
-     "value": "半赢（躯干过冲，w0 配方病）"
+      "slug": "v7-8783-review-digest",
+      "path": "results/v7-8783-review-digest/",
+      "title": "v7 8783 已审窗消化与切刀特性",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "date": "2026-09-04",
+      "status": "PASS",
+      "tags": [
+        "babel",
+        "soma",
+        "v7",
+        "segmentation",
+        "human-review"
+      ],
+      "metrics": [
+        {
+          "label": "已审窗单次实例可用",
+          "value": "277/314 (88.2%)"
+        },
+        {
+          "label": "都不对",
+          "value": "25/314"
+        },
+        {
+          "label": "最大残余",
+          "value": "穿模 20/22 · punch 漏周期 12/20"
+        }
+      ],
+      "summary": "babel_soma_semantic_clean_v7_final 在 8783 上的已审 314 窗消化，并写清 walk 完整步幅、hold-crouch、punch/clap 按窗条数、kick 双脚着地 0.8 s 的刀合同。Verdict PASS，但审查未关账：晋级-only note 不当瑕疵；残余集中在 cross_arms 穿模、punch one-strike 漏周期、bow 抖动、wave 漏切。不开训，继续审未审窗。",
+      "thumbnail": "results/v7-8783-review-digest/assets/decision_mix.png",
+      "thumbnailAlt": "Stacked bars of 314 reviewed v7 windows by action class and decision: single-instance usable, neither, and SIGNAL."
+    },
+    {
+      "slug": "g1-motiongpt-line-ten-laws",
+      "path": "results/g1-motiongpt-line-ten-laws/",
+      "title": "G1-MotionGPT 线大总结:十条经验规律",
+      "project": "VAD Alignment",
+      "category": "LLM Judge",
+      "date": "2026-08-29",
+      "status": "FINAL",
+      "tags": [
+        "llm-judge",
+        "retrospective",
+        "controlled-ablation",
+        "motion-representation",
+        "rlvr"
+      ],
+      "metrics": [
+        {
+          "label": "生产判定器",
+          "value": "stage-B v2, AUC 0.888 / R@P90≈0.6"
+        },
+        {
+          "label": "训法轴",
+          "value": "r32>r128>全参>全参+KL(单调)"
+        },
+        {
+          "label": "底座轴",
+          "value": "换底座 0/6 胜,Phi-4-3.8B 垫底"
+        }
+      ],
+      "summary": "把 Qwen2.5-1.5B 改造成 G1 动作段审查员(判干净/脏 + 写出区间与病因)这条线的收官总结,十条经验规律各带证据数字与适用边界:语言(MMLU)与动作判定在 1.5B 里抢地盘、LoRA 最小约束最优、HumanoidBERT 双向前端条件性有用、段内信息天花板 ~0.80(五种模态含纯像素 V-JEPA2 收敛同一高原)、冻结特征与零样本行为间的兑现缺口靠判定微调收账、特征质量与可微调性解耦(探针选型律 8 臂证伪)、换底座六战六败且推理系包揽倒数、思维链/GRPO/纠错对话在小判定器上均为负资产、病因文本是密集监督也是风格污染源(标签重述零代价修复)。附生产状态与四个开放问题。",
+      "thumbnail": "results/g1-motiongpt-line-ten-laws/assets/thumbnail.png",
+      "thumbnailAlt": "Title card for the G1-MotionGPT ten-laws retrospective."
+    },
+    {
+      "slug": "g1-llm-judge-vq-to-latent",
+      "title": "An LLM motion judge in one day: the four-arm ladder from VQ codes to continuous latents",
+      "date": "2026-08-25",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "CANDIDATE",
+      "summary": "Can a pretrained language model plus 1,128 human labels become a segment-quality judge that explains itself? Four arms in one day: T5-small on VQ codes reaches 55% of the deployed window-MLP's precision frontier, Qwen-1.5B on the same codes 73%, switching the motion representation to the MLP's own continuous latents 87%, and doubling the judge mix plus steps 94% — passing the preregistered gate (4 of 8 classes at or above 90% of the MLP, with clap at 130% and handshake at 103%, the first arms to beat the deployed judge anywhere). RL on top (GRPO, then GSPO with a span-IoU reward) produced zero gradient: SFT had memorized every training verdict and span, so the verifiable reward saturates — a clean negative with a clean mechanism. A 40-segment blind review on unseen data (all judged by the annotator) measured the MLP's confident-pass purity at 0.875 (perfect on six classes, 1/5 on kick) and the LLM at 0.926 pass-side purity, catching three of the four dirty kicks the MLP admitted.",
+      "path": "results/g1-llm-judge-vq-to-latent/",
+      "thumbnail": "results/g1-llm-judge-vq-to-latent/assets/llm-judge-ladder.png",
+      "thumbnailAlt": "Grouped bars comparing LLM judge v2 and window MLP per class, plus a four-arm ladder rising 55-73-87-94 percent across the 90 percent criterion line.",
+      "tags": [
+        "llm-judge",
+        "motion-representation",
+        "rlvr",
+        "dataset-cleaning"
+      ],
+      "metrics": [
+        {
+          "label": "prereg gate",
+          "value": "PASS (4/8 classes ≥90% of MLP)"
+        },
+        {
+          "label": "ladder",
+          "value": "55→73→87→94% of MLP"
+        },
+        {
+          "label": "blind pass purity",
+          "value": "MLP 0.875 / LLM 0.926"
+        }
+      ]
+    },
+    {
+      "slug": "g1-classifier-lineup-delivery-status",
+      "title": "Segment-quality classifier lineup after the full label audit: per-class standing and the remaining gates to delivery",
+      "date": "2026-08-23",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "CANDIDATE",
+      "summary": "Status snapshot after auditing all 904 human labels (36 fixes) and retraining all 8 per-class window-MLP judges. Against the delivery criterion (precision and dirty-removal both above 0.9): punch's strict-filter + head-trim-rejudge pipeline passes both (0.956/0.963, uncertified); clap and handshake clear dirty-removal but sit 0.04-0.07 short on precision; walk's precision readout is dominated by exam sampling (0.50 to 0.92 across three exam draws for the same model) while a blind render spot-check of 12 model rejections found 9 correct, 3 debatable, 0 clear false kills; crouch and kick are clean-sample starved (6 and 12 clean training segments). Four gates remain before delivery: certification on a blind batch, measured pool dirt rates, a 20-clip render check per class, and the annotation gap on the three under-labelled classes.",
+      "path": "results/g1-classifier-lineup-delivery-status/",
+      "thumbnail": "results/g1-classifier-lineup-delivery-status/assets/lineup-delivery-scoreboard.png",
+      "thumbnailAlt": "Grouped bar chart of precision and dirty-removal for all 8 classes against the 0.9 delivery line; punch clears both, clap and handshake clear one, walk and crouch sit near 0.5 precision.",
+      "tags": [
+        "classifier",
+        "dataset-cleaning",
+        "delivery-gates",
+        "label-audit"
+      ],
+      "metrics": [
+        {
+          "label": "classes passing v3",
+          "value": "1/8 (punch, uncertified)"
+        },
+        {
+          "label": "labels audited",
+          "value": "904 (36 fixes)"
+        },
+        {
+          "label": "delivery gates left",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "slug": "g1-punch-line-consolidated",
+      "title": "Cleaning robot motion data, the punch case: nine experiments, their conclusions, and a first deliverable pipeline",
+      "date": "2026-08-22",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "CANDIDATE",
+      "summary": "One report replacing the three process reports of Aug 20-22, written in plain research language. Nine experiments in cheapest-first order: splitting the hand labels in half exposed the old exam's diluted dirty side as the source of fake readings; a frozen 59-segment gold exam was instituted; the learning curve was flat only because the training recipe copied every human label five times (removing that one setting lifted discrimination immediately and restored +0.05 purity per label doubling); a linear probe cleared the features of suspicion; a five-way architecture comparison crowned the simplest per-window MLP, explained by measuring that each nominal 0.2-second feature vector actually spans +/-0.6 seconds of pretrained context; synthetic augmentation failed in five combinations because position-generated dirty labels are necessarily noise on distinctions that are semantic judgments. The deliverable pipeline: per-class window head, strictest threshold, and a second chance for rejected segments whose alarms sit inside the first second - trim the head, re-judge, admit trimmed. Frozen-exam readings: kept-purity 0.956, dirt-rejection 0.963, retention 0.562 - both primary metrics above 0.9, pending blind-test certification.",
+      "path": "results/g1-punch-line-consolidated/",
+      "thumbnail": "results/g1-punch-line-consolidated/assets/thumbnail.png",
+      "thumbnailAlt": "Grouped bar chart of punch operating points showing purity, dirt-rejection and retention with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears it on both primary metrics.",
+      "tags": [
+        "consolidated report",
+        "dataset cleaning",
+        "release pipeline",
+        "learning curve",
+        "architecture ablation",
+        "punch",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.956 / 0.963",
+          "label": "Kept-purity and dirt-rejection of the deliverable pipeline on the frozen gold exam (uncertified)"
+        },
+        {
+          "value": "×5 → ×1",
+          "label": "The single recipe change (stop copying each label five times) that revived the learning curve"
+        },
+        {
+          "value": "9 experiments",
+          "label": "Cheapest-first probe chain from exam audit to pipeline accounting, all evidence on file"
+        }
+      ]
+    },
+    {
+      "slug": "g1-punch-pipeline-strict-trim-rejudge",
+      "title": "Punch release pipeline, near-final: strict filtering plus model-guided head-trim and re-judge",
+      "date": "2026-08-22",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "ARCHIVED",
+      "summary": "Consolidation of the punch line under revised acceptance criteria v3 (primary: kept-purity > 0.9 AND dirt-rejection > 0.9; retention becomes an auxiliary yield parameter). The selected pipeline filters at the strictest window-head threshold, then gives rejected segments whose alarms are confined to the first second a second chance: trim at the alarm end plus margin, re-judge, and admit in trimmed form. On the frozen 59-segment gold exam this is a Pareto improvement over pure strict filtering - purity 0.930 to 0.956 and retention 0.417 to 0.562 rise together, with dirt-rejection 0.963 - because the strict tier's false kills concentrate at segment heads and the re-judge recovers them. Onset loss is confined to ~16% of admitted clean segments (vs 100% under the vetoed unconditional trim). Both primary metrics clear 0.9 but remain uncertified: threshold and margin were chosen on the exam, and certification requires pre-fixed parameters plus a blind test on unseen batches. Projected yield at the estimated 1:2 clean:dirty pool ratio: 650-900 segments per class at ~0.95 purity.",
+      "path": "results/g1-punch-pipeline-strict-trim-rejudge/",
+      "thumbnail": "results/g1-punch-pipeline-strict-trim-rejudge/assets/thumbnail.png",
+      "thumbnailAlt": "Grouped bar chart of four operating points showing purity, dirt-rejection, and retention side by side with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears 0.9 on both primary metrics at retention 0.56.",
+      "tags": [
+        "release pipeline",
+        "acceptance criteria",
+        "head trim",
+        "operating point",
+        "punch",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.956 / 0.963",
+          "label": "Kept-purity and dirt-rejection of the selected pipeline (both primary metrics > 0.9, uncertified)"
+        },
+        {
+          "value": "(0.930, 0.417) → (0.956, 0.562)",
+          "label": "Pareto improvement over pure strict filtering: purity and retention rise together"
+        },
+        {
+          "value": "~16%",
+          "label": "Admitted clean segments that lose 1-1.5 s of onset - the confined remnant of the vetoed unconditional trim"
+        }
+      ]
+    },
+    {
+      "slug": "g1-punch-window-head-ablation",
+      "title": "Per-window head architecture ablation: why a memoryless MLP beats every context model",
+      "date": "2026-08-22",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "ARCHIVED",
+      "summary": "Five per-window judgment heads are compared on the frozen punch gold exam with identical labels: an MLP on frozen encoder tokens, the 6-layer transformer z-head, a bidirectional GRU, a +/-1s-context TCN at 0.1s resolution on raw features, and the GRU with head-shift augmentation (testing the hypothesis that context heads lose only because they starve for sequences). The MLP dominates at every recall level; augmentation makes the context head worse, and the MLP shows no plateau (purity +0.05-0.06 per label doubling). The paradox dissolves with a receptive-field measurement: each '0.2s' encoder token actually responds to frames +/-0.6s away, so the winner is pretrained local context plus a tiny head - effective sample size ~4200 windows - while freshly trained full-segment memory collapses the effective sample size to ~115 segments and overfits. Current punch scorecard: no single operating point yet clears both precision > 0.9 and recall > 0.85.",
+      "path": "results/g1-punch-window-head-ablation/",
+      "thumbnail": "results/g1-punch-window-head-ablation/assets/thumbnail.png",
+      "thumbnailAlt": "Left: grouped bar chart of best-threshold purity at recall floors 0.6 and 0.75 for five per-window heads, MLP highest at 0.896/0.878. Right: measured receptive field curve of the frozen encoder token - response decays to zero beyond 0.8 seconds, shaded +/-0.6s.",
+      "tags": [
+        "architecture ablation",
+        "receptive field",
+        "per-window head",
+        "overfitting",
+        "sample efficiency",
+        "punch",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.896 vs 0.787",
+          "label": "Best purity at recall >= 0.6: memoryless MLP vs bidirectional GRU (same labels, same exam)"
+        },
+        {
+          "value": "±0.6 s",
+          "label": "Measured receptive field of one frozen encoder token - the 'memoryless' head sees context after all"
+        },
+        {
+          "value": "+0.05-0.06 / doubling",
+          "label": "MLP purity growth per label doubling - no plateau at current annotation volume"
+        }
+      ]
+    },
+    {
+      "slug": "g1-punch-exam-reform-recipe-fix",
+      "title": "Punch turned around: exam reform, an oversampling culprit, and an 8-class recipe retrain",
+      "date": "2026-08-21",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "ARCHIVED",
+      "summary": "Continuation of the acceptance scoreboard. Punch - previously the only class where labels made things worse - is fully diagnosed by a four-step probe chain: a gold exam built from the hand-labels themselves shows the model always had signal (the old V2 exam's dirty side was diluted); the learning curve was flat only because of a x5 real-label oversampling in the recipe (removing it alone lifts gold-exam ranking 0.754 to 0.816, and the curve un-flattens to +0.067 per doubling); a linear probe proves the frozen encoder separates every dirt mode (AUC 0.82-0.90), and a 64-unit window MLP matches the 10.9M transformer. The acceptance criterion was amended twice: severe dirt (any other-class content, regardless of duration) must stay out of the kept set - under this strict definition punch reads P_severe 0.757 and remains below the bar. Retraining all labeled classes without oversampling flips clap and cross_arms to new registered bests; classes with few or unbalanced labels are unchanged, and one legacy walk arm's perfect exam score is exposed as train-on-test contamination. Synthetic augmentation, retested under the fixed recipe, still fails to expand the precision-recall frontier.",
+      "path": "results/g1-punch-exam-reform-recipe-fix/",
+      "thumbnail": "results/g1-punch-exam-reform-recipe-fix/assets/thumbnail.png",
+      "thumbnailAlt": "Left: punch learning curve, ranking vs number of real labels on log axis; the old recipe (grey) flattens at 59-116 while the fixed recipe (red) keeps rising to 0.816. Right: bar chart of head/recipe ablations with oversampling removal and the window MLP highest.",
+      "tags": [
+        "punch",
+        "gold exam",
+        "oversampling",
+        "learning curve",
+        "linear probe",
+        "recipe ablation",
+        "acceptance criteria",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.754 → 0.816",
+          "label": "Gold-exam ranking from removing x5 label oversampling alone (same data, same head)"
+        },
+        {
+          "value": "+0.067 / doubling",
+          "label": "Learning-curve slope restored under the fixed recipe (was ~0 under the old one)"
+        },
+        {
+          "value": "2 / 6",
+          "label": "Classes flipped to new registered bests by the recipe fix (clap, cross_arms)"
+        }
+      ]
+    },
+    {
+      "slug": "g1-per-action-vs-acceptance",
+      "title": "Per-action motion classifiers against the acceptance bar: precision first, then recall",
+      "date": "2026-08-20",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "MARGINAL",
+      "summary": "After wiring real human annotations into training - including a comment-by-comment adjudication of all 113 dirty-segment notes (21 whole-invalid, 3 location-unknown masked, 82 real clean crops mined from outside the marked spans) with the annotation database now the single label authority - the best model per action is scored against the newly set acceptance bar: kept-precision > 0.9 first, then clean-recall > 0.85. One of eight actions passes outright (crouch, 1.000/1.000 on a zero-overlap frozen exam). Kick shows the intended path: precision pinned at 1.000 with recall lifted 0.200 to 0.400 by twenty labels. Six actions have not cleared the precision gate; punch alone gets worse with labels and needs separate diagnosis. Certifying precision > 0.9 requires 50-100 test segments per action - the current 15-20 resolve only one dirty segment of slack.",
+      "path": "results/g1-per-action-vs-acceptance/",
+      "thumbnail": "results/g1-per-action-vs-acceptance/assets/thumbnail.png",
+      "thumbnailAlt": "Scatter plot of eight actions by recall (x) and precision (y) with the acceptance region P>0.9 and R>0.85 shaded top-right; crouch sits inside at (1.0, 1.0), kick at (0.40, 1.00) above the precision line, six other actions below 0.67 precision.",
+      "tags": [
+        "acceptance criteria",
+        "human annotation",
+        "label curation",
+        "dataset cleaning",
+        "per-class models",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "1 / 8",
+          "label": "Actions passing the bar (crouch: precision 1.000, recall 1.000)"
+        },
+        {
+          "value": "0.200 → 0.400",
+          "label": "Kick recall growth from twenty real labels at pinned precision 1.000"
+        },
+        {
+          "value": "0.623 vs 0.408",
+          "label": "Aggregate kept-purity with filtering vs without (152 exam segments)"
+        }
+      ]
+    },
+    {
+      "slug": "g1-per-action-classifiers",
+      "title": "One classifier per action: eight-way evaluation on a frozen motion test set",
+      "date": "2026-08-19",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "MARGINAL",
+      "summary": "Eight separate segment-quality classifiers, one per robot action, each trained purely on synthetic augmentations of reviewed-clean segments and scored on test segments drawn and frozen before annotation. One action (crouch) clears every metric: accuracy 0.950 against a reject-all baseline of 0.700, precision 1.000, recall 0.929, negative recall 1.000. Two more (kick, walk) reach recall 1.000 but keep almost no clean segments (negative recall 0.200 / 0.000), so they cannot be used to filter data. Three (clap, punch, wave_arms) score below the reject-all baseline with precision and recall both low; in exactly those actions the dirty segments are markedly longer than the clean ones, while three of the four augmentations lengthen a segment as they dirty it. Per-action models beat a single eight-way model on five of six comparable actions.",
+      "path": "results/g1-per-action-classifiers/",
+      "thumbnail": "results/g1-per-action-classifiers/assets/thumbnail.png",
+      "thumbnailAlt": "Architecture data-flow diagram of the segment-quality classifier: motion segment to per-frame kinematic features to a frozen continuous conv autoencoder, then a bidirectional transformer with per-step and segment-level output heads.",
+      "tags": [
+        "per-class models",
+        "frozen test set",
+        "dataset cleaning",
+        "evaluation",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.950 / 1.000 / 0.929 / 1.000",
+          "label": "crouch: accuracy / precision / recall / negative recall (baseline 0.700)"
+        },
+        {
+          "value": "1.000 vs 0.200",
+          "label": "kick: recall against negative recall — catches all dirt, keeps almost no clean"
+        },
+        {
+          "value": "3 of 8",
+          "label": "Actions scoring below the reject-all baseline (clap, punch, wave_arms)"
+        }
+      ]
+    },
+    {
+      "slug": "g1-zhead-classifier-architecture",
+      "title": "z-head: a segment-quality classifier for robot motion data — architecture, augmentation, results",
+      "date": "2026-08-18",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "FAIL",
+      "summary": "An explainer page for the classifier that decides whether a robot motion segment contains only its labelled action: layer-by-layer architecture with equations (frozen 1D conv autoencoder to one 512-d vector per 0.2 s, no quantization; 6-layer bidirectional transformer, 10.9 M params, conditioned on the claimed action class; a per-step head and a segment head, reject if either crosses 0.5), the four synthetic augmentations and their label rules (all sampled inside one original recording, never spliced across recordings), and what it actually measures. Dirt recall is 87-100% across three eval sets including a locked pre-annotation run on random deployment-pool samples; clean recall is 9-38%, so it cannot yet be used to filter the 28k pool. Includes the purity algebra showing why 90% kept-purity on walk demands 98.5% dirt recall.",
+      "path": "results/g1-zhead-classifier-architecture/",
+      "thumbnail": "results/g1-zhead-classifier-architecture/assets/thumbnail.png",
+      "thumbnailAlt": "Architecture data-flow diagram: motion segment to 106-d per-frame kinematic features to a frozen domain-adapted conv autoencoder producing one 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step head and a segment head with the 0.5 reject rule.",
+      "tags": [
+        "architecture",
+        "equations",
+        "data augmentation",
+        "dataset cleaning",
+        "continuous encoder",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "87-100% vs 9-38%",
+          "label": "Dirt recall vs clean recall across three eval sets (the keep side is the failure)"
+        },
+        {
+          "value": "0.80 vs 0.55-0.67",
+          "label": "Linear-probe AUC: continuous features vs discrete codes (why the encoder skips quantization)"
+        },
+        {
+          "value": "98.5%",
+          "label": "Dirt recall the purity algebra demands for 90% kept-purity on walk at 90% clean recall"
+        }
+      ]
+    },
+    {
+      "slug": "g1-motiongpt-zhead-design-and-training",
+      "title": "G1 MotionGPT judge line: z-head architecture, data augmentation and training recipe",
+      "date": "2026-08-14",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "FAIL",
+      "summary": "Design document plus current measurements for the z-head judge: a frozen domain-adapted continuous conv-AE encoder (0.2 s / 512-d vectors, no vector quantization) feeding a trainable 6-layer bidirectional transformer (10.9 M params) with a per-step dirt head and a segment-level head. Rationale: a linear probe reads AUC 0.80 from continuous features but only 0.55-0.67 from VQ codes, and the T5 line never trains on pass/fail, which capped the MotionGPT semantic-alignment route near 0.6 accuracy. Augmentation shifts segment boundaries inside the same recording (no cross-recording splicing) plus cross-class impostors and arm-column pastes. Verdict: dirt recall 87-100% on all three eval sets, but clean recall 9-38% - the model cannot yet be deployed to clean the 28k train pool; a test-then-train rolling loop over the unreviewed pool is running (round-1 walk: acc 0.842, 19 segments).",
+      "path": "results/g1-motiongpt-zhead-design-and-training/",
+      "thumbnail": "results/g1-motiongpt-zhead-design-and-training/assets/thumbnail.png",
+      "thumbnailAlt": "Architecture data-flow diagram: G1 motion segment to per-frame kinematic features to frozen domain-adapted conv-AE encoder to a 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step dirt head and a segment-level head with the 0.5 reject rule.",
+      "tags": [
+        "architecture",
+        "continuous encoder",
+        "data augmentation",
+        "dataset cleaning",
+        "test-then-train",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "0.80 vs 0.55-0.67",
+          "label": "Linear-probe AUC: continuous features vs VQ codes (why the encoder is continuous)"
+        },
+        {
+          "value": "87-100% / 9-38%",
+          "label": "Dirt recall / clean recall across the three eval sets (keep side is the failure mode)"
+        },
+        {
+          "value": "0.842 (19 seg)",
+          "label": "Rolling round-1 walk: locked pre-annotation predictions vs fresh hans labels"
+        }
+      ]
+    },
+    {
+      "slug": "g1-motiongpt-partbert-judge-halfb",
+      "title": "G1 MotionGPT judge line: part-token backbone (partbert) vs the T5 line on half-B",
+      "date": "2026-08-13",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "FAIL",
+      "summary": "Swapping the judge backbone to a from-scratch bidirectional encoder over upper/lower-body part tokens (register tokens, Muon, bf16), with physically-gated BABEL augmentations (speed/mirror/splice/part-mix, SONIC rollout gate incl. an FK-verified mirror), does not beat the T5 discrete-token line on the untouched half-B exam: best arm 0.670@22% recall is the top of a 5-seed band (median 0.612) vs 0.578@32% for the incumbent; the preregistered criterion (purity>0.578 at recall≥30%) fails on all five arms. The one stable gain: synthetic concurrent-window detection at 0.96–0.98. Ruling: back to the discrete-token default line.",
+      "path": "results/g1-motiongpt-partbert-judge-halfb/",
+      "thumbnail": "results/g1-motiongpt-partbert-judge-halfb/assets/thumbnail.png",
+      "thumbnailAlt": "Left: five seed dots for the partbert no-augmentation arm straddling the incumbent 0.578 dashed line, values 0.548 to 0.670. Right: five grey purity-recall curves overlapping the blue incumbent curve, all converging to the 0.363 no-filter base rate.",
+      "tags": [
+        "part tokens",
+        "register tokens",
+        "Muon",
+        "data augmentation",
+        "SONIC gate",
+        "dataset cleaning",
+        "G1",
+        "negative result"
+      ],
+      "metrics": [
+        {
+          "value": "0.612 (0.548–0.670)",
+          "label": "Half-B strict-gate purity, 5-seed median (incumbent 0.578@32%)"
+        },
+        {
+          "value": "5/5 arms FAIL",
+          "label": "Preregistered criterion: purity>0.578 at recall≥30%"
+        },
+        {
+          "value": "0.96–0.98",
+          "label": "Synthetic concurrent-window detection, stable across seeds"
+        }
+      ]
+    },
+    {
+      "slug": "g1-motiongpt-stage2-v3-in-training",
+      "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination",
+      "date": "2026-08-11",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "FAIL",
+      "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix teaches the target vocabulary, but on the fully held-out split discrimination AUC is 0.477 (extra actions named) and 0.526 (nominal-action surprisal) against a 0.615 handcrafted-feature baseline, and contaminated segments have their nominal action named slightly more often than clean ones. A 0.706 AUC on the other split is reported and rejected: 1,248 of its 1,559 clean segments were in training. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
+      "path": "results/g1-motiongpt-stage2-v3-in-training/",
+      "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
+      "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on the held-out split, clean 0.324 and dirty 0.370 above a 0.082 majority-class baseline, and three dots for discrimination AUC where the two held-out readouts 0.477 and 0.526 fall below the 0.615 handcrafted baseline while a training-contaminated 0.706 sits above it.",
+      "tags": [
+        "motion-language model",
+        "VQ-VAE tokenizer",
+        "dataset cleaning",
+        "BABEL",
+        "G1",
+        "negative result"
+      ],
+      "metrics": [
+        {
+          "value": "0.477 / 0.526",
+          "label": "Held-out contamination AUC, generated actions / surprisal (target 0.615)"
+        },
+        {
+          "value": "0.324 vs 0.370",
+          "label": "Nominal action named on held-out clean vs contaminated segments"
+        },
+        {
+          "value": "0.706",
+          "label": "Same readout on the training-contaminated split — rejected, not a result"
+        }
+      ]
+    },
+    {
+      "slug": "task067-clap-form-and-exec-closure-audit",
+      "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
+      "date": "2026-08-08",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
+      "path": "results/task067-clap-form-and-exec-closure-audit/",
+      "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
+      "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
+      "tags": [
+        "TASK-067",
+        "Clap",
+        "VADCompose",
+        "Tracker execution",
+        "Semantic audit",
+        "G1"
+      ],
+      "metrics": [
+        {
+          "value": "54.3%",
+          "label": "hold-form share of V2 clap references (107/197)"
+        },
+        {
+          "value": "+6.1 cm",
+          "label": "median closure gap: executed vs reference min wrist distance"
+        },
+        {
+          "value": "14.3%",
+          "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
+        }
+      ]
+    },
+    {
+      "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
+      "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
+      "date": "2026-08-05",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "GUIDE",
+      "summary": "Onboarding walkthrough of the first filtering stage: 1993 long recordings are segmented by frame annotations, 85 raw action labels are merged into 9 parent classes, and each candidate segment is human-reviewed (pass/fail/edit/trim) for action purity, boundaries, and label semantics, keeping 1446 segments. Per action: 5 deleted examples (explicit fails vs never-admitted, labeled) side by side with 2 kept examples, rendered from the raw 20 fps release motion.",
+      "path": "results/data-curation-line1-vadcompose-to-cleaned-v2/",
+      "thumbnail": "results/data-curation-line1-vadcompose-to-cleaned-v2/assets/thumbnail.png",
+      "thumbnailAlt": "Raw release segment replay frame from a human-rejected candidate",
+      "tags": [
+        "VADCompose",
+        "Data curation",
+        "Human review",
+        "G1",
+        "Onboarding",
+        "Guide"
+      ],
+      "metrics": [
+        {
+          "value": "3317 → 1392",
+          "label": "8-class candidate segments kept (1446 total incl. bow)"
+        },
+        {
+          "value": "85 → 9",
+          "label": "raw labels merged into parent classes"
+        },
+        {
+          "value": "5 vs 2",
+          "label": "deleted vs kept examples per action"
+        }
+      ]
+    },
+    {
+      "slug": "data-curation-line2-cleaned-v2-to-tracked-v3",
+      "title": "Data curation walkthrough 2/2: Cleaned V2 to Tracked V3 rev4 (physical execution + gate)",
+      "date": "2026-08-05",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "GUIDE",
+      "summary": "Onboarding walkthrough of the second filtering stage: reference motions are executed by per-action physical trackers (SONIC for walk/kick, D6 GTrXL for six upper-body actions) and gated by four automatic criteria (jerk ratio, acceleration ratio, two-sided motion preservation, phase lag), keeping 1063 of 1392 executed clips. Per action: 5 gate-rejected executions with their actual gate readings and rejection reasons, side by side with 2 accepted ones (white robot = execution, blue ghost = reference). Ends with the gate's three known blind spots.",
+      "path": "results/data-curation-line2-cleaned-v2-to-tracked-v3/",
+      "thumbnail": "results/data-curation-line2-cleaned-v2-to-tracked-v3/assets/thumbnail.png",
+      "thumbnailAlt": "Rejected kick execution: blue reference ghost mid high-kick while the executed robot barely lifts its leg",
+      "tags": [
+        "VADCompose",
+        "Data curation",
+        "Tracker gate",
+        "SONIC",
+        "D6 GTrXL",
+        "G1",
+        "Onboarding",
+        "Guide"
+      ],
+      "metrics": [
+        {
+          "value": "1063/1392",
+          "label": "executed clips passing the four-part gate (76.4%)"
+        },
+        {
+          "value": "4",
+          "label": "gate criteria (jerk, accel, motion, phase)"
+        },
+        {
+          "value": "5 vs 2",
+          "label": "rejected vs accepted examples per action"
+        }
+      ]
+    },
+    {
+      "slug": "babel-g1-8class-reference-pool-human-audit",
+      "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
+      "date": "2026-08-01",
+      "project": "VAD Alignment",
+      "category": "Dataset",
+      "status": "DATASET",
+      "summary": "What was done, no interpretation: 13,258 raw AMASS SMPL-X sequences retargeted to Unitree G1 at native 50 Hz (GMR, frame-rate patched), joined with BABEL frame-level labels, segmented into 8 action classes, filtered by automatic gates (concurrent-label policy, IK limit-jam, clap contact loss, window dedup), then reviewed segment-by-segment by a human (7 classes in full plus the first 250 walk segments). 909 segments / 35 minutes kept out of 1759. One PASS vs FAIL playback pair per class, with the reviewer's original rejection notes.",
+      "path": "results/babel-g1-8class-reference-pool-human-audit/",
+      "thumbnail": "results/babel-g1-8class-reference-pool-human-audit/assets/thumbnail.png",
+      "thumbnailAlt": "G1 robot kinematic playback frame from a kept kick reference segment",
+      "tags": [
+        "Humanoid control",
+        "G1",
+        "BABEL",
+        "AMASS",
+        "Retargeting",
+        "Dataset",
+        "Human audit",
+        "Showcase"
+      ],
+      "metrics": [
+        {
+          "value": "909 / 1759",
+          "label": "segments kept after human audit"
+        },
+        {
+          "value": "8",
+          "label": "action classes, PASS vs FAIL example each"
+        },
+        {
+          "value": "35 min",
+          "label": "audited kinematic reference at 50 Hz"
+        }
+      ]
+    },
+    {
+      "slug": "rate20-fast-oscillation-motion-showcase",
+      "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
+      "date": "2026-07-30",
+      "project": "VAD Alignment",
+      "category": "Tracker Evaluation",
+      "status": "PRELIMINARY",
+      "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows from the reviewed VADCompose V2 reference segments (walk/kick excluded, 1.67-2.22 Hz, located by a sliding-window scan of the full release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family / end-effector / arm-joint-angle time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
+      "path": "results/rate20-fast-oscillation-motion-showcase/",
+      "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
+      "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "VADCompose V2",
+        "Fast oscillation",
+        "Preliminary",
+        "Showcase"
+      ],
+      "metrics": [
+        {
+          "value": "20",
+          "label": "clips, fastest in-pool oscillation windows"
+        },
+        {
+          "value": "1.67-2.22 Hz",
+          "label": "wrist oscillation dominant frequency"
+        },
+        {
+          "value": "5",
+          "label": "trackers side by side per clip"
+        }
+      ]
+    },
+    {
+      "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
+      "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
+      "date": "2026-07-29",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "50Hz executed-state humanoid trajectories for planner training. Two controllers with complementary measured failure modes split the work: D6 GTrXL self-generates jitter on locomotion (jerk 6.8x/4.4x reference) while SONIC low-passes motion away and runs its arms 80-100 ms late, so kick and walk go to SONIC and the six upper-body actions to D6. Four criteria on joint kinematics keep 1063 of 1392 clips. Because none of them reads world position, this report measures that separately: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m) but collapses to 0.033-0.128 m once the pelvis is aligned — the failure mode is accumulated root drift, only in locomotion, and relative limb motion holds everywhere.",
+      "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
+      "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
+      "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "50Hz",
+        "Rollouts V3",
+        "Dataset verification",
+        "Data contract",
+        "Drift analysis"
+      ],
+      "metrics": [
+        {
+          "value": "1063/1392",
+          "label": "clips passing the four criteria (76.4%, 10111 s)"
+        },
+        {
+          "value": "92% vs 0.5%",
+          "label": "walk gate pass rate, SONIC vs D6 under the same criteria"
+        },
+        {
+          "value": "0.033-0.128 m",
+          "label": "pelvis-aligned limb deviation, all 8 actions"
+        }
+      ]
+    },
+    {
+      "slug": "vad-cleaned-50hz-rollouts-v3-composite-gate",
+      "title": "VAD_Cleaned_50Hz_Rollouts_V3: three-part gate and per-action executor assignment",
+      "date": "2026-07-26",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "V3 assigns executors per action (SONIC for walk/kick, D6 GTrXL for the six upper-body/crouch actions) and gates rollouts on jitter, two-sided motion preservation, and phase lag; 1063/1392 clips (76.4%) pass. A pre-registered timing probe finds deceleration overshoot separates human-accepted kicks at 91% (permutation p=0.015) where 40 whole-clip metrics all fail.",
+      "path": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/",
+      "thumbnail": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/assets/thumbnail.png",
+      "thumbnailAlt": "Preview frame from an accepted walk rollout executed by SONIC with reference ghost overlay",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "50Hz",
+        "Rollouts V3",
+        "SONIC",
+        "Smoothness gate"
+      ],
+      "metrics": [
+        {
+          "value": "1063/1392",
+          "label": "clips passing the three-part gate"
+        },
+        {
+          "value": "92%",
+          "label": "walk gate pass rate (SONIC executor)"
+        },
+        {
+          "value": "p=0.015",
+          "label": "kick timing metric vs human review"
+        }
+      ]
+    },
+    {
+      "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
+      "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
+      "date": "2026-07-24",
+      "project": "VAD Alignment",
+      "category": "Tracker Training",
+      "status": "FAIL",
+      "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04→2.41, kick 6.20→3.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
+      "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
+      "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
+      "thumbnailAlt": "3×2 comparison frame: walk/kick × SONIC / D6 / Expert Spec_legvel",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "SONIC",
+        "D6 GTrXL",
+        "Jitter",
+        "Preliminary"
+      ],
+      "metrics": [
+        {
+          "value": "1.0",
+          "label": "walk/kick val BM SR"
+        },
+        {
+          "value": "2.41",
+          "label": "walk hf_v (↓ vs 8.04)"
+        },
+        {
+          "value": "3.61",
+          "label": "kick hf_v (↓ vs 6.20)"
+        }
+      ]
+    },
+    {
+      "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
+      "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
+      "date": "2026-07-23",
+      "project": "VAD Alignment",
+      "category": "Dataset & Tracker",
+      "status": "PASS",
+      "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6× / ~4×), while upper-body clips stay comparatively smooth.",
+      "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
+      "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
+      "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "50Hz",
+        "Rollouts V2",
+        "Jitter"
+      ],
+      "metrics": [
+        {
+          "value": "0.993",
+          "label": "D6 GTrXL test BM SR"
+        },
+        {
+          "value": "~6.4×",
+          "label": "walk jerk ratio median"
+        },
+        {
+          "value": "~4.0×",
+          "label": "kick jerk ratio median"
+        }
+      ]
+    },
+    {
+      "slug": "moe-unilab-specialist-distill-d6",
+      "title": "MOE UniLab PPO specialist distill (D6) + locomotion jitter note",
+      "date": "2026-07-23",
+      "project": "VAD Alignment",
+      "category": "Tracker Training",
+      "status": "PASS",
+      "summary": "PPO specialist→DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6’s accepted walk/kick physical rollouts jitter vs reference (medians ~6× / ~4× jerk).",
+      "path": "results/moe-unilab-specialist-distill-d6/",
+      "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
+      "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
+      "tags": [
+        "Humanoid control",
+        "Motion tracking",
+        "G1",
+        "UniLab",
+        "MoE",
+        "DAgger",
+        "Jitter"
+      ],
+      "metrics": [
+        {
+          "value": "0.993",
+          "label": "D6 test BM SR"
+        },
+        {
+          "value": "0.994",
+          "label": "locked Spec val SR"
+        },
+        {
+          "value": "~6×/~4×",
+          "label": "walk/kick jerk medians"
+        }
+      ]
     }
-   ],
-   "summary": "BASE-V7 残差配方原样换宿主为冻结 GMT 跟踪器，三臂 dev_val 七指标：走路赢、踢腿赢（摔倒经 318 单元大样本证伪）、出拳半赢（w_torso=0 躯干过冲，复现 TASK-482）。残差把 GMT 不优化的描述子（幅度/姿态）收回来，不碰 GMT 自身高频抖动；授权探针证明抖在指令、被物理低通掉 93%，残差修不动。含踢腿四方叠加回放。",
-   "thumbnail": "results/gmt-v1-residual/thumb.jpg",
-   "thumbnailAlt": "踢腿一周期，SONIC / GMT 零残差 / GMT 残差 三格叠参考蓝影"
-  },
-  {
-   "slug": "v7-8783-review-digest",
-   "path": "results/v7-8783-review-digest/",
-   "title": "v7 8783 已审窗消化与切刀特性",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "date": "2026-09-04",
-   "status": "PASS",
-   "tags": [
-    "babel",
-    "soma",
-    "v7",
-    "segmentation",
-    "human-review"
-   ],
-   "metrics": [
-    {
-     "label": "已审窗单次实例可用",
-     "value": "277/314 (88.2%)"
-    },
-    {
-     "label": "都不对",
-     "value": "25/314"
-    },
-    {
-     "label": "最大残余",
-     "value": "穿模 20/22 · punch 漏周期 12/20"
-    }
-   ],
-   "summary": "babel_soma_semantic_clean_v7_final 在 8783 上的已审 314 窗消化，并写清 walk 完整步幅、hold-crouch、punch/clap 按窗条数、kick 双脚着地 0.8 s 的刀合同。Verdict PASS，但审查未关账：晋级-only note 不当瑕疵；残余集中在 cross_arms 穿模、punch one-strike 漏周期、bow 抖动、wave 漏切。不开训，继续审未审窗。",
-   "thumbnail": "results/v7-8783-review-digest/assets/decision_mix.png",
-   "thumbnailAlt": "Stacked bars of 314 reviewed v7 windows by action class and decision: single-instance usable, neither, and SIGNAL."
-  },
-  {
-   "slug": "g1-motiongpt-line-ten-laws",
-   "path": "results/g1-motiongpt-line-ten-laws/",
-   "title": "G1-MotionGPT 线大总结:十条经验规律",
-   "project": "VAD Alignment",
-   "category": "LLM Judge",
-   "date": "2026-08-29",
-   "status": "FINAL",
-   "tags": [
-    "llm-judge",
-    "retrospective",
-    "controlled-ablation",
-    "motion-representation",
-    "rlvr"
-   ],
-   "metrics": [
-    {
-     "label": "生产判定器",
-     "value": "stage-B v2, AUC 0.888 / R@P90≈0.6"
-    },
-    {
-     "label": "训法轴",
-     "value": "r32>r128>全参>全参+KL(单调)"
-    },
-    {
-     "label": "底座轴",
-     "value": "换底座 0/6 胜,Phi-4-3.8B 垫底"
-    }
-   ],
-   "summary": "把 Qwen2.5-1.5B 改造成 G1 动作段审查员(判干净/脏 + 写出区间与病因)这条线的收官总结,十条经验规律各带证据数字与适用边界:语言(MMLU)与动作判定在 1.5B 里抢地盘、LoRA 最小约束最优、HumanoidBERT 双向前端条件性有用、段内信息天花板 ~0.80(五种模态含纯像素 V-JEPA2 收敛同一高原)、冻结特征与零样本行为间的兑现缺口靠判定微调收账、特征质量与可微调性解耦(探针选型律 8 臂证伪)、换底座六战六败且推理系包揽倒数、思维链/GRPO/纠错对话在小判定器上均为负资产、病因文本是密集监督也是风格污染源(标签重述零代价修复)。附生产状态与四个开放问题。",
-   "thumbnail": "results/g1-motiongpt-line-ten-laws/assets/thumbnail.png",
-   "thumbnailAlt": "Title card for the G1-MotionGPT ten-laws retrospective."
-  },
-  {
-   "slug": "g1-llm-judge-vq-to-latent",
-   "title": "An LLM motion judge in one day: the four-arm ladder from VQ codes to continuous latents",
-   "date": "2026-08-25",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "CANDIDATE",
-   "summary": "Can a pretrained language model plus 1,128 human labels become a segment-quality judge that explains itself? Four arms in one day: T5-small on VQ codes reaches 55% of the deployed window-MLP's precision frontier, Qwen-1.5B on the same codes 73%, switching the motion representation to the MLP's own continuous latents 87%, and doubling the judge mix plus steps 94% — passing the preregistered gate (4 of 8 classes at or above 90% of the MLP, with clap at 130% and handshake at 103%, the first arms to beat the deployed judge anywhere). RL on top (GRPO, then GSPO with a span-IoU reward) produced zero gradient: SFT had memorized every training verdict and span, so the verifiable reward saturates — a clean negative with a clean mechanism. A 40-segment blind review on unseen data (all judged by the annotator) measured the MLP's confident-pass purity at 0.875 (perfect on six classes, 1/5 on kick) and the LLM at 0.926 pass-side purity, catching three of the four dirty kicks the MLP admitted.",
-   "path": "results/g1-llm-judge-vq-to-latent/",
-   "thumbnail": "results/g1-llm-judge-vq-to-latent/assets/llm-judge-ladder.png",
-   "thumbnailAlt": "Grouped bars comparing LLM judge v2 and window MLP per class, plus a four-arm ladder rising 55-73-87-94 percent across the 90 percent criterion line.",
-   "tags": [
-    "llm-judge",
-    "motion-representation",
-    "rlvr",
-    "dataset-cleaning"
-   ],
-   "metrics": [
-    {
-     "label": "prereg gate",
-     "value": "PASS (4/8 classes ≥90% of MLP)"
-    },
-    {
-     "label": "ladder",
-     "value": "55→73→87→94% of MLP"
-    },
-    {
-     "label": "blind pass purity",
-     "value": "MLP 0.875 / LLM 0.926"
-    }
-   ]
-  },
-  {
-   "slug": "g1-classifier-lineup-delivery-status",
-   "title": "Segment-quality classifier lineup after the full label audit: per-class standing and the remaining gates to delivery",
-   "date": "2026-08-23",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "CANDIDATE",
-   "summary": "Status snapshot after auditing all 904 human labels (36 fixes) and retraining all 8 per-class window-MLP judges. Against the delivery criterion (precision and dirty-removal both above 0.9): punch's strict-filter + head-trim-rejudge pipeline passes both (0.956/0.963, uncertified); clap and handshake clear dirty-removal but sit 0.04-0.07 short on precision; walk's precision readout is dominated by exam sampling (0.50 to 0.92 across three exam draws for the same model) while a blind render spot-check of 12 model rejections found 9 correct, 3 debatable, 0 clear false kills; crouch and kick are clean-sample starved (6 and 12 clean training segments). Four gates remain before delivery: certification on a blind batch, measured pool dirt rates, a 20-clip render check per class, and the annotation gap on the three under-labelled classes.",
-   "path": "results/g1-classifier-lineup-delivery-status/",
-   "thumbnail": "results/g1-classifier-lineup-delivery-status/assets/lineup-delivery-scoreboard.png",
-   "thumbnailAlt": "Grouped bar chart of precision and dirty-removal for all 8 classes against the 0.9 delivery line; punch clears both, clap and handshake clear one, walk and crouch sit near 0.5 precision.",
-   "tags": [
-    "classifier",
-    "dataset-cleaning",
-    "delivery-gates",
-    "label-audit"
-   ],
-   "metrics": [
-    {
-     "label": "classes passing v3",
-     "value": "1/8 (punch, uncertified)"
-    },
-    {
-     "label": "labels audited",
-     "value": "904 (36 fixes)"
-    },
-    {
-     "label": "delivery gates left",
-     "value": "4"
-    }
-   ]
-  },
-  {
-   "slug": "g1-punch-line-consolidated",
-   "title": "Cleaning robot motion data, the punch case: nine experiments, their conclusions, and a first deliverable pipeline",
-   "date": "2026-08-22",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "CANDIDATE",
-   "summary": "One report replacing the three process reports of Aug 20-22, written in plain research language. Nine experiments in cheapest-first order: splitting the hand labels in half exposed the old exam's diluted dirty side as the source of fake readings; a frozen 59-segment gold exam was instituted; the learning curve was flat only because the training recipe copied every human label five times (removing that one setting lifted discrimination immediately and restored +0.05 purity per label doubling); a linear probe cleared the features of suspicion; a five-way architecture comparison crowned the simplest per-window MLP, explained by measuring that each nominal 0.2-second feature vector actually spans +/-0.6 seconds of pretrained context; synthetic augmentation failed in five combinations because position-generated dirty labels are necessarily noise on distinctions that are semantic judgments. The deliverable pipeline: per-class window head, strictest threshold, and a second chance for rejected segments whose alarms sit inside the first second - trim the head, re-judge, admit trimmed. Frozen-exam readings: kept-purity 0.956, dirt-rejection 0.963, retention 0.562 - both primary metrics above 0.9, pending blind-test certification.",
-   "path": "results/g1-punch-line-consolidated/",
-   "thumbnail": "results/g1-punch-line-consolidated/assets/thumbnail.png",
-   "thumbnailAlt": "Grouped bar chart of punch operating points showing purity, dirt-rejection and retention with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears it on both primary metrics.",
-   "tags": [
-    "consolidated report",
-    "dataset cleaning",
-    "release pipeline",
-    "learning curve",
-    "architecture ablation",
-    "punch",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.956 / 0.963",
-     "label": "Kept-purity and dirt-rejection of the deliverable pipeline on the frozen gold exam (uncertified)"
-    },
-    {
-     "value": "×5 → ×1",
-     "label": "The single recipe change (stop copying each label five times) that revived the learning curve"
-    },
-    {
-     "value": "9 experiments",
-     "label": "Cheapest-first probe chain from exam audit to pipeline accounting, all evidence on file"
-    }
-   ]
-  },
-  {
-   "slug": "g1-punch-pipeline-strict-trim-rejudge",
-   "title": "Punch release pipeline, near-final: strict filtering plus model-guided head-trim and re-judge",
-   "date": "2026-08-22",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "ARCHIVED",
-   "summary": "Consolidation of the punch line under revised acceptance criteria v3 (primary: kept-purity > 0.9 AND dirt-rejection > 0.9; retention becomes an auxiliary yield parameter). The selected pipeline filters at the strictest window-head threshold, then gives rejected segments whose alarms are confined to the first second a second chance: trim at the alarm end plus margin, re-judge, and admit in trimmed form. On the frozen 59-segment gold exam this is a Pareto improvement over pure strict filtering - purity 0.930 to 0.956 and retention 0.417 to 0.562 rise together, with dirt-rejection 0.963 - because the strict tier's false kills concentrate at segment heads and the re-judge recovers them. Onset loss is confined to ~16% of admitted clean segments (vs 100% under the vetoed unconditional trim). Both primary metrics clear 0.9 but remain uncertified: threshold and margin were chosen on the exam, and certification requires pre-fixed parameters plus a blind test on unseen batches. Projected yield at the estimated 1:2 clean:dirty pool ratio: 650-900 segments per class at ~0.95 purity.",
-   "path": "results/g1-punch-pipeline-strict-trim-rejudge/",
-   "thumbnail": "results/g1-punch-pipeline-strict-trim-rejudge/assets/thumbnail.png",
-   "thumbnailAlt": "Grouped bar chart of four operating points showing purity, dirt-rejection, and retention side by side with the 0.9 primary-metric line; the selected strict-plus-trim-rejudge pipeline clears 0.9 on both primary metrics at retention 0.56.",
-   "tags": [
-    "release pipeline",
-    "acceptance criteria",
-    "head trim",
-    "operating point",
-    "punch",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.956 / 0.963",
-     "label": "Kept-purity and dirt-rejection of the selected pipeline (both primary metrics > 0.9, uncertified)"
-    },
-    {
-     "value": "(0.930, 0.417) → (0.956, 0.562)",
-     "label": "Pareto improvement over pure strict filtering: purity and retention rise together"
-    },
-    {
-     "value": "~16%",
-     "label": "Admitted clean segments that lose 1-1.5 s of onset - the confined remnant of the vetoed unconditional trim"
-    }
-   ]
-  },
-  {
-   "slug": "g1-punch-window-head-ablation",
-   "title": "Per-window head architecture ablation: why a memoryless MLP beats every context model",
-   "date": "2026-08-22",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "ARCHIVED",
-   "summary": "Five per-window judgment heads are compared on the frozen punch gold exam with identical labels: an MLP on frozen encoder tokens, the 6-layer transformer z-head, a bidirectional GRU, a +/-1s-context TCN at 0.1s resolution on raw features, and the GRU with head-shift augmentation (testing the hypothesis that context heads lose only because they starve for sequences). The MLP dominates at every recall level; augmentation makes the context head worse, and the MLP shows no plateau (purity +0.05-0.06 per label doubling). The paradox dissolves with a receptive-field measurement: each '0.2s' encoder token actually responds to frames +/-0.6s away, so the winner is pretrained local context plus a tiny head - effective sample size ~4200 windows - while freshly trained full-segment memory collapses the effective sample size to ~115 segments and overfits. Current punch scorecard: no single operating point yet clears both precision > 0.9 and recall > 0.85.",
-   "path": "results/g1-punch-window-head-ablation/",
-   "thumbnail": "results/g1-punch-window-head-ablation/assets/thumbnail.png",
-   "thumbnailAlt": "Left: grouped bar chart of best-threshold purity at recall floors 0.6 and 0.75 for five per-window heads, MLP highest at 0.896/0.878. Right: measured receptive field curve of the frozen encoder token - response decays to zero beyond 0.8 seconds, shaded +/-0.6s.",
-   "tags": [
-    "architecture ablation",
-    "receptive field",
-    "per-window head",
-    "overfitting",
-    "sample efficiency",
-    "punch",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.896 vs 0.787",
-     "label": "Best purity at recall >= 0.6: memoryless MLP vs bidirectional GRU (same labels, same exam)"
-    },
-    {
-     "value": "±0.6 s",
-     "label": "Measured receptive field of one frozen encoder token - the 'memoryless' head sees context after all"
-    },
-    {
-     "value": "+0.05-0.06 / doubling",
-     "label": "MLP purity growth per label doubling - no plateau at current annotation volume"
-    }
-   ]
-  },
-  {
-   "slug": "g1-punch-exam-reform-recipe-fix",
-   "title": "Punch turned around: exam reform, an oversampling culprit, and an 8-class recipe retrain",
-   "date": "2026-08-21",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "ARCHIVED",
-   "summary": "Continuation of the acceptance scoreboard. Punch - previously the only class where labels made things worse - is fully diagnosed by a four-step probe chain: a gold exam built from the hand-labels themselves shows the model always had signal (the old V2 exam's dirty side was diluted); the learning curve was flat only because of a x5 real-label oversampling in the recipe (removing it alone lifts gold-exam ranking 0.754 to 0.816, and the curve un-flattens to +0.067 per doubling); a linear probe proves the frozen encoder separates every dirt mode (AUC 0.82-0.90), and a 64-unit window MLP matches the 10.9M transformer. The acceptance criterion was amended twice: severe dirt (any other-class content, regardless of duration) must stay out of the kept set - under this strict definition punch reads P_severe 0.757 and remains below the bar. Retraining all labeled classes without oversampling flips clap and cross_arms to new registered bests; classes with few or unbalanced labels are unchanged, and one legacy walk arm's perfect exam score is exposed as train-on-test contamination. Synthetic augmentation, retested under the fixed recipe, still fails to expand the precision-recall frontier.",
-   "path": "results/g1-punch-exam-reform-recipe-fix/",
-   "thumbnail": "results/g1-punch-exam-reform-recipe-fix/assets/thumbnail.png",
-   "thumbnailAlt": "Left: punch learning curve, ranking vs number of real labels on log axis; the old recipe (grey) flattens at 59-116 while the fixed recipe (red) keeps rising to 0.816. Right: bar chart of head/recipe ablations with oversampling removal and the window MLP highest.",
-   "tags": [
-    "punch",
-    "gold exam",
-    "oversampling",
-    "learning curve",
-    "linear probe",
-    "recipe ablation",
-    "acceptance criteria",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.754 → 0.816",
-     "label": "Gold-exam ranking from removing x5 label oversampling alone (same data, same head)"
-    },
-    {
-     "value": "+0.067 / doubling",
-     "label": "Learning-curve slope restored under the fixed recipe (was ~0 under the old one)"
-    },
-    {
-     "value": "2 / 6",
-     "label": "Classes flipped to new registered bests by the recipe fix (clap, cross_arms)"
-    }
-   ]
-  },
-  {
-   "slug": "g1-per-action-vs-acceptance",
-   "title": "Per-action motion classifiers against the acceptance bar: precision first, then recall",
-   "date": "2026-08-20",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "MARGINAL",
-   "summary": "After wiring real human annotations into training - including a comment-by-comment adjudication of all 113 dirty-segment notes (21 whole-invalid, 3 location-unknown masked, 82 real clean crops mined from outside the marked spans) with the annotation database now the single label authority - the best model per action is scored against the newly set acceptance bar: kept-precision > 0.9 first, then clean-recall > 0.85. One of eight actions passes outright (crouch, 1.000/1.000 on a zero-overlap frozen exam). Kick shows the intended path: precision pinned at 1.000 with recall lifted 0.200 to 0.400 by twenty labels. Six actions have not cleared the precision gate; punch alone gets worse with labels and needs separate diagnosis. Certifying precision > 0.9 requires 50-100 test segments per action - the current 15-20 resolve only one dirty segment of slack.",
-   "path": "results/g1-per-action-vs-acceptance/",
-   "thumbnail": "results/g1-per-action-vs-acceptance/assets/thumbnail.png",
-   "thumbnailAlt": "Scatter plot of eight actions by recall (x) and precision (y) with the acceptance region P>0.9 and R>0.85 shaded top-right; crouch sits inside at (1.0, 1.0), kick at (0.40, 1.00) above the precision line, six other actions below 0.67 precision.",
-   "tags": [
-    "acceptance criteria",
-    "human annotation",
-    "label curation",
-    "dataset cleaning",
-    "per-class models",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "1 / 8",
-     "label": "Actions passing the bar (crouch: precision 1.000, recall 1.000)"
-    },
-    {
-     "value": "0.200 → 0.400",
-     "label": "Kick recall growth from twenty real labels at pinned precision 1.000"
-    },
-    {
-     "value": "0.623 vs 0.408",
-     "label": "Aggregate kept-purity with filtering vs without (152 exam segments)"
-    }
-   ]
-  },
-  {
-   "slug": "g1-per-action-classifiers",
-   "title": "One classifier per action: eight-way evaluation on a frozen motion test set",
-   "date": "2026-08-19",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "MARGINAL",
-   "summary": "Eight separate segment-quality classifiers, one per robot action, each trained purely on synthetic augmentations of reviewed-clean segments and scored on test segments drawn and frozen before annotation. One action (crouch) clears every metric: accuracy 0.950 against a reject-all baseline of 0.700, precision 1.000, recall 0.929, negative recall 1.000. Two more (kick, walk) reach recall 1.000 but keep almost no clean segments (negative recall 0.200 / 0.000), so they cannot be used to filter data. Three (clap, punch, wave_arms) score below the reject-all baseline with precision and recall both low; in exactly those actions the dirty segments are markedly longer than the clean ones, while three of the four augmentations lengthen a segment as they dirty it. Per-action models beat a single eight-way model on five of six comparable actions.",
-   "path": "results/g1-per-action-classifiers/",
-   "thumbnail": "results/g1-per-action-classifiers/assets/thumbnail.png",
-   "thumbnailAlt": "Architecture data-flow diagram of the segment-quality classifier: motion segment to per-frame kinematic features to a frozen continuous conv autoencoder, then a bidirectional transformer with per-step and segment-level output heads.",
-   "tags": [
-    "per-class models",
-    "frozen test set",
-    "dataset cleaning",
-    "evaluation",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.950 / 1.000 / 0.929 / 1.000",
-     "label": "crouch: accuracy / precision / recall / negative recall (baseline 0.700)"
-    },
-    {
-     "value": "1.000 vs 0.200",
-     "label": "kick: recall against negative recall — catches all dirt, keeps almost no clean"
-    },
-    {
-     "value": "3 of 8",
-     "label": "Actions scoring below the reject-all baseline (clap, punch, wave_arms)"
-    }
-   ]
-  },
-  {
-   "slug": "g1-zhead-classifier-architecture",
-   "title": "z-head: a segment-quality classifier for robot motion data — architecture, augmentation, results",
-   "date": "2026-08-18",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "FAIL",
-   "summary": "An explainer page for the classifier that decides whether a robot motion segment contains only its labelled action: layer-by-layer architecture with equations (frozen 1D conv autoencoder to one 512-d vector per 0.2 s, no quantization; 6-layer bidirectional transformer, 10.9 M params, conditioned on the claimed action class; a per-step head and a segment head, reject if either crosses 0.5), the four synthetic augmentations and their label rules (all sampled inside one original recording, never spliced across recordings), and what it actually measures. Dirt recall is 87-100% across three eval sets including a locked pre-annotation run on random deployment-pool samples; clean recall is 9-38%, so it cannot yet be used to filter the 28k pool. Includes the purity algebra showing why 90% kept-purity on walk demands 98.5% dirt recall.",
-   "path": "results/g1-zhead-classifier-architecture/",
-   "thumbnail": "results/g1-zhead-classifier-architecture/assets/thumbnail.png",
-   "thumbnailAlt": "Architecture data-flow diagram: motion segment to 106-d per-frame kinematic features to a frozen domain-adapted conv autoencoder producing one 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step head and a segment head with the 0.5 reject rule.",
-   "tags": [
-    "architecture",
-    "equations",
-    "data augmentation",
-    "dataset cleaning",
-    "continuous encoder",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "87-100% vs 9-38%",
-     "label": "Dirt recall vs clean recall across three eval sets (the keep side is the failure)"
-    },
-    {
-     "value": "0.80 vs 0.55-0.67",
-     "label": "Linear-probe AUC: continuous features vs discrete codes (why the encoder skips quantization)"
-    },
-    {
-     "value": "98.5%",
-     "label": "Dirt recall the purity algebra demands for 90% kept-purity on walk at 90% clean recall"
-    }
-   ]
-  },
-  {
-   "slug": "g1-motiongpt-zhead-design-and-training",
-   "title": "G1 MotionGPT judge line: z-head architecture, data augmentation and training recipe",
-   "date": "2026-08-14",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "FAIL",
-   "summary": "Design document plus current measurements for the z-head judge: a frozen domain-adapted continuous conv-AE encoder (0.2 s / 512-d vectors, no vector quantization) feeding a trainable 6-layer bidirectional transformer (10.9 M params) with a per-step dirt head and a segment-level head. Rationale: a linear probe reads AUC 0.80 from continuous features but only 0.55-0.67 from VQ codes, and the T5 line never trains on pass/fail, which capped the MotionGPT semantic-alignment route near 0.6 accuracy. Augmentation shifts segment boundaries inside the same recording (no cross-recording splicing) plus cross-class impostors and arm-column pastes. Verdict: dirt recall 87-100% on all three eval sets, but clean recall 9-38% - the model cannot yet be deployed to clean the 28k train pool; a test-then-train rolling loop over the unreviewed pool is running (round-1 walk: acc 0.842, 19 segments).",
-   "path": "results/g1-motiongpt-zhead-design-and-training/",
-   "thumbnail": "results/g1-motiongpt-zhead-design-and-training/assets/thumbnail.png",
-   "thumbnailAlt": "Architecture data-flow diagram: G1 motion segment to per-frame kinematic features to frozen domain-adapted conv-AE encoder to a 512-d vector per 0.2 s, then a 6-layer bidirectional transformer with CLS token and class embedding, ending in a per-step dirt head and a segment-level head with the 0.5 reject rule.",
-   "tags": [
-    "architecture",
-    "continuous encoder",
-    "data augmentation",
-    "dataset cleaning",
-    "test-then-train",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "0.80 vs 0.55-0.67",
-     "label": "Linear-probe AUC: continuous features vs VQ codes (why the encoder is continuous)"
-    },
-    {
-     "value": "87-100% / 9-38%",
-     "label": "Dirt recall / clean recall across the three eval sets (keep side is the failure mode)"
-    },
-    {
-     "value": "0.842 (19 seg)",
-     "label": "Rolling round-1 walk: locked pre-annotation predictions vs fresh hans labels"
-    }
-   ]
-  },
-  {
-   "slug": "g1-motiongpt-partbert-judge-halfb",
-   "title": "G1 MotionGPT judge line: part-token backbone (partbert) vs the T5 line on half-B",
-   "date": "2026-08-13",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "FAIL",
-   "summary": "Swapping the judge backbone to a from-scratch bidirectional encoder over upper/lower-body part tokens (register tokens, Muon, bf16), with physically-gated BABEL augmentations (speed/mirror/splice/part-mix, SONIC rollout gate incl. an FK-verified mirror), does not beat the T5 discrete-token line on the untouched half-B exam: best arm 0.670@22% recall is the top of a 5-seed band (median 0.612) vs 0.578@32% for the incumbent; the preregistered criterion (purity>0.578 at recall≥30%) fails on all five arms. The one stable gain: synthetic concurrent-window detection at 0.96–0.98. Ruling: back to the discrete-token default line.",
-   "path": "results/g1-motiongpt-partbert-judge-halfb/",
-   "thumbnail": "results/g1-motiongpt-partbert-judge-halfb/assets/thumbnail.png",
-   "thumbnailAlt": "Left: five seed dots for the partbert no-augmentation arm straddling the incumbent 0.578 dashed line, values 0.548 to 0.670. Right: five grey purity-recall curves overlapping the blue incumbent curve, all converging to the 0.363 no-filter base rate.",
-   "tags": [
-    "part tokens",
-    "register tokens",
-    "Muon",
-    "data augmentation",
-    "SONIC gate",
-    "dataset cleaning",
-    "G1",
-    "negative result"
-   ],
-   "metrics": [
-    {
-     "value": "0.612 (0.548–0.670)",
-     "label": "Half-B strict-gate purity, 5-seed median (incumbent 0.578@32%)"
-    },
-    {
-     "value": "5/5 arms FAIL",
-     "label": "Preregistered criterion: purity>0.578 at recall≥30%"
-    },
-    {
-     "value": "0.96–0.98",
-     "label": "Synthetic concurrent-window detection, stable across seeds"
-    }
-   ]
-  },
-  {
-   "slug": "g1-motiongpt-stage2-v3-in-training",
-   "title": "G1 MotionGPT stage 2: naming the action vs detecting contamination",
-   "date": "2026-08-11",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "FAIL",
-   "summary": "A motion-language model trained natively in G1 joint space (VQ-VAE motion tokenizer + Flan-T5 with the text side frozen) is asked to name the actions inside a VADCompose segment, so that an unexpected second action would flag contamination. Adding VADCompose Cleaned V3 clean segments to the training mix teaches the target vocabulary, but on the fully held-out split discrimination AUC is 0.477 (extra actions named) and 0.526 (nominal-action surprisal) against a 0.615 handcrafted-feature baseline, and contaminated segments have their nominal action named slightly more often than clean ones. A 0.706 AUC on the other split is reported and rejected: 1,248 of its 1,559 clean segments were in training. Two measurement defects that had been scoring correct predictions as wrong are documented and fixed.",
-   "path": "results/g1-motiongpt-stage2-v3-in-training/",
-   "thumbnail": "results/g1-motiongpt-stage2-v3-in-training/assets/thumbnail.png",
-   "thumbnailAlt": "Two panels: bar chart of nominal-action naming rate on the held-out split, clean 0.324 and dirty 0.370 above a 0.082 majority-class baseline, and three dots for discrimination AUC where the two held-out readouts 0.477 and 0.526 fall below the 0.615 handcrafted baseline while a training-contaminated 0.706 sits above it.",
-   "tags": [
-    "motion-language model",
-    "VQ-VAE tokenizer",
-    "dataset cleaning",
-    "BABEL",
-    "G1",
-    "negative result"
-   ],
-   "metrics": [
-    {
-     "value": "0.477 / 0.526",
-     "label": "Held-out contamination AUC, generated actions / surprisal (target 0.615)"
-    },
-    {
-     "value": "0.324 vs 0.370",
-     "label": "Nominal action named on held-out clean vs contaminated segments"
-    },
-    {
-     "value": "0.706",
-     "label": "Same readout on the training-contaminated split — rejected, not a result"
-    }
-   ]
-  },
-  {
-   "slug": "task067-clap-form-and-exec-closure-audit",
-   "title": "Clap pool form composition and tracker closure audit (V2 pool, TASK-067)",
-   "date": "2026-08-08",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "PASS",
-   "summary": "Full-population audit of the 197 V2 clap segments. Reference side: 54.3% are hold-form (hands together for most of the clip; 83 clap-then-hold + 24 held throughout), 45.7% single claps, zero repeated claps — a property inherited from the source data, since the 50 Hz reference is a pure resample of the release with no step that could introduce hand contact. Execution side: the tracker rarely reproduces the reference hand closure — median closest wrist distance 0.142 m executed vs 0.071 m in reference (+6.1 cm gap); only 14.3% of clips reach reference closure within 2 cm, and the gate-passing set (11.5%) is worse than the rejected set (22.9%). Classification thresholds are not yet human-calibrated; a per-clip review queue grouped by form is prepared.",
-   "path": "results/task067-clap-form-and-exec-closure-audit/",
-   "thumbnail": "results/task067-clap-form-and-exec-closure-audit/assets/thumbnail.png",
-   "thumbnailAlt": "Side-by-side frame: reference clap (left) vs executed rollout with hands apart (right)",
-   "tags": [
-    "TASK-067",
-    "Clap",
-    "VADCompose",
-    "Tracker execution",
-    "Semantic audit",
-    "G1"
-   ],
-   "metrics": [
-    {
-     "value": "54.3%",
-     "label": "hold-form share of V2 clap references (107/197)"
-    },
-    {
-     "value": "+6.1 cm",
-     "label": "median closure gap: executed vs reference min wrist distance"
-    },
-    {
-     "value": "14.3%",
-     "label": "clips reaching reference closure within 2 cm (kept set: 11.5%)"
-    }
-   ]
-  },
-  {
-   "slug": "data-curation-line1-vadcompose-to-cleaned-v2",
-   "title": "Data curation walkthrough 1/2: VADCompose release to Cleaned V2 (human review)",
-   "date": "2026-08-05",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "GUIDE",
-   "summary": "Onboarding walkthrough of the first filtering stage: 1993 long recordings are segmented by frame annotations, 85 raw action labels are merged into 9 parent classes, and each candidate segment is human-reviewed (pass/fail/edit/trim) for action purity, boundaries, and label semantics, keeping 1446 segments. Per action: 5 deleted examples (explicit fails vs never-admitted, labeled) side by side with 2 kept examples, rendered from the raw 20 fps release motion.",
-   "path": "results/data-curation-line1-vadcompose-to-cleaned-v2/",
-   "thumbnail": "results/data-curation-line1-vadcompose-to-cleaned-v2/assets/thumbnail.png",
-   "thumbnailAlt": "Raw release segment replay frame from a human-rejected candidate",
-   "tags": [
-    "VADCompose",
-    "Data curation",
-    "Human review",
-    "G1",
-    "Onboarding",
-    "Guide"
-   ],
-   "metrics": [
-    {
-     "value": "3317 → 1392",
-     "label": "8-class candidate segments kept (1446 total incl. bow)"
-    },
-    {
-     "value": "85 → 9",
-     "label": "raw labels merged into parent classes"
-    },
-    {
-     "value": "5 vs 2",
-     "label": "deleted vs kept examples per action"
-    }
-   ]
-  },
-  {
-   "slug": "data-curation-line2-cleaned-v2-to-tracked-v3",
-   "title": "Data curation walkthrough 2/2: Cleaned V2 to Tracked V3 rev4 (physical execution + gate)",
-   "date": "2026-08-05",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "GUIDE",
-   "summary": "Onboarding walkthrough of the second filtering stage: reference motions are executed by per-action physical trackers (SONIC for walk/kick, D6 GTrXL for six upper-body actions) and gated by four automatic criteria (jerk ratio, acceleration ratio, two-sided motion preservation, phase lag), keeping 1063 of 1392 executed clips. Per action: 5 gate-rejected executions with their actual gate readings and rejection reasons, side by side with 2 accepted ones (white robot = execution, blue ghost = reference). Ends with the gate's three known blind spots.",
-   "path": "results/data-curation-line2-cleaned-v2-to-tracked-v3/",
-   "thumbnail": "results/data-curation-line2-cleaned-v2-to-tracked-v3/assets/thumbnail.png",
-   "thumbnailAlt": "Rejected kick execution: blue reference ghost mid high-kick while the executed robot barely lifts its leg",
-   "tags": [
-    "VADCompose",
-    "Data curation",
-    "Tracker gate",
-    "SONIC",
-    "D6 GTrXL",
-    "G1",
-    "Onboarding",
-    "Guide"
-   ],
-   "metrics": [
-    {
-     "value": "1063/1392",
-     "label": "executed clips passing the four-part gate (76.4%)"
-    },
-    {
-     "value": "4",
-     "label": "gate criteria (jerk, accel, motion, phase)"
-    },
-    {
-     "value": "5 vs 2",
-     "label": "rejected vs accepted examples per action"
-    }
-   ]
-  },
-  {
-   "slug": "babel-g1-8class-reference-pool-human-audit",
-   "title": "BABEL→G1 8-class kinematic reference pool: build pipeline and full human audit (pass/fail examples)",
-   "date": "2026-08-01",
-   "project": "VAD Alignment",
-   "category": "Dataset",
-   "status": "DATASET",
-   "summary": "What was done, no interpretation: 13,258 raw AMASS SMPL-X sequences retargeted to Unitree G1 at native 50 Hz (GMR, frame-rate patched), joined with BABEL frame-level labels, segmented into 8 action classes, filtered by automatic gates (concurrent-label policy, IK limit-jam, clap contact loss, window dedup), then reviewed segment-by-segment by a human (7 classes in full plus the first 250 walk segments). 909 segments / 35 minutes kept out of 1759. One PASS vs FAIL playback pair per class, with the reviewer's original rejection notes.",
-   "path": "results/babel-g1-8class-reference-pool-human-audit/",
-   "thumbnail": "results/babel-g1-8class-reference-pool-human-audit/assets/thumbnail.png",
-   "thumbnailAlt": "G1 robot kinematic playback frame from a kept kick reference segment",
-   "tags": [
-    "Humanoid control",
-    "G1",
-    "BABEL",
-    "AMASS",
-    "Retargeting",
-    "Dataset",
-    "Human audit",
-    "Showcase"
-   ],
-   "metrics": [
-    {
-     "value": "909 / 1759",
-     "label": "segments kept after human audit"
-    },
-    {
-     "value": "8",
-     "label": "action classes, PASS vs FAIL example each"
-    },
-    {
-     "value": "35 min",
-     "label": "audited kinematic reference at 50 Hz"
-    }
-   ]
-  },
-  {
-   "slug": "rate20-fast-oscillation-motion-showcase",
-   "title": "Preliminary: tracker performance review on fast upper-limb oscillations (measurements as-is)",
-   "date": "2026-07-30",
-   "project": "VAD Alignment",
-   "category": "Tracker Evaluation",
-   "status": "PRELIMINARY",
-   "summary": "Full measurement display, no interpretation: the 20 fastest sustained wrist-oscillation windows from the reviewed VADCompose V2 reference segments (walk/kick excluded, 1.67-2.22 Hz, located by a sliding-window scan of the full release) executed by five trackers. Per clip: five-panel video with reference ghost, amplitude-family / end-effector / arm-joint-angle time curves, per-arm wrist-amplitude retention, link error, and dominant-frequency readouts. Verdicts are recorded separately in the research repo.",
-   "path": "results/rate20-fast-oscillation-motion-showcase/",
-   "thumbnail": "results/rate20-fast-oscillation-motion-showcase/assets/thumbnail.png",
-   "thumbnailAlt": "Five-panel comparison frame of the 2.22 Hz double-arm wave: each tracker's execution with blue reference ghost",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "UniLab",
-    "VADCompose V2",
-    "Fast oscillation",
-    "Preliminary",
-    "Showcase"
-   ],
-   "metrics": [
-    {
-     "value": "20",
-     "label": "clips, fastest in-pool oscillation windows"
-    },
-    {
-     "value": "1.67-2.22 Hz",
-     "label": "wrist oscillation dominant frequency"
-    },
-    {
-     "value": "5",
-     "label": "trackers side by side per clip"
-    }
-   ]
-  },
-  {
-   "slug": "vad-rollouts-v3-schema-defects-and-delivery-verification",
-   "title": "Rollouts V3 as delivered: gate, executor assignment, and the tracking-quality envelope",
-   "date": "2026-07-29",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "PASS",
-   "summary": "50Hz executed-state humanoid trajectories for planner training. Two controllers with complementary measured failure modes split the work: D6 GTrXL self-generates jitter on locomotion (jerk 6.8x/4.4x reference) while SONIC low-passes motion away and runs its arms 80-100 ms late, so kick and walk go to SONIC and the six upper-body actions to D6. Four criteria on joint kinematics keep 1063 of 1392 clips. Because none of them reads world position, this report measures that separately: world-frame limb deviation spans 45x across actions (0.029 to 1.314 m) but collapses to 0.033-0.128 m once the pelvis is aligned — the failure mode is accumulated root drift, only in locomotion, and relative limb motion holds everywhere.",
-   "path": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/",
-   "thumbnail": "results/vad-rollouts-v3-schema-defects-and-delivery-verification/assets/thumbnail.png",
-   "thumbnailAlt": "Per-action gate outcome with rejection reasons, beside contract-check failure counts across three builds",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "50Hz",
-    "Rollouts V3",
-    "Dataset verification",
-    "Data contract",
-    "Drift analysis"
-   ],
-   "metrics": [
-    {
-     "value": "1063/1392",
-     "label": "clips passing the four criteria (76.4%, 10111 s)"
-    },
-    {
-     "value": "92% vs 0.5%",
-     "label": "walk gate pass rate, SONIC vs D6 under the same criteria"
-    },
-    {
-     "value": "0.033-0.128 m",
-     "label": "pelvis-aligned limb deviation, all 8 actions"
-    }
-   ]
-  },
-  {
-   "slug": "vad-cleaned-50hz-rollouts-v3-composite-gate",
-   "title": "VAD_Cleaned_50Hz_Rollouts_V3: three-part gate and per-action executor assignment",
-   "date": "2026-07-26",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "PASS",
-   "summary": "V3 assigns executors per action (SONIC for walk/kick, D6 GTrXL for the six upper-body/crouch actions) and gates rollouts on jitter, two-sided motion preservation, and phase lag; 1063/1392 clips (76.4%) pass. A pre-registered timing probe finds deceleration overshoot separates human-accepted kicks at 91% (permutation p=0.015) where 40 whole-clip metrics all fail.",
-   "path": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/",
-   "thumbnail": "results/vad-cleaned-50hz-rollouts-v3-composite-gate/assets/thumbnail.png",
-   "thumbnailAlt": "Preview frame from an accepted walk rollout executed by SONIC with reference ghost overlay",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "UniLab",
-    "50Hz",
-    "Rollouts V3",
-    "SONIC",
-    "Smoothness gate"
-   ],
-   "metrics": [
-    {
-     "value": "1063/1392",
-     "label": "clips passing the three-part gate"
-    },
-    {
-     "value": "92%",
-     "label": "walk gate pass rate (SONIC executor)"
-    },
-    {
-     "value": "p=0.015",
-     "label": "kick timing metric vs human review"
-    }
-   ]
-  },
-  {
-   "slug": "preliminary-anti-jitter-spec-legvel-vs-d6",
-   "title": "Preliminary: walk/kick anti-jitter relative to D6 GTrXL",
-   "date": "2026-07-24",
-   "project": "VAD Alignment",
-   "category": "Tracker Training",
-   "status": "FAIL",
-   "summary": "Reward-only specialist retrain vs D6-era teachers. hf_v medians drop (walk 8.04→2.41, kick 6.20→3.61) but external visual review failed both: kick foot still jitters; walk gait initiation remains weak vs SONIC.",
-   "path": "results/preliminary-anti-jitter-spec-legvel-vs-d6/",
-   "thumbnail": "results/preliminary-anti-jitter-spec-legvel-vs-d6/assets/thumbnail.png",
-   "thumbnailAlt": "3×2 comparison frame: walk/kick × SONIC / D6 / Expert Spec_legvel",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "UniLab",
-    "SONIC",
-    "D6 GTrXL",
-    "Jitter",
-    "Preliminary"
-   ],
-   "metrics": [
-    {
-     "value": "1.0",
-     "label": "walk/kick val BM SR"
-    },
-    {
-     "value": "2.41",
-     "label": "walk hf_v (↓ vs 8.04)"
-    },
-    {
-     "value": "3.61",
-     "label": "kick hf_v (↓ vs 6.20)"
-    }
-   ]
-  },
-  {
-   "slug": "vad-cleaned-50hz-rollouts-v2-and-tracker",
-   "title": "UniLab PPO tracker and VAD_Cleaned_50Hz_Rollouts_V2",
-   "date": "2026-07-23",
-   "project": "VAD Alignment",
-   "category": "Dataset & Tracker",
-   "status": "PASS",
-   "summary": "D6 reaches test BM SR 0.993 and 99.4% filter accept; accepted walk/kick still show large exec/ref jerk (medians ~6× / ~4×), while upper-body clips stay comparatively smooth.",
-   "path": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/",
-   "thumbnail": "results/vad-cleaned-50hz-rollouts-v2-and-tracker/assets/thumbnail.png",
-   "thumbnailAlt": "Preview frame from accepted crouch live physics overlay",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "UniLab",
-    "50Hz",
-    "Rollouts V2",
-    "Jitter"
-   ],
-   "metrics": [
-    {
-     "value": "0.993",
-     "label": "D6 GTrXL test BM SR"
-    },
-    {
-     "value": "~6.4×",
-     "label": "walk jerk ratio median"
-    },
-    {
-     "value": "~4.0×",
-     "label": "kick jerk ratio median"
-    }
-   ]
-  },
-  {
-   "slug": "moe-unilab-specialist-distill-d6",
-   "title": "MOE UniLab PPO specialist distill (D6) + locomotion jitter note",
-   "date": "2026-07-23",
-   "project": "VAD Alignment",
-   "category": "Tracker Training",
-   "status": "PASS",
-   "summary": "PPO specialist→DAgger student D6 reaches test BM SR 0.993; post-hoc, the same D6’s accepted walk/kick physical rollouts jitter vs reference (medians ~6× / ~4× jerk).",
-   "path": "results/moe-unilab-specialist-distill-d6/",
-   "thumbnail": "results/moe-unilab-specialist-distill-d6/assets/thumbnail.png",
-   "thumbnailAlt": "Bar chart of walk/kick exec-vs-ref jerk and accel ratio medians",
-   "tags": [
-    "Humanoid control",
-    "Motion tracking",
-    "G1",
-    "UniLab",
-    "MoE",
-    "DAgger",
-    "Jitter"
-   ],
-   "metrics": [
-    {
-     "value": "0.993",
-     "label": "D6 test BM SR"
-    },
-    {
-     "value": "0.994",
-     "label": "locked Spec val SR"
-    },
-    {
-     "value": "~6×/~4×",
-     "label": "walk/kick jerk medians"
-    }
-   ]
-  }
- ]
+  ]
 }
