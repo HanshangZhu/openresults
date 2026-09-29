@@ -1,6 +1,42 @@
 {
   "results": [
     {
+      "slug": "gmt-audit-task-summary",
+      "path": "results/gmt-audit-task-summary/",
+      "title": "GMT 审计与复现 · 各任务做法与结论",
+      "project": "GMT Audit",
+      "category": "Audit & Reproduction",
+      "date": "2026-09-29",
+      "status": "IN PROGRESS",
+      "tags": [
+        "gmt",
+        "audit",
+        "reproduction",
+        "mujoco-warp",
+        "long-tail",
+        "jitter",
+        "retarget-quality",
+        "sonic"
+      ],
+      "metrics": [
+        {
+          "label": "动作结束后最后 2 s 双脚移动（BABEL）",
+          "value": "GMT ~1 m · SONIC 1 cm"
+        },
+        {
+          "label": "复现 teacher（2 万轮，测试集）",
+          "value": "成功率 99% · E_mpkpe 37.6 mm"
+        },
+        {
+          "label": "长尾根因",
+          "value": "BABEL 末帧质心出支撑区 94.5%（TWIST 41%）"
+        }
+      ],
+      "summary": "按任务总结 GMT 审计与复现：抖动由策略映射本身产生，仿真 PD 吸收 3–14 倍，官方 xml 额外带 2.0 关节阻尼；动作结束后在 BABEL 数据上持续踏步而 SONIC 能停住，根因是参考末帧静力不可行、GMT 贴参考不偏离；自建 MuJoCo-Warp 流水线通过观测逐位一致门槛，teacher 2 万轮追平官方跟踪精度；另发现参考数据根四元数非单位长度；对照实验 6 组已预注册。全部为仿真层结论。",
+      "thumbnail": "results/gmt-audit-task-summary/thumb.jpg",
+      "thumbnailAlt": "四格对比：参考、保持末帧、膝角抬高、过渡到默认站姿的 G1 执行"
+    },
+    {
       "slug": "task515-eight-action-review-defects",
       "path": "results/task515-eight-action-review-defects/",
       "title": "TASK-515 八动作数据集 · 人工审查三处毛病",

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="./">
+<title>GMT 审计与复现 · 各任务做法与结论</title>
+<style>:root{--bg:#08111d;--panel:#0e1b2b;--ink:#e9f1fb;--soft:#b9c7d8;--line:#27415e;
+--cyan:#62b6ff;--green:#78d6a3;--red:#ef7f8d;--yellow:#f1d06c;
+--mono:"SFMono-Regular",Consolas,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.62 Inter,system-ui,-apple-system,"Noto Sans CJK SC",sans-serif}
+main{max-width:980px;margin:auto;padding:36px 22px 70px}h1{font-size:28px;margin:6px 0 12px}
+h2{font-size:20px;color:var(--cyan);margin:30px 0 12px}h3{font-size:16px;margin:20px 0 8px}
+p,li,td{color:var(--soft)}a{color:#8bc8ff}code,pre{font-family:var(--mono)}
+blockquote{margin:16px 0;padding:12px 16px;background:var(--panel);border-left:4px solid var(--cyan)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0;display:block;overflow-x:auto}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+td.w{white-space:normal;min-width:260px}
+th{color:var(--ink)}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#06101a;
+padding:12px;border-radius:6px;color:#d6e9ff;font-size:12px}
+img,video{max-width:100%;border:1px solid var(--line);border-radius:7px;background:#fff}
+.tag{display:inline-block;font:12px var(--mono);padding:2px 9px;border-radius:99px;
+border:1px solid var(--line);margin-right:6px}.tag.ok{color:var(--green)}.tag.no{color:var(--red)}.tag.open{color:var(--yellow)}
+details{margin:12px 0;border-top:1px solid var(--line);padding-top:9px}
+summary{cursor:pointer;color:#a9d5ff}.source{font-size:12px;color:#8fa2b8}
+@media(max-width:700px){main{padding:24px 12px 50px}h1{font-size:23px}}</style>
+</head>
+<body>
+<main>
+<p class="source">项目 GMT-Audit · 2026-09-28 至 2026-09-29 · 对象：GMT（arXiv 2506.14770）官方发布的 student checkpoint 与 8 条示例动作；对照：SONIC（GR00T WBC，经 VAD_Alignment 部署栈，无残差）。代码与产物在项目仓库 <code>cvpr_workspace/</code>、<code>gmt_repro/</code>。</p>
+<h1 id="top">GMT 审计与复现 · 各任务做法与结论</h1>
+<p>起点问题：GMT 官方 checkpoint 部署到 Unitree G1 后出现足部高频抖动、姿态偏差、动作结束后站不稳。这里按任务列出每一步做了什么、测到了什么、结论是什么。整体顺序是<strong>先审计官方策略 → 复刻 GMT 训练 → 在复刻配方上做一次只改一个因素的对照实验 → 总结</strong>；目前处在第三步开始前。</p>
+
+<blockquote>
+全部结论只在 <strong>MuJoCo 仿真层</strong>成立，没有真机测量。本页只报告测量结果，不对原作者的意图做判断。凡是"推断"或"未验证"的地方都单独标出。
+</blockquote>
+
+<h2 id="overview">总览</h2>
+<table>
+<tr><th>任务</th><th>问题</th><th>结论</th><th>状态</th></tr>
+<tr><td>TASK-001</td><td class="w">抖动从哪来；仿真是否掩盖了它；策略是否学成了直腿</td><td class="w">抖动是策略自己产生的；在仿真里被 PD 吸收了 3–14 倍；策略没有学成直腿，反而比参考更屈膝</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-002</td><td class="w">GMT 没公开的部分有哪些，能否复刻</td><td class="w">student 网络能从权重完整还原；teacher、奖励权重、PPO、retarget 都缺失；TWIST 的训练代码与 GMT 同源，可作参照</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-003</td><td class="w">"骨盆后仰 + 腰前屈"是否是 GMT 特有的 retarget 偏置</td><td class="w">不是；躯干总 pitch 和独立 retarget 一致</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-004</td><td class="w">官方 sim2sim 和 VAD 部署栈为什么表现不同</td><td class="w">推理栈不是原因，数据是；官方 xml 带有额外的 2.0 关节被动阻尼</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-005</td><td class="w">动作结束后的长尾：能不能站稳</td><td class="w">GMT 在 BABEL 数据上停不下来（最后 2 s 双脚移动约 1 m），SONIC 能停住；与 xml、PD 增益无关；过渡到默认站姿后可以停住</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-006</td><td class="w">用 VAD 的 JITTER-EE-HF-WELCH-V1 指标量化抖动</td><td class="w">跟踪阶段 GMT 抖动 p95 是 SONIC 的 2.5 倍；踢腿时脚踝相差 3–4 倍</td><td><span class="tag ok">完成</span></td></tr>
+<tr><td>TASK-007</td><td class="w">"越界即终止"的训练是否让策略没学会恢复</td><td class="w">推力实验无法判定（误差是结果变量）</td><td><span class="tag open">未决</span></td></tr>
+<tr><td>复现</td><td class="w">用自己的流水线复刻 GMT 训练</td><td class="w">两道正确性门槛通过；teacher 第 2 万轮起追平官方 checkpoint 的成功率和关键点误差；长尾问题的根因定位到参考数据的静力学可行性</td><td><span class="tag open">训练中</span></td></tr>
+<tr><td>TASK-008</td><td class="w">对照实验：哪个训练因素决定稳定性</td><td class="w">6 组已预注册，工具就绪</td><td><span class="tag open">待运行</span></td></tr>
+</table>
+
+<h2 id="t1">TASK-001 · 抖动的来源</h2>
+<p><strong>做法。</strong>在官方 MuJoCo 模型上逐物理步复现 sim2sim（与原脚本逐位一致），8 条官方动作。①扰动执行层（延迟 0/10/20/40 ms × kd ×1/×0.5），看抖动是否被放大；②开环回放：把闭环记录下来的全部 2154 维输入低通到 6 Hz 再喂回策略，看输出里还剩多少 8–25 Hz 成分；③用合成的站立参考（膝角 0.05–0.8）和按步态相位拆开的走路数据，检查策略是否偏好直腿。</p>
+<table>
+<tr><th>测量</th><th>结果</th></tr>
+<tr><td>腿部指令 / 执行的 8–25 Hz 能量比</td><td>3.2–13.8 倍（8/8 条）：仿真里的 PD 吸收了大部分高频</td></tr>
+<tr><td>延迟 40 ms 或阻尼减半后，脚踝高频放大</td><td>最多 1.9 倍；预注册判定"无法判定"</td></tr>
+<tr><td>输入全部低通到 6 Hz 后，输出 8–25 Hz 保留</td><td><strong>50–95%</strong>（6/8 条 ≥70%）；只平滑参考部分时不变（P≈1.00）</td></tr>
+<tr><td>执行膝角 − 参考膝角</td><td>走路时 +0.14 rad（更屈）；站立参考 0.05–0.8 时跟随，偏差在 [−0.02, +0.07]</td></tr>
+</table>
+<p><strong>结论。</strong>抖动是策略映射本身产生的（输入平滑了，输出依然抖），不是闭环反馈，也不是参考插值带来的。仿真没有学成直腿，方向反而是更屈。</p>
+
+<h2 id="t2">TASK-002 · 复刻规格</h2>
+<p><strong>做法。</strong>逐节读论文，拆解官方 JIT 权重，对照 GMT 与 TWIST 的代码；每一项标注来源：论文 / 权重 / 代码 / 缺失。</p>
+<ul>
+<li>student 网络可以完整还原：两个 Conv1d 编码器（参考 20×30 → 128，历史 20×74 → 64）加 1024-1024-512-256 的 MLP，输入 2154 维。自己写的实现加载官方权重后，输出和官方 JIT <strong>完全一致（差为 0）</strong>。</li>
+<li>从 normalizer 的计数反推：student 训练了 4096 × 24 × 5000 = 4.9 亿样本。</li>
+<li>缺失：MoE teacher 的结构、奖励权重和核宽度、PPO 超参数、DAgger 调度、retarget 方法（论文全文没有出现 "retarget"）、过滤阈值。</li>
+<li>TWIST（与 GMT 有两位共同作者）公开了训练代码。它的参考槽位置、9 个关键点、电枢数值和 GMT 完全相同，<code>MotionEncoder</code> 的 20 帧分支和 GMT 权重逐层同构，说明两者共用一套训练代码库。它补上了奖励权重（action_rate −0.01，dof_acc −5e-8）、PPO 和 DAgger 的参数；它训练用的 URDF <strong>没有关节阻尼</strong>。</li>
+<li>论文写的是"连续 100 帧参考"，权重里实际是 20 个采样槽；论文的目标帧包含关键点，student 的参考输入里没有。</li>
+</ul>
+
+<h2 id="t3">TASK-003 · 骨盆后仰 + 腰前屈是不是偏置</h2>
+<p><strong>做法。</strong>比较 GMT 官方 8 条、GMT 训练集（由 normalizer 均值反推）与两套独立 G1 retarget（AMASS-unilab 10,280 条、BONES-SEED 58 条）的骨盆 pitch、腰 pitch 和膝角。</p>
+<table>
+<tr><th>数据</th><th>骨盆 pitch</th><th>腰 pitch</th><th>躯干合计</th><th>出现该模式的片段比例</th></tr>
+<tr><td>GMT 官方 8 条</td><td>−0.066</td><td>+0.105</td><td>+0.046</td><td>62%</td></tr>
+<tr><td>AMASS-unilab</td><td>+0.035</td><td>+0.016</td><td>+0.047</td><td>2%</td></tr>
+<tr><td>BONES-SEED</td><td>−0.046</td><td>+0.218</td><td>+0.144</td><td>43%</td></tr>
+</table>
+<p><strong>结论。</strong>这个模式不是 GMT 独有的；GMT 的躯干总姿态和 AMASS-unilab 几乎一样，只是在骨盆和腰之间的分配不同，属于冗余自由度的取法差异。站立时膝角偏直（0.205 对 0.29）只是弱线索，只有 881 帧。</p>
+
+<h2 id="t4">TASK-004 · 推理栈还是数据</h2>
+<p><strong>做法。</strong>写了一个可逐项切换的 harness，直接 import VAD 的部署组件，从官方 sim2sim 一项一项换成 VAD 的做法；再做"2 套推理栈 × 2 份数据"的对照；最后用正向运动学检查参考数据的脚底高度。</p>
+<table>
+<tr><th>发现</th><th>数值</th></tr>
+<tr><td>官方 <code>g1.xml</code> 每个关节带 2.0 被动阻尼（叠加在 PD 的 kd 之上）</td><td>公开的 G1 模型都是 0–0.05；改成 0.05 后执行层高频上升 35%</td></tr>
+<tr><td>同一份数据，VAD 栈和官方栈的差别</td><td>摔倒率相同，姿态偏差接近</td></tr>
+<tr><td>换成 VAD 数据后</td><td>更屈 +0.14 变成略直 −0.02；前倾 +0.02；骨盆低 2.2 cm</td></tr>
+<tr><td>参考脚底高度（中位数）</td><td>GMT 官方 −2.1 cm（穿地），VAD 的 BABEL 数据 +1.1 cm（悬空）</td></tr>
+<tr><td>把官方参考的根高度抬高 4 cm</td><td>多屈膝从 +0.14 降到 +0.08，只能解释约 1/3–1/2</td></tr>
+</table>
+
+<h2 id="t5">TASK-005 · 动作结束后的长尾</h2>
+<p><strong>做法。</strong>BABEL-SOMA-G1 完整片段（1,882 条），每条动作结束后保持末帧 10 s，比较 GMT（官方栈阻尼 2.0 / 阻尼 0.05 / VAD 栈）和 SONIC（VAD 真实控制器），统计最后 2 s。</p>
+<table>
+<tr><th></th><th>GMT（三种配置）</th><th>SONIC</th></tr>
+<tr><td>最后 2 s 双脚移动（中位数）</td><td>102–120 cm</td><td><strong>1.0 cm</strong></td></tr>
+<tr><td>身体角速率</td><td>0.39–0.42 rad/s</td><td>0.08 rad/s</td></tr>
+<tr><td>尾段摔倒</td><td>4.5–6.9%</td><td>1.4%</td></tr>
+<tr><td>膝角 执行 − 参考末帧</td><td>−0.02（贴着参考）</td><td>+0.19（偏离参考，换成屈膝站姿）</td></tr>
+</table>
+<ul>
+<li>把 kd 加大到 ×2、×3 或 SONIC 的值：踏步只减少约 15%，尾段摔倒从 7.9% 升到 15–27%。</li>
+<li>动作结束后用 1 s 过渡到默认站姿：825 条片段 <strong>100%</strong> 停住，尾段摔倒 7.9% → 1.7%。只把末帧膝角抬到 0.4 则无效。</li>
+</ul>
+<p>四格对比（左上参考，右上保持末帧，左下膝角 ≥0.4，右下过渡到站姿），片段 <code>dev_val walk_0002</code>：</p>
+<video controls preload="metadata" src="exp3_walk_0002.mp4"></video>
+
+<h2 id="t6">TASK-006 · 抖动指标</h2>
+<p><strong>做法。</strong>原样搬用 VAD_Alignment 定稿的 <code>JITTER-EE-HF-WELCH-V1</code>：取 6 个身体点（骨盆、躯干、双踝、双腕）的世界坐标，计算 8–25 Hz 的 Welch 带内 RMS，取执行减参考，得到 Δ（mm）。先用文档里的合成信号验证：纯 2 Hz 正弦得 0.015 mm、叠加 12 Hz 1 mm 得 0.707 mm，都和文档一致。BABEL 825 条片段。</p>
+<table>
+<tr><th>Δ，mm（p50 / p95）</th><th>GMT 保持末帧</th><th>GMT 过渡站姿</th><th>SONIC</th></tr>
+<tr><td>跟踪阶段</td><td>+0.27 / +1.67</td><td>+0.27 / +1.67</td><td>+0.20 / +0.68</td></tr>
+<tr><td>其中踢腿（脚踝）</td><td>+1.27（+2.7）</td><td>同左</td><td>+0.35（+0.9）</td></tr>
+<tr><td>尾段前 3 s</td><td>+0.43</td><td>+0.16</td><td>+0.15</td></tr>
+<tr><td>尾段 7–10 s</td><td>+0.44</td><td>0.00</td><td>0.01</td></tr>
+</table>
+
+<h2 id="t7">TASK-007 · 推离恢复</h2>
+<p>在默认站姿下给骨盆施加 0.25–2.5 m/s 的水平冲量。推力 ≤1.25 m/s 时两者都能恢复；推力 2.5 m/s 时 GMT 0/4 恢复，SONIC 3/4。<strong>无法据此判断"提前终止导致不会恢复"</strong>：峰值误差是结果变量，摔倒本身就会把误差拉大。需要改成直接设定初始偏离量再测。</p>
+
+<h2 id="repro">复现：自建 MuJoCo-Warp 训练流水线</h2>
+<p><strong>平台。</strong>本机没有 Isaac Gym，Isaac Lab 无头启动超时，所以改用 MuJoCo Warp。训练和评估都用 MuJoCo 物理；在 RTX 5090 上约 8 万样本/秒。</p>
+<table>
+<tr><th>门槛</th><th>结果</th></tr>
+<tr><td>G1 物理一致性（Warp 对比 CPU MuJoCo）</td><td>倒地前差异 ≤3e-6 rad</td></tr>
+<tr><td>G2a 参考观测逐位对比（对照官方 sim2sim）</td><td>8 条动作的所有 tick，最大误差 1.2e-7</td></tr>
+<tr><td>G2b 官方 student 在复现环境里闭环</td><td>8/8 条跑完</td></tr>
+<tr><td>官方 checkpoint 在复现环境的测试集上（300 条留出的 AMASS 片段）</td><td>成功率 97%，E_mpkpe 35.1 mm，E_mpjpe 0.079 rad。论文表 2 的 student 是 42.0 mm / 0.081 rad</td></tr>
+</table>
+<p><strong>teacher 训练进度</strong>（数据为 TWIST 的 AMASS 部分 14,688 条，目标 7 万轮 ≈ 69 亿样本）：</p>
+<table>
+<tr><th>checkpoint</th><th>成功率</th><th>E_mpkpe</th><th>E_mpjpe</th><th>腿部指令 8–25 Hz</th><th>BABEL 长尾静止比例</th></tr>
+<tr><td>1 万轮</td><td>97%</td><td>39.0 mm</td><td>0.099</td><td>0.035</td><td>46%</td></tr>
+<tr><td>2 万轮</td><td>99%</td><td>37.6 mm</td><td>0.095</td><td>0.057</td><td>33%</td></tr>
+<tr><td>3 万轮</td><td>—</td><td>—</td><td>—</td><td>—</td><td>36%</td></tr>
+<tr><td>官方 student</td><td>97%</td><td>35.1 mm</td><td>0.079</td><td>0.071</td><td>14%</td></tr>
+</table>
+<p>注意：这里比的是我们的 <strong>teacher</strong>（带特权输入，在自家 MuJoCo 环境里评估）和官方的 <strong>student</strong>（在 Isaac Gym 训练，迁移到 MuJoCo 评估），不是同类比较。</p>
+<video controls preload="metadata" src="repro_walk_stand.mp4"></video>
+<p class="source">左：参考；中：官方 student；右：复现 teacher 第 23000 轮。停步过渡段（约 6.6 s）官方 student 的指令高频瞬时达到 0.2 rad，复现 teacher 在 7.0 s 基本静止。</p>
+
+<h3>复现中得到的新发现</h3>
+<ul>
+<li><strong>参考数据里的根四元数不是单位长度</strong>：GMT 发布的 pkl 有 7/8 条模长在 0.947–0.997，TWIST 数据中 286/300 条模长 &lt;0.99。官方运动库从不归一化，所以策略看到的机体系速度和倾角系统性偏小约 3–6%。VAD 的数据模长正好是 1。</li>
+<li><strong>retarget 质量指纹</strong>：GMT 与 TWIST 的 AMASS 数据几乎同型（穿地约 2 cm，支撑脚滑步 7–8 cm/s，高频 0.2–0.3 mrad），是同一条流水线的不同版本；TWIST 版各项略好 1.2–1.5 倍。VAD 的 BABEL 数据高频是它们的 6–9 倍，脚悬空 +2 cm。</li>
+<li><strong>soft MoE 没有分工</strong>：99.8% 的步数最大权重都在同一个专家上，门控熵 1.16（均匀分布为 1.39）。</li>
+<li><strong>"停不下来"的根因</strong>：在分布内数据上所有策略都能停住（见下表）；把 BABEL 的四元数、根高度、高频分别往训练数据方向修正都无效。决定性的差异是静力学可行性：BABEL 末帧质心落在支撑区外的比例 94.5%（TWIST 中途截断 41%）；站立帧中单脚悬空 &gt;2 cm 的比例 37%（TWIST 8.6%）。SONIC 能停住，靠的是偏离参考；GMT 贴着参考，只能持续迈步。</li>
+</ul>
+<table>
+<tr><th>动作结束后保持 10 s，最后 2 s</th><th>teacher 1 万轮</th><th>teacher 2 万轮</th><th>官方 student</th></tr>
+<tr><td>TWIST 测试集（分布内）：双脚移动 / 静止比例</td><td>0.17 cm / 90%</td><td>0.19 cm / 84%</td><td>0.30 cm / 62%</td></tr>
+<tr><td>TWIST 在动作中途随机截断</td><td>0.22 cm / 80%</td><td>0.28 cm / 70%</td><td>2.0 cm / 53%</td></tr>
+<tr><td>BABEL-SOMA（VAD retarget）</td><td>99 cm / 46%</td><td>163 cm / 33%</td><td>128 cm / 14%</td></tr>
+</table>
+
+<h2 id="t8">TASK-008 · 对照实验（已预注册，待运行）</h2>
+<p>基线 R0 是复刻配方的 teacher 第 2 万轮。每组只改一个因素，训练 2 万轮，主要指标为 BABEL 长尾静止比例（R0 = 0.35）。一组只换随机种子（R0′），用来估计噪声：只有效应大于 2 倍种子噪声才算数。</p>
+<table>
+<tr><th>组</th><th>改动</th><th>检验的假设</th></tr>
+<tr><td>B（优先）</td><td class="w">30% 的 episode 在随机时刻截断参考并保持 2–5 s</td><td class="w">训练里从没遇到站不住的参考，所以没学会为了站稳而偏离参考</td></tr>
+<tr><td>A</td><td class="w">终止阈值固定为 0.6 m</td><td class="w">终止太紧，策略不敢偏离参考</td></tr>
+<tr><td>C</td><td class="w">action_rate、dof_acc 权重 ×10</td><td class="w">抖动来自平滑惩罚太弱</td></tr>
+<tr><td>D</td><td class="w">四元数归一化，根高度贴地</td><td class="w">训练数据的 retarget 缺陷</td></tr>
+<tr><td>E</td><td class="w">均匀采样</td><td class="w">自适应采样导致分布外退化</td></tr>
+<tr><td>R0′</td><td class="w">只换随机种子</td><td class="w">噪声尺度</td></tr>
+</table>
+
+<h2 id="limits">局限与未决问题</h2>
+<ul>
+<li>全部是仿真层结论；真机上的现象（直腿、前倾、抖动）没有做过编码器或 IMU 测量。</li>
+<li>复现的训练数据用的是 TWIST 的 AMASS 部分，不是 GMT 的训练集（未公开）；物理引擎是 MuJoCo 而不是 PhysX；奖励和 PPO 超参数用的是 TWIST 的值。</li>
+<li>teacher 在 1 万、2 万、3 万轮时的 BABEL 长尾静止比例为 46% / 33% / 36%，不是单调变化，训练过程中的波动需要用种子对照来估计。</li>
+<li>复现 student 尚未蒸馏；"蒸馏是否放大了抖动或停步问题"要等同一流水线的 teacher 和 student 都训完才能回答。</li>
+<li>"提前终止导致不会恢复"尚未检验。</li>
+</ul>
+<p><a href="#top">回到顶部</a></p>
+</main>
+</body>
+</html>
